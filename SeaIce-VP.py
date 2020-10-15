@@ -241,10 +241,8 @@ def strain_rate_tensor():
     R.interpolate(zeta/2*(3/2*pi_x**2*sin(pi_x*x)*sin(pi_x*y)-1/2*pi_x**2*cos(pi_x*x)*cos(pi_x*y)))
 
     # momentum equation
-    L = (inner((u - u_)/timestep,v) + inner(sigma,grad(v)))*dx
-
-    a = R*w*dx
-
+    a = (inner((u - u_)/timestep,v) + inner(sigma,grad(v)))*dx
+    L = R * w * dx
     t = 0.0
 
     ufile = File('strain_rate_tensor_u.pvd')
