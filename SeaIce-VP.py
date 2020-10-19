@@ -1,9 +1,10 @@
 from firedrake import *
 
 try:
-  import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 except:
-  warning("Matplotlib not imported")
+    warning("Matplotlib not imported")
+
 
 def box_test():
     '''
@@ -50,14 +51,13 @@ def box_test():
     h = Function(W, name="HeightNext")
 
     # sea ice concentration
-    A_ = Function(W,name="Concentration")
-    A = Function(W,name="ConcentrationNext")
+    A_ = Function(W, name="Concentration")
+    A = Function(W, name="ConcentrationNext")
 
-    #test functions
+    # test functions
     v = TestFunction(V)
     w = TestFunction(W)
     q = TestFunction(W)
-
 
     x, y = SpatialCoordinate(mesh)
 
@@ -67,19 +67,18 @@ def box_test():
 
     h = Constant(1)
 
-    A = x/L
+    A = x / L
 
-    timestep = 1/n
+    timestep = 1 / n
 
     T = 100
+
+    N_evp = 500
 
     # defining the constants to be used in the sea ice momentum equation:
 
     # the sea ice density
     rho = Constant(900)
-
-    # gravity
-    g = Constant(10)
 
     # Coriolis parameter
     cor = Constant(1.46 * 10 ** (-4))
@@ -107,11 +106,12 @@ def box_test():
 
     # geostrophic wind
 
-    geo_wind = as_vector([5 + (sin(2*pi*t/T)-3)*sin(2*pi*x/L)*sin(2*pi*y/L),5 + (sin(2*pi*t/T)-3)*sin(2*pi*y/L)*sin(2*pi*x/L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     # ocean current
 
-    ocean_curr = as_vector([0.1*(2*y - L)/L,-0.1*(L - 2*x)/L])
+    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # mEVP rheology
 
@@ -143,10 +143,13 @@ def box_test():
     # constructing the discretised weak form
 
     # momentum equation
+    # L_evp = (beta*rho*h/k_s*)
+
     Lm = (inner(rho * h * (u - u_) / timestep - rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]])
-               + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr, u - ocean_curr) * (
-                           ocean_curr - u), v) +
-         inner(sigma, grad(v))) * dx
+                + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,
+                                                                                       u - ocean_curr) * (
+                        ocean_curr - u), v) +
+          inner(sigma, grad(v))) * dx
 
     t = 0.0
 
@@ -162,15 +165,16 @@ def box_test():
         print(t)
 
     try:
-      fig, axes = plt.subplots()
-      plot(all_hs[-1], axes=axes)
+        fig, axes = plt.subplots()
+        plot(all_hs[-1], axes=axes)
     except Exception as e:
-      warning("Cannot plot figure. Error msg: '%s'" % e)
+        warning("Cannot plot figure. Error msg: '%s'" % e)
 
     try:
-      plt.show()
+        plt.show()
     except Exception as e:
-      warning("Cannot show figure. Error msg: '%s'" % e)
+        warning("Cannot show figure. Error msg: '%s'" % e)
+
 
 def strain_rate_tensor():
     '''
@@ -184,12 +188,12 @@ def strain_rate_tensor():
     zeta = P/2*Delta_min
 
     '''
-    n = 30
+    n = 100
     L = 500000
     mesh = SquareMesh(n, n, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
-    U = FunctionSpace(mesh, "CR", 1)
+    #U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
     u_ = Function(V, name="Velocity")
@@ -197,9 +201,6 @@ def strain_rate_tensor():
 
     # test functions
     v = TestFunction(V)
-    w = TestFunction(U)
-
-    R = Function(U)
 
     x, y = SpatialCoordinate(mesh)
 
@@ -207,7 +208,7 @@ def strain_rate_tensor():
 
     u_.assign(as_vector([0, 0]))
 
-    u.assign(as_vector([0.1, 0.2]))
+    u.assign(u_)
 
     h = Constant(1)
 
@@ -234,42 +235,38 @@ def strain_rate_tensor():
     zeta = P / (2 * Delta_min)
 
     # internal stress tensor
-    sigma = zeta/2*(grad(u)+transpose(grad(u)))
+    sigma = zeta / 2 * (grad(u) + transpose(grad(u)))
 
-    pi_x = pi/L
+    pi_x = pi / L
 
-    R.interpolate(zeta/2*(3/2*pi_x**2*sin(pi_x*x)*sin(pi_x*y)-1/2*pi_x**2*cos(pi_x*x)*cos(pi_x*y)))
+    v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+    sigma_exp = zeta / 2 * (grad(v_exp) + transpose(grad(v_exp)))
+    R = -div(sigma_exp)
+
+    def strain(omega):
+        return 1 / 2 * (omega + transpose(omega))
 
     # momentum equation
-    a = (inner((u - u_)/timestep,v) + inner(sigma,grad(v)))*dx
-    L = R * w * dx
+    a = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
+    a -= inner(R, v) * dx
+
     t = 0.0
 
     ufile = File('strain_rate_tensor_u.pvd')
     ufile.write(u_, time=t)
-    all_us = []
     end = T
+    bcs = [DirichletBC(V,0,"on_boundary")]
     while (t <= end):
-        solve(L == a, u)
+        solve(a == 0, u, solver_parameters={"ksp_monitor": None,"snes_monitor":None,"ksp_type":"preonly","pc_type":"lu"},bcs = bcs)
         u_.assign(u)
         t += timestep
         ufile.write(u_, time=t)
         print(t)
+        print(norm(u))
 
-    try:
-        fig, axes = plt.subplots()
-        plot(all_us[-1], axes=axes)
-    except Exception as e:
-        warning("Cannot plot figure. Error msg: '%s'" % e)
-
-    try:
-        plt.show()
-    except Exception as e:
-        warning("Cannot show figure. Error msg: '%s'" % e)
-
-    #compute the L2 norm of the error between the analytic solution and the given solution
-    #f.interpolate(cos(x * pi * 2) * cos(y * pi * 2))
-    #print(sqrt(assemble(dot(u - f, u - f) * dx)))
+    # compute the L2 norm of the error between the analytic solution and the given solution
+    # f.interpolate(cos(x * pi * 2) * cos(y * pi * 2))
+    # print(sqrt(assemble(dot(u - f, u - f) * dx)))
 
 def strain_rate_tensor_stabilised():
     '''
@@ -280,14 +277,15 @@ def strain_rate_tensor_stabilised():
     By construction, the analytical solution is
         v_1 = -sin(pi_x*x)*sin(pi_y*y)
         v_2 = -sin(pi_x*x)*sin(pi_y*y)
-
+    zeta = P/2*Delta_min
 
     '''
-    n = 30
+    n = 100
     L = 500000
     mesh = SquareMesh(n, n, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
+    #U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
     u_ = Function(V, name="Velocity")
@@ -300,7 +298,9 @@ def strain_rate_tensor_stabilised():
 
     # initial conditions
 
-    u_.assign(0)
+    u_.assign(as_vector([0, 0]))
+
+    u.assign(u_)
 
     h = Constant(1)
 
@@ -312,85 +312,49 @@ def strain_rate_tensor_stabilised():
 
     # defining the constants to be used in the sea ice momentum equation:
 
-    # the sea ice density
-    rho = Constant(900)
-
-    # gravity
-    g = Constant(10)
-
-    # Coriolis parameter
-    cor = Constant(1.46 * 10 ** (-4))
-
-    # air density
-    rho_a = Constant(1.3)
-
-    # air drag coefficient
-    C_a = Constant(1.2 * 10 ** (-3))
-
-    # water density
-    rho_w = Constant(1026)
-
-    # water drag coefficient
-    C_w = Constant(5.5 * 10 ** (-3))
-
     # ice strength parameter
     P_star = Constant(27.5 * 10 ** 3)
 
     # ice concentration parameter
     C = Constant(20)
 
-    #  ellipse ratio
-    e = Constant(2)
-
-    # strain rate tensor, where grad(u) is the jacobian matrix of u
-    ep_dot = 1 / 2 * (grad(u) + transpose(grad(u)))
-
-    # deviatoric part of the strain rate tensor
-    ep_dot_prime = ep_dot - 1 / 2 * tr(ep_dot) * Identity(2)
-
     # ice strength
     P = P_star * h * exp(-C * (1 - A))
 
     Delta_min = Constant(2 * 10 ** (-9))
 
-    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
-
     # viscosities
-    zeta = P / (2 * Delta)
+    zeta = P / (2 * Delta_min)
 
     # internal stress tensor
-    sigma = zeta/2*(grad(u))
+    sigma = zeta / 2 * (grad(u))
 
-    pi_x = pi/L
+    pi_x = pi / L
 
-    R = zeta/2*(3/2*pi_x**2*sin(pi_x*x)*sin(pi_x*y)-1/2*pi_x**2*cos(pi_x*x)*cos(pi_x*y))
+    v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+    sigma_exp = zeta / 2 * (grad(v_exp) + transpose(grad(v_exp)))
+    R = -div(sigma_exp)
+
+    def strain(omega):
+        return 1 / 2 * (omega + transpose(omega))
 
     # momentum equation
-    Lm = (inner((u - u_)/timestep,v) + inner(sigma,grad(v)))*dx
+    a = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
+    a -= inner(R, v) * dx
 
     t = 0.0
 
-    ufile = File('strain_rate_tensor_u.pvd')
+    ufile = File('strain_rate_tensor_stabilised_u.pvd')
     ufile.write(u_, time=t)
-    all_us = []
     end = T
+    bcs = [DirichletBC(V,0,"on_boundary")]
     while (t <= end):
-        solve(Lm == 0, u)
+        solve(a == 0, u, solver_parameters={"ksp_monitor": None,"snes_monitor":None,"ksp_type":"preonly","pc_type":"lu"},bcs = bcs)
         u_.assign(u)
         t += timestep
         ufile.write(u_, time=t)
         print(t)
-
-    try:
-        fig, axes = plt.subplots()
-        plot(all_us[-1], axes=axes)
-    except Exception as e:
-        warning("Cannot plot figure. Error msg: '%s'" % e)
-
-    try:
-        plt.show()
-    except Exception as e:
-        warning("Cannot show figure. Error msg: '%s'" % e)
+        print(norm(u))
 
 def VP_EVP_test1():
     '''
@@ -423,14 +387,13 @@ def VP_EVP_test1():
     h = Function(W, name="HeightNext")
 
     # sea ice concentration
-    A_ = Function(W,name="Concentration")
-    A = Function(W,name="ConcentrationNext")
+    A_ = Function(W, name="Concentration")
+    A = Function(W, name="ConcentrationNext")
 
-    #test functions
+    # test functions
     v = TestFunction(V)
     w = TestFunction(W)
     q = TestFunction(W)
-
 
     x, y = SpatialCoordinate(mesh)
 
@@ -440,9 +403,9 @@ def VP_EVP_test1():
 
     h = Constant(1)
 
-    A = x/L
+    A = x / L
 
-    timestep = 1/n
+    timestep = 1 / n
 
     T = 100
 
@@ -480,11 +443,12 @@ def VP_EVP_test1():
 
     # geostrophic wind
 
-    geo_wind = as_vector([5 + (sin(2*pi*t/T)-3)*sin(2*pi*x/L)*sin(2*pi*y/L),5 + (sin(2*pi*t/T)-3)*sin(2*pi*y/L)*sin(2*pi*x/L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     # ocean current
 
-    ocean_curr = as_vector([0.1*(2*y - L)/L,-0.1*(L - 2*x)/L])
+    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # mEVP rheology
 
@@ -517,9 +481,10 @@ def VP_EVP_test1():
 
     # momentum equation
     Lm = (inner(rho * h * (u - u_) / timestep - rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]])
-               + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr, u - ocean_curr) * (
-                           ocean_curr - u), v) +
-         inner(sigma, grad(v))) * dx
+                + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,
+                                                                                       u - ocean_curr) * (
+                        ocean_curr - u), v) +
+          inner(sigma, grad(v))) * dx
 
     t = 0.0
 
@@ -535,15 +500,16 @@ def VP_EVP_test1():
         print(t)
 
     try:
-      fig, axes = plt.subplots()
-      plot(all_hs[-1], axes=axes)
+        fig, axes = plt.subplots()
+        plot(all_hs[-1], axes=axes)
     except Exception as e:
-      warning("Cannot plot figure. Error msg: '%s'" % e)
+        warning("Cannot plot figure. Error msg: '%s'" % e)
 
     try:
-      plt.show()
+        plt.show()
     except Exception as e:
-      warning("Cannot show figure. Error msg: '%s'" % e)
+        warning("Cannot show figure. Error msg: '%s'" % e)
+
 
 def VP_EVP_test2():
     '''
@@ -570,14 +536,13 @@ def VP_EVP_test2():
     h = Function(W, name="HeightNext")
 
     # sea ice concentration
-    A_ = Function(W,name="Concentration")
-    A = Function(W,name="ConcentrationNext")
+    A_ = Function(W, name="Concentration")
+    A = Function(W, name="ConcentrationNext")
 
-    #test functions
+    # test functions
     v = TestFunction(V)
     w = TestFunction(W)
     q = TestFunction(W)
-
 
     x, y = SpatialCoordinate(mesh)
 
@@ -587,9 +552,9 @@ def VP_EVP_test2():
 
     h = Constant(1)
 
-    A = x/L
+    A = x / L
 
-    timestep = 1/n
+    timestep = 1 / n
 
     T = 100
 
@@ -627,11 +592,12 @@ def VP_EVP_test2():
 
     # geostrophic wind
 
-    geo_wind = as_vector([5 + (sin(2*pi*t/T)-3)*sin(2*pi*x/L)*sin(2*pi*y/L),5 + (sin(2*pi*t/T)-3)*sin(2*pi*y/L)*sin(2*pi*x/L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     # ocean current
 
-    ocean_curr = as_vector([0.1*(2*y - L)/L,-0.1*(L - 2*x)/L])
+    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # mEVP rheology
 
@@ -664,9 +630,10 @@ def VP_EVP_test2():
 
     # momentum equation
     Lm = (inner(rho * h * (u - u_) / timestep - rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]])
-               + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr, u - ocean_curr) * (
-                           ocean_curr - u), v) +
-         inner(sigma, grad(v))) * dx
+                + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,
+                                                                                       u - ocean_curr) * (
+                        ocean_curr - u), v) +
+          inner(sigma, grad(v))) * dx
 
     t = 0.0
 
@@ -682,16 +649,17 @@ def VP_EVP_test2():
         print(t)
 
     try:
-      fig, axes = plt.subplots()
-      plot(all_hs[-1], axes=axes)
+        fig, axes = plt.subplots()
+        plot(all_hs[-1], axes=axes)
     except Exception as e:
-      warning("Cannot plot figure. Error msg: '%s'" % e)
+        warning("Cannot plot figure. Error msg: '%s'" % e)
 
     try:
-      plt.show()
+        plt.show()
     except Exception as e:
-      warning("Cannot show figure. Error msg: '%s'" % e)
-
+        warning("Cannot show figure. Error msg: '%s'" % e)
 
 
 strain_rate_tensor()
+
+strain_rate_tensor_stabilised()
