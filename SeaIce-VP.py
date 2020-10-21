@@ -1,4 +1,5 @@
 from firedrake import *
+import time
 
 try:
     import matplotlib.pyplot as plt
@@ -175,8 +176,7 @@ def box_test():
     except Exception as e:
         warning("Cannot show figure. Error msg: '%s'" % e)
 
-
-def strain_rate_tensor():
+def strain_rate_tensor(length_of_time):
     '''
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -186,14 +186,13 @@ def strain_rate_tensor():
         v_1 = -sin(pi_x*x)*sin(pi_y*y)
         v_2 = -sin(pi_x*x)*sin(pi_y*y)
     zeta = P/2*Delta_min
-
     '''
+
     n = 100
     L = 500000
     mesh = SquareMesh(n, n, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
-    #U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
     u_ = Function(V, name="Velocity")
@@ -214,9 +213,9 @@ def strain_rate_tensor():
 
     A = Constant(1)
 
-    timestep = 10
+    timestep = 10**(-6)
 
-    T = 100
+    T = length_of_time
 
     # defining the constants to be used in the sea ice momentum equation:
 
@@ -252,7 +251,7 @@ def strain_rate_tensor():
 
     t = 0.0
 
-    ufile = File('strain_rate_tensor_u.pvd')
+    ufile = File('strain_rate_tensor_u2.pvd')
     ufile.write(u_, time=t)
     end = T
     bcs = [DirichletBC(V,0,"on_boundary")]
@@ -261,14 +260,14 @@ def strain_rate_tensor():
         u_.assign(u)
         t += timestep
         ufile.write(u_, time=t)
-        print(t)
-        print(norm(u))
+        print("Time:", t , "seconds")
+        print("Norm:", norm(u))
 
     # compute the L2 norm of the error between the analytic solution and the given solution
     # f.interpolate(cos(x * pi * 2) * cos(y * pi * 2))
     # print(sqrt(assemble(dot(u - f, u - f) * dx)))
 
-def strain_rate_tensor_stabilised():
+def strain_rate_tensor_stabilised(length_of_time):
     '''
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -278,14 +277,13 @@ def strain_rate_tensor_stabilised():
         v_1 = -sin(pi_x*x)*sin(pi_y*y)
         v_2 = -sin(pi_x*x)*sin(pi_y*y)
     zeta = P/2*Delta_min
-
     '''
+
     n = 100
     L = 500000
     mesh = SquareMesh(n, n, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
-    #U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
     u_ = Function(V, name="Velocity")
@@ -306,9 +304,9 @@ def strain_rate_tensor_stabilised():
 
     A = Constant(1)
 
-    timestep = 10
+    timestep = 10**(-6)
 
-    T = 100
+    T = length_of_time
 
     # defining the constants to be used in the sea ice momentum equation:
 
@@ -356,7 +354,7 @@ def strain_rate_tensor_stabilised():
         print(t)
         print(norm(u))
 
-def VP_EVP_test1():
+def VP_test1():
     '''
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -371,7 +369,7 @@ def VP_EVP_test1():
     '''
 
     n = 30
-    L = 1000000
+    L = 500000
     mesh = SquareMesh(n, n, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
@@ -382,18 +380,8 @@ def VP_EVP_test1():
     u_ = Function(V, name="Velocity")
     u = Function(V, name="VelocityNext")
 
-    # mean height of sea ice
-    h_ = Function(W, name="Height")
-    h = Function(W, name="HeightNext")
-
-    # sea ice concentration
-    A_ = Function(W, name="Concentration")
-    A = Function(W, name="ConcentrationNext")
-
     # test functions
     v = TestFunction(V)
-    w = TestFunction(W)
-    q = TestFunction(W)
 
     x, y = SpatialCoordinate(mesh)
 
@@ -405,9 +393,9 @@ def VP_EVP_test1():
 
     A = x / L
 
-    timestep = 1 / n
+    timestep = 10**(-1)
 
-    T = 100
+    T = 10
 
     # defining the constants to be used in the sea ice momentum equation:
 
@@ -441,19 +429,15 @@ def VP_EVP_test1():
     #  ellipse ratio
     e = Constant(2)
 
-    # geostrophic wind
+    #height
+    h = 1
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                          5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+    #sea ice conc.
+    A = x/L
 
     # ocean current
 
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
-
-    # mEVP rheology
-
-    alpha = Constant(500)
-    beta = Constant(500)
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 1 / 2 * (grad(u) + transpose(grad(u)))
@@ -480,6 +464,8 @@ def VP_EVP_test1():
     # constructing the discretised weak form
 
     # momentum equation
+    L = rho*
+
     Lm = (inner(rho * h * (u - u_) / timestep - rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]])
                 + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,
                                                                                        u - ocean_curr) * (
@@ -510,8 +496,7 @@ def VP_EVP_test1():
     except Exception as e:
         warning("Cannot show figure. Error msg: '%s'" % e)
 
-
-def VP_EVP_test2():
+def EVP_test2():
     '''
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -660,6 +645,8 @@ def VP_EVP_test2():
         warning("Cannot show figure. Error msg: '%s'" % e)
 
 
-strain_rate_tensor()
-
-strain_rate_tensor_stabilised()
+start = time.time()
+strain_rate_tensor(10**(-1))
+end = time.time()
+print(end-start)
+#strain_rate_tensor_stabilised(10**(-4))
