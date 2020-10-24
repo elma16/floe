@@ -7,7 +7,7 @@ try:
 except:
     warning("Matplotlib not imported")
 
-def box_test():
+def box_test(number_of_triangles = 71):
     '''
     from Mehlmann and Korn, 2020
     Section 4.3
@@ -32,6 +32,8 @@ def box_test():
         A(0) = x/L_x
 
     Solved using the mEVP solver
+
+    number_of_triangles : for the paper's 15190 edges, between 70 and 71 are required
 
     '''
 

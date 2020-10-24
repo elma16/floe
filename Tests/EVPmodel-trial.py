@@ -7,12 +7,13 @@ try:
 except:
     warning("Matplotlib not imported")
 
-def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 100):
+
+def EVP_trial(T=10, timestep=10 ** (-1), number_of_triangles=100, subcycles=20):
     '''
     from Mehlmann and Korn, 2020
     Section 4.2
-    VP+EVP Test 1
-    Solve a modified momentum equation
+    EVP Test 1
+    Solve a modified momentum equation using the EVP solver, rather than the mEVP solver
     L_x = L_y = L = 500000
     vw_1 = 0.1*(2y-L_y)/L_y
     vw_2 = -0.1*(L_x-2x)/L_x
@@ -26,7 +27,7 @@ def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 100):
     mesh = SquareMesh(n, n, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
-    U = FunctionSpace(mesh,"CR",1)
+    U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
     u_ = Function(V, name="Velocity")
@@ -46,7 +47,7 @@ def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 100):
 
     h = Constant(1)
 
-    A.interpolate(x/L)
+    A.interpolate(x / L)
 
     # defining the constants to be used in the sea ice momentum equation:
 
@@ -92,9 +93,40 @@ def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 100):
     # internal stress tensor
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
 
+    # ------------------------------------------------------------------------
+    subcycle_timestep = timestep/subcycles
+
+    #updating the EVP stress tensor
+    sigma1 = sigma[0,0] + sigma [1,1]
+    sigma2= sigma[0,0] - sigma[1,1]
+    ep_dot1 = ep_dot[0,0] + ep_dot[1,1]
+    ep_dot2 = ep_dot[0,0] - ep_dot[1,1]
+
+    #subcycled update of EVP stress tensor
+
+    sigma1 = (2 * subcycle_timestep * zeta * ep_dot1 - P / 2 + 2 * T * sigma1) / (2 * T + subcycle_timestep)
+    sigma2 = (2 * subcycle_timestep * zeta * ep_dot2 - P / 2 + 2 * T * sigma2) / (
+                2 * T + subcycle_timestep)
+
+    #computing the entries of the stress tensor
+    sigma[0, 1] = (2 * subcycle_timestep * zeta * ep_dot[0,1]+2*T*sigma[0,1])/(2*T+4*subcycles)
+    sigma[0, 0] = (sigma1 + sigma2) / 2
+    sigma[0, 0] = (sigma1 - sigma2) / 2
+
+    #updating the mEVP stress tensor
+
+    alpha = 500
+    beta = 500
+    sigma1 = 1 + (sigma1 + 2 * zeta * (ep_dot1 - P ) )/alpha
+    sigma2 = 1 + (sigma2 * zeta * ep_dot2)/2*alpha
+    sigma[0, 1] = 1 + (sigma[0,1] * zeta * ep_dot[0,1])/2*alpha
+    #------------------------------------------------------------------------
+
     # momentum equation
 
-    a = (inner(rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr,u - ocean_curr)) * (ocean_curr - u), v)) * dx
+    a = (inner(
+        rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr, u - ocean_curr)) * (ocean_curr - u),
+        v)) * dx
     a += inner(sigma, grad(v)) * dx
 
     t = 0.0
@@ -112,6 +144,3 @@ def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 100):
         t += timestep
         u2file.write(u_, time=t)
         print("Time:", t, "seconds", t / T * 100, "% complete")
-
-
-VP_test1()

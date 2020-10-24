@@ -7,12 +7,12 @@ try:
 except:
     warning("Matplotlib not imported")
 
-def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 100):
+def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
     '''
     from Mehlmann and Korn, 2020
     Section 4.2
-    VP+EVP Test 1
-    Solve a modified momentum equation
+    VP+EVP Test 2
+    Solve a modified momentum equation with A,h advected
     L_x = L_y = L = 500000
     vw_1 = 0.1*(2y-L_y)/L_y
     vw_2 = -0.1*(L_x-2x)/L_x
@@ -32,11 +32,17 @@ def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 100):
     u_ = Function(V, name="Velocity")
     u = Function(V, name="VelocityNext")
 
-    #
-    A = Function(U)
+    # sea ice concentration
+    A_ = Function(U, name="Concentration")
+    A_ = Function(U, name="ConcentrationNext")
+
+    # sea ice height
+    h_ = Function(U, name="Height")
+    h = Function(U, name="HeightNext")
 
     # test functions
     v = TestFunction(V)
+    w = TestFunction(U)
 
     x, y = SpatialCoordinate(mesh)
 
@@ -103,6 +109,12 @@ def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 100):
     u2file.write(u_, time=t)
     end = T
     bcs = [DirichletBC(V, 0, "on_boundary")]
+
+    def energy1(v):
+        return norm(sqrt(zeta)*v)
+
+    def energy2(v):
+        return norm(sqrt(eta)*grad(v))
 
     while (t <= end):
         solve(a == 0, u,

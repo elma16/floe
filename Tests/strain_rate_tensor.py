@@ -7,7 +7,7 @@ try:
 except:
     warning("Matplotlib not imported")
 
-def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=False,error_plot=False,number_of_triangles=100):
+def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=0,number_of_triangles=100):
     '''
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -17,6 +17,13 @@ def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=False,erro
         v_1 = -sin(pi_x*x)*sin(pi_y*y)
         v_2 = -sin(pi_x*x)*sin(pi_y*y)
     zeta = P/2*Delta_min
+
+    number_of_triangles: paper's value for 3833 edges is between 35,36.
+
+    stabilised = {0,1,2}
+    0 - unstabilised (default option)
+    1 - stabilised (change the form of the stress tensor)
+    2 - stabilised (via the a velocity jump algorithm)
     '''
 
     n = number_of_triangles
@@ -65,10 +72,15 @@ def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=False,erro
     zeta = P / (2 * Delta_min)
 
     # internal stress tensor, stabilised vs unstabilised
-    if stabilised == True:
-        sigma = zeta /2 * (grad(u))
-    else:
+    if stabilised == 0:
         sigma = zeta / 2 * (grad(u) + transpose(grad(u)))
+    elif stabilised == 1:
+        #algo
+    elif stabilised == 2:
+        sigma = zeta / 2 * (grad(u))
+    else:
+        return("Not a valid input. Try again.")
+
 
     pi_x = pi / L
 
@@ -103,7 +115,7 @@ def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=False,erro
         t += timestep
         error = norm(u - v_exp)
         ufile.write(u_, time=t)
-        print("Time:", t, "seconds", t / T * 100, "% complete")
+        print("Time:", t, "seconds", min(t / T * 100,100), "% complete")
         print("Norm:", error)
         all_errors.append(error)
 
