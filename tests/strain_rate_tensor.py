@@ -1,6 +1,6 @@
 from firedrake import *
 
-def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=30):
+def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=30,output=False):
     """
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -90,26 +90,39 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
 
     t = 0.0
 
-    outfile = File('./output/strain_rate/strain_rate_tensor_u.pvd')
-    outfile.write(u_, time=t)
     all_errors = []
     end = T
     bcs = [DirichletBC(V, 0, "on_boundary")]
     params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
 
-
-    print('******************************** Forward solver ********************************\n')
-    while t <= end:
-        solve(a == 0, u,solver_parameters = params,bcs = bcs)
-        u_.assign(u)
-        t += timestep
-        error = norm(u - v_exp)
+    if output:
+        outfile = File('./output/strain_rate/strain_rate_tensor_u.pvd')
         outfile.write(u_, time=t)
-        print("Time:", t, "[s]")
-        print(int(min(t / T * 100,100)), "% complete")
-        print("Error norm:", error)
-        all_errors.append(error)
-    print('... forward problem solved...\n')
+        print('******************************** Forward solver ********************************\n')
+        while t <= end:
+            solve(a == 0, u,solver_parameters = params,bcs = bcs)
+            u_.assign(u)
+            t += timestep
+            error = norm(u - v_exp)
+            outfile.write(u_, time=t)
+            print("Time:", t, "[s]")
+            print(int(min(t / T * 100,100)), "% complete")
+            print("Error norm:", error)
+            all_errors.append(error)
+        print('... forward problem solved...\n')
+    else:
+        print('******************************** Forward solver ********************************\n')
+        while t <= end:
+            solve(a == 0, u, solver_parameters=params, bcs=bcs)
+            u_.assign(u)
+            t += timestep
+            error = norm(u - v_exp)
+            print("Time:", t, "[s]")
+            print(int(min(t / T * 100, 100)), "% complete")
+            print("Error norm:", error)
+            all_errors.append(error)
+        print('... forward problem solved...\n')
+
 
     del all_errors[-1]
     print('...done!')
