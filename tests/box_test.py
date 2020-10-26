@@ -150,8 +150,8 @@ def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
 
     t = 0.0
 
-    hfile = File('h.pvd')
-    hfile.write(h_, time=t)
+    outfile = File('./output/box_test/box-test.pvd')
+    outfile.write(h_, time=t)
     all_hs = []
     end = T
 
@@ -160,7 +160,7 @@ def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
         solve(Lm == 0, u)
         u_.assign(u)
         t += timestep
-        hfile.write(h_, time=t)
+        outfile.write(h_, time=t)
         print(t)
     print('... forward problem solved...\n')
 

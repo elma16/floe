@@ -8,7 +8,7 @@ except:
     warning("Matplotlib not imported")
 
 
-def EVP_trial(T=10, timestep=10 ** (-1), number_of_triangles=100, subcycles=20):
+def EVP_trial(T=10, timestep=10 ** (-1), number_of_triangles=30, subcycles=20):
     """
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -131,8 +131,8 @@ def EVP_trial(T=10, timestep=10 ** (-1), number_of_triangles=100, subcycles=20):
 
     t = 0.0
 
-    u2file = File('vp_test.pvd')
-    u2file.write(u_, time=t)
+    outfile = File('./output/EVP_model/EVP_test.pvd')
+    outfile.write(u_, time=t)
     end = T
     bcs = [DirichletBC(V, 0, "on_boundary")]
     params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
@@ -142,7 +142,7 @@ def EVP_trial(T=10, timestep=10 ** (-1), number_of_triangles=100, subcycles=20):
         solve(a == 0, u,solver_parameters= params,bcs=bcs)
         u_.assign(u)
         t += timestep
-        u2file.write(u_, time=t)
+        outfile.write(u_, time=t)
         print("Time:", t, "[s]")
         print(int(min(t / T * 100, 100)), "% complete")
 

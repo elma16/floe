@@ -68,7 +68,7 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
     elif stabilised == 2:
         sigma = zeta / 2 * (grad(u))
     else:
-        return "Not a valid input. Try again."
+        raise ValueError("Expected 0, 1 or 2 but got {:d}".format(stabilised))
 
 
     pi_x = pi / L
@@ -90,8 +90,8 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
 
     t = 0.0
 
-    ufile = File('strain_rate_tensor_u_no_norm.pvd')
-    ufile.write(u_, time=t)
+    outfile = File('./output/strain_rate/strain_rate_tensor_u.pvd')
+    outfile.write(u_, time=t)
     all_errors = []
     end = T
     bcs = [DirichletBC(V, 0, "on_boundary")]
@@ -104,15 +104,13 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
         u_.assign(u)
         t += timestep
         error = norm(u - v_exp)
-        ufile.write(u_, time=t)
+        outfile.write(u_, time=t)
         print("Time:", t, "[s]")
         print(int(min(t / T * 100,100)), "% complete")
         print("Error norm:", error)
         all_errors.append(error)
     print('... forward problem solved...\n')
 
-    #del all_errors[-1]
+    del all_errors[-1]
     print('...done!')
     return all_errors
-
-strain_rate_tensor()

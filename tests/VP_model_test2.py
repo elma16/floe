@@ -7,7 +7,7 @@ try:
 except:
     warning("Matplotlib not imported")
 
-def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
+def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 30):
     """
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -21,9 +21,8 @@ def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
     A = x/L_x
     """
     print('\n******************************** VP MODEL TEST 2 ********************************\n')
-    n = number_of_triangles
     L = 500000
-    mesh = SquareMesh(n, n, L)
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     U = FunctionSpace(mesh,"CR",1)
@@ -105,8 +104,8 @@ def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
 
     t = 0.0
 
-    u2file = File('vp_test.pvd')
-    u2file.write(u_, time=t)
+    outfile = File('./output/vp_test/vp_test2.pvd')
+    outfile.write(u_, time=t)
     end = T
     bcs = [DirichletBC(V, 0, "on_boundary")]
     params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
@@ -118,11 +117,11 @@ def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
         return norm(sqrt(eta)*grad(v))
 
     print('******************************** Forward solver ********************************\n')
-    while (t <= end):
+    while t <= end:
         solve(a == 0, u,solver_parameters=params,bcs=bcs)
         u_.assign(u)
         t += timestep
-        u2file.write(u_, time=t)
+        outfile.write(u_, time=t)
         print("Time:", t, "[s]")
         print(int(min(t / T * 100, 100)), "% complete")
 
