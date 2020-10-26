@@ -7,6 +7,11 @@ from tests.strain_rate_tensor import *
 import numpy as np
 import time
 
+try:
+    import matplotlib.pyplot as plt
+except:
+    warning("Matplotlib not imported")
+
 '''
 Creating all the vector plots and plotting error against time.
 '''

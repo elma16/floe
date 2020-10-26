@@ -8,7 +8,7 @@ except:
     warning("Matplotlib not imported")
 
 def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
-    '''
+    """
     from Mehlmann and Korn, 2020
     Section 4.2
     VP+EVP Test 2
@@ -19,8 +19,8 @@ def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
     v(0) = 0
     h = 1
     A = x/L_x
-    '''
-
+    """
+    print('\n******************************** VP MODEL TEST 2 ********************************\n')
     n = number_of_triangles
     L = 500000
     mesh = SquareMesh(n, n, L)
@@ -109,6 +109,7 @@ def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
     u2file.write(u_, time=t)
     end = T
     bcs = [DirichletBC(V, 0, "on_boundary")]
+    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
 
     def energy1(v):
         return norm(sqrt(zeta)*v)
@@ -116,14 +117,16 @@ def VP_test2(T=10,timestep = 10**(-1),number_of_triangles = 100):
     def energy2(v):
         return norm(sqrt(eta)*grad(v))
 
+    print('******************************** Forward solver ********************************\n')
     while (t <= end):
-        solve(a == 0, u,
-              solver_parameters={"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"},
-              bcs=bcs)
+        solve(a == 0, u,solver_parameters=params,bcs=bcs)
         u_.assign(u)
         t += timestep
         u2file.write(u_, time=t)
-        print("Time:", t, "seconds", t / T * 100, "% complete")
+        print("Time:", t, "[s]")
+        print(int(min(t / T * 100, 100)), "% complete")
 
+    print('... forward problem solved...\n')
 
+    print('...done!')
 VP_test1()

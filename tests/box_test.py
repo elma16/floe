@@ -7,8 +7,8 @@ try:
 except:
     warning("Matplotlib not imported")
 
-def box_test(number_of_triangles = 71):
-    '''
+def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
+    """
     from Mehlmann and Korn, 2020
     Section 4.3
     Box-Test conditions
@@ -35,11 +35,11 @@ def box_test(number_of_triangles = 71):
 
     number_of_triangles : for the paper's 15190 edges, between 70 and 71 are required
 
-    '''
+    """
+    print('\n******************************** BOX TEST ********************************\n')
 
-    n = 30
     L = 1000000
-    mesh = SquareMesh(n, n, L)
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     W = FunctionSpace(mesh, "CR", 1)
@@ -71,12 +71,6 @@ def box_test(number_of_triangles = 71):
     h = Constant(1)
 
     A = x / L
-
-    timestep = 1 / n
-
-    T = 100
-
-    N_evp = 500
 
     # defining the constants to be used in the sea ice momentum equation:
 
@@ -160,20 +154,15 @@ def box_test(number_of_triangles = 71):
     hfile.write(h_, time=t)
     all_hs = []
     end = T
-    while (t <= end):
+
+    print('******************************** Forward solver ********************************\n')
+    while t <= end:
         solve(Lm == 0, u)
         u_.assign(u)
         t += timestep
         hfile.write(h_, time=t)
         print(t)
+    print('... forward problem solved...\n')
 
-    try:
-        fig, axes = plt.subplots()
-        plot(all_hs[-1], axes=axes)
-    except Exception as e:
-        warning("Cannot plot figure. Error msg: '%s'" % e)
+    print('...done!')
 
-    try:
-        plt.show()
-    except Exception as e:
-        warning("Cannot show figure. Error msg: '%s'" % e)

@@ -1,3 +1,11 @@
+# File types to be ignored
+
 *.DS_Store
+*.pvd
+*.pvtu
+*.vtu
+
+# Folders to be ignored
+
 *__pycache__/
 *.idea

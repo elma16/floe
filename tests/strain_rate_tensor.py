@@ -1,14 +1,7 @@
 from firedrake import *
-import numpy as np
-import time
 
-try:
-    import matplotlib.pyplot as plt
-except:
-    warning("Matplotlib not imported")
-
-def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=0,number_of_triangles=100):
-    '''
+def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=30):
+    """
     from Mehlmann and Korn, 2020
     Section 4.2
     L = 500000
@@ -24,11 +17,11 @@ def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=0,number_o
     0 - unstabilised (default option)
     1 - stabilised (change the form of the stress tensor)
     2 - stabilised (via the a velocity jump algorithm)
-    '''
+    """
+    print('\n******************************** STRAIN RATE TENSOR ********************************\n')
 
-    n = number_of_triangles
     L = 500000
-    mesh = SquareMesh(n, n, L)
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
 
@@ -51,10 +44,6 @@ def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=0,number_o
 
     A = Constant(1)
 
-    timestep = timestep
-
-    T = length_of_time
-
     # defining the constants to be used in the sea ice momentum equation:
 
     # ice strength parameter
@@ -75,11 +64,11 @@ def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=0,number_o
     if stabilised == 0:
         sigma = zeta / 2 * (grad(u) + transpose(grad(u)))
     elif stabilised == 1:
-        #algo
+        sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
     elif stabilised == 2:
         sigma = zeta / 2 * (grad(u))
     else:
-        return("Not a valid input. Try again.")
+        return "Not a valid input. Try again."
 
 
     pi_x = pi / L
@@ -106,48 +95,24 @@ def strain_rate_tensor(length_of_time=10,timestep=10**(-6),stabilised=0,number_o
     all_errors = []
     end = T
     bcs = [DirichletBC(V, 0, "on_boundary")]
+    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
 
-    while (t <= end):
-        solve(a == 0, u,
-                solver_parameters={"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"},
-                bcs=bcs)
+
+    print('******************************** Forward solver ********************************\n')
+    while t <= end:
+        solve(a == 0, u,solver_parameters = params,bcs = bcs)
         u_.assign(u)
         t += timestep
         error = norm(u - v_exp)
         ufile.write(u_, time=t)
-        print("Time:", t, "seconds", min(t / T * 100,100), "% complete")
-        print("Norm:", error)
+        print("Time:", t, "[s]")
+        print(int(min(t / T * 100,100)), "% complete")
+        print("Error norm:", error)
         all_errors.append(error)
+    print('... forward problem solved...\n')
 
-    del all_errors[-1]
-
+    #del all_errors[-1]
+    print('...done!')
     return all_errors
 
-
-
-
-'''
-Creating all the vector plots and plotting error against time.
-'''
-
-
-starttime = time.time()
-all_errors1 = strain_rate_tensor(10**(-2),10**(-4),error_plot = True)
-all_errors2 = strain_rate_tensor(10**(-2),10**(-4),error_plot = True,number_of_triangles=10)
-all_errors3 = strain_rate_tensor(10**(-2),10**(-4),error_plot = True,stabilised=True)
-all_errors4 = strain_rate_tensor(10**(-2),10**(-4),error_plot = True,stabilised=True,number_of_triangles=10)
-endtime = time.time()
-print(endtime-starttime)
-
-length_of_time = 10**(-2)
-timestep = 10**(-4)
-t = np.arange(0, length_of_time, timestep)
-plt.plot(t, all_errors1,'r--',label = r'$n = 100, \sigma = \frac{\zeta}{2}(\nabla v + \nabla v^T)$')
-plt.plot(t,all_errors2,'b.',label = r'$n = 10, \sigma = \frac{\zeta}{2}(\nabla v + \nabla v^T)$')
-plt.plot(t,all_errors3,'g--',label = r'$n = 100, \sigma = \frac{\zeta}{2}(\nabla v)$')
-plt.plot(t,all_errors4,'k.',label = r'$n = 10, \sigma = \frac{\zeta}{2}(\nabla v)$')
-plt.ylabel(r'Error of solution $[\times 10^3]$')
-plt.xlabel(r'Time [s]')
-plt.title(r'Error of computed solution for Section 4.1 Test, $k = 10^{-4}, T = 10^{-2}$')
-plt.legend(loc='best')
-plt.show()
+strain_rate_tensor()
