@@ -96,31 +96,7 @@ def EVP_trial(T=10, timestep=10 ** (-1), number_of_triangles=30, subcycles=20):
     # ------------------------------------------------------------------------
     subcycle_timestep = timestep/subcycles
 
-    #updating the EVP stress tensor
-    sigma1 = sigma[0,0] + sigma [1,1]
-    sigma2= sigma[0,0] - sigma[1,1]
-    ep_dot1 = ep_dot[0,0] + ep_dot[1,1]
-    ep_dot2 = ep_dot[0,0] - ep_dot[1,1]
 
-    #subcycled update of EVP stress tensor
-
-    sigma1 = (2 * subcycle_timestep * zeta * ep_dot1 - P / 2 + 2 * T * sigma1) / (2 * T + subcycle_timestep)
-    sigma2 = (2 * subcycle_timestep * zeta * ep_dot2 - P / 2 + 2 * T * sigma2) / (
-                2 * T + subcycle_timestep)
-
-    #computing the entries of the stress tensor
-    sigma[0, 1] = (2 * subcycle_timestep * zeta * ep_dot[0,1]+2*T*sigma[0,1])/(2*T+4*subcycles)
-    sigma[0, 0] = (sigma1 + sigma2) / 2
-    sigma[0, 0] = (sigma1 - sigma2) / 2
-
-    #updating the mEVP stress tensor
-
-    alpha = 500
-    beta = 500
-    sigma1 = 1 + (sigma1 + 2 * zeta * (ep_dot1 - P ) )/alpha
-    sigma2 = 1 + (sigma2 * zeta * ep_dot2)/2*alpha
-    sigma[0, 1] = 1 + (sigma[0,1] * zeta * ep_dot[0,1])/2*alpha
-    #------------------------------------------------------------------------
 
     # momentum equation
 
