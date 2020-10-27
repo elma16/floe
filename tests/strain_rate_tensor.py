@@ -1,4 +1,10 @@
+import os,sys,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+
 from firedrake import *
+from tests.parameters import *
 
 def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=30,output=False):
     """
@@ -44,18 +50,8 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
 
     A = Constant(1)
 
-    # defining the constants to be used in the sea ice momentum equation:
-
-    # ice strength parameter
-    P_star = Constant(27.5 * 10 ** 3)
-
-    # ice concentration parameter
-    C = Constant(20)
-
     # ice strength
     P = P_star * h * exp(-C * (1 - A))
-
-    Delta_min = Constant(2 * 10 ** (-9))
 
     # viscosities
     zeta = P / (2 * Delta_min)
@@ -69,7 +65,6 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
         sigma = zeta / 2 * (grad(u))
     else:
         raise ValueError("Expected 0, 1 or 2 but got {:d}".format(stabilised))
-
 
     pi_x = pi / L
 
@@ -122,7 +117,6 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
             print("Error norm:", error)
             all_errors.append(error)
         print('... forward problem solved...\n')
-
 
     del all_errors[-1]
     print('...done!')

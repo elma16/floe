@@ -1,11 +1,10 @@
-from firedrake import *
-import numpy as np
-import time
+import os,sys,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
 
-try:
-    import matplotlib.pyplot as plt
-except:
-    warning("Matplotlib not imported")
+from firedrake import *
+from tests.parameters import *
 
 def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
     """
@@ -72,35 +71,6 @@ def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
 
     A = x / L
 
-    # defining the constants to be used in the sea ice momentum equation:
-
-    # the sea ice density
-    rho = Constant(900)
-
-    # Coriolis parameter
-    cor = Constant(1.46 * 10 ** (-4))
-
-    # air density
-    rho_a = Constant(1.3)
-
-    # air drag coefficient
-    C_a = Constant(1.2 * 10 ** (-3))
-
-    # water density
-    rho_w = Constant(1026)
-
-    # water drag coefficient
-    C_w = Constant(5.5 * 10 ** (-3))
-
-    # ice strength parameter
-    P_star = Constant(27.5 * 10 ** 3)
-
-    # ice concentration parameter
-    C = Constant(20)
-
-    #  ellipse ratio
-    e = Constant(2)
-
     # geostrophic wind
 
     geo_wind = as_vector([5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
@@ -109,11 +79,6 @@ def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
     # ocean current
 
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
-
-    # mEVP rheology
-
-    alpha = Constant(500)
-    beta = Constant(500)
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 1 / 2 * (grad(u) + transpose(grad(u)))

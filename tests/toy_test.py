@@ -1,4 +1,10 @@
+import os,sys,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0,parentdir)
+
 from firedrake import *
+from tests.parameters import *
 
 def toy_problem(T=10,timestep=10**(-3),stabilised=0,number_of_triangles=30,output=False,shape = "Square"):
     """
@@ -33,25 +39,14 @@ def toy_problem(T=10,timestep=10**(-3),stabilised=0,number_of_triangles=30,outpu
         # circle
         u_.interpolate(conditional(le(((x-L/2)**2+(y-L/2)**2),10000*L), as_vector([10, 10]), as_vector([0, 0])))
 
-
     u.assign(u_)
 
     h = Constant(1)
 
     A = Constant(1)
 
-    # defining the constants to be used in the sea ice momentum equation:
-
-    # ice strength parameter
-    P_star = Constant(27.5 * 10 ** 3)
-
-    # ice concentration parameter
-    C = Constant(20)
-
     # ice strength
     P = P_star * h * exp(-C * (1 - A))
-
-    Delta_min = Constant(2 * 10 ** (-9))
 
     # viscosities
     zeta = P / (2 * Delta_min)
@@ -65,7 +60,6 @@ def toy_problem(T=10,timestep=10**(-3),stabilised=0,number_of_triangles=30,outpu
         sigma = zeta / 2 * (grad(u))
     else:
         raise ValueError("Expected 0, 1 or 2 but got {:d}".format(stabilised))
-
 
     pi_x = pi / L
 
