@@ -1,13 +1,6 @@
 from firedrake import *
-import numpy as np
-import time
 
-try:
-    import matplotlib.pyplot as plt
-except:
-    warning("Matplotlib not imported")
-
-def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 30):
+def EVP_VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 30):
     """
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -116,4 +109,5 @@ def VP_test1(T=10,timestep = 10**(-1),number_of_triangles = 30):
     print('... forward problem solved...\n')
 
     print('...done!')
-VP_test1()
+
+# def EVP_VP_test2(T=10,timestep,number_of_triangles, )
