@@ -2,7 +2,7 @@ from firedrake import *
 
 from solvers.solver_parameters import *
 
-def stress_solver(sigma,ep_dot,P,zeta,T,subcycle_timestep):
+def evp_stress_solver(sigma,ep_dot,P,zeta,T,subcycle_timestep):
     """
     Implementation of the stress tensor solver used by Mehlmann and Korn:
 
@@ -36,7 +36,7 @@ def evp_solver(u,u_,a,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,pa
             s = t
             while s <= t + timestep:
                 solve(a == 0, u, solver_parameters=params, bcs=bcs)
-                stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
                 u_.assign(u)
                 s += subcycle_timestep
             t += timestep
@@ -51,7 +51,7 @@ def evp_solver(u,u_,a,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,pa
             s = t
             while s <= t + timestep:
                 solve(a == 0, u, solver_parameters=params, bcs=bcs)
-                stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
                 u_.assign(u)
                 s += subcycle_timestep
             t += timestep

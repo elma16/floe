@@ -73,8 +73,12 @@ def evp_vp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     #sigma = as_matrix([[1,0],[0,1]])
 
     # momentum equation
-    if advection == False:
+    if not advection:
         a = (inner(rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr,u - ocean_curr)) * (ocean_curr - u), v)) * dx
+        a += inner(sigma, grad(v)) * dx
+
+    if solver == "mEVP":
+        a = (inner(beta * rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr,u - ocean_curr)) * (ocean_curr - u), v)) * dx
         a += inner(sigma, grad(v)) * dx
 
 
@@ -82,7 +86,11 @@ def evp_vp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
     if rheology == "VP":
-        forward_euler_solver(u,u_,a,bcs,t,timestep,timescale,pathname='./output/vp_evp_rheology/test1.pvd',output=output)
+        if solver == "FE":
+            forward_euler_solver(u,u_,a,bcs,t,timestep,timescale,pathname='./output/vp_evp_rheology/vp_test1fe.pvd',output=output)
+        elif solver == "mEVP":
+            mevp_solver(u, u_, a, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                       pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
     elif rheology == "EVP":
         evp_solver(u, u_, a, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
                    pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
@@ -91,4 +99,4 @@ def evp_vp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
 #evp_vp_test1(timescale=10,timestep=10**(-1),rheology="EVP")
 
-evp_vp_test1(timescale=10,timestep=10**(-1),rheology="EVP",subcycle=5)
+evp_vp_test1(timescale=10,timestep=10**(-1),rheology="VP",subcycle=5,solver="mEVP",output=True)
