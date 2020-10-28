@@ -8,7 +8,7 @@ from solvers.mEVP_solver import mEVPsolver
 from solvers.EVP_solver import EVPsolver
 from solvers.solver_parameters import *
 
-def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheology="VP",advection = "Off",
+def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheology="VP",advection = False,
                  solver = "FE",stabilisation = 0,subcycle = 100,output = "False"):
     """
     from Mehlmann and Korn, 2020
@@ -71,9 +71,10 @@ def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
 
     # momentum equation
-    if advection == "Off":
+    if advection == False:
         a = (inner(rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr,u - ocean_curr)) * (ocean_curr - u), v)) * dx
         a += inner(sigma, grad(v)) * dx
+
 
     t = 0.0
 
@@ -116,4 +117,4 @@ def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     print('...done!')
 
-EVP_VP_test1(timescale=10,timestep=10**(-1),rheology="EVP")
+#EVP_VP_test1(timescale=10,timestep=10**(-1),rheology="EVP")

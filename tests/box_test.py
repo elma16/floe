@@ -6,7 +6,7 @@ sys.path.insert(0,parentdir)
 from firedrake import *
 from tests.parameters import *
 
-def box_test(number_of_triangles = 71,timestep = 600,timescale=2678400,subcycle = 500):
+def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle = 500):
     """
     from Mehlmann and Korn, 2020
     Section 4.3

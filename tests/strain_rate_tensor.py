@@ -6,7 +6,8 @@ sys.path.insert(0,parentdir)
 from firedrake import *
 from tests.parameters import *
 
-def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_triangles=30,output=False):
+def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_triangles=35,
+                       transform_mesh = False,output=False):
     """
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -27,7 +28,16 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     print('\n******************************** STRAIN RATE TENSOR ********************************\n')
 
     L = 500000
-    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
+
+    # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral triangles
+    if transform_mesh:
+        mesh = PeriodicSquareMesh(10,10,10,"both")
+        Vc = mesh.coordinates.function_space()
+        x, y = SpatialCoordinate(mesh)
+        f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
+        mesh.coordinates.assign(f)
+    else:
+        mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
 
@@ -121,3 +131,5 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     del all_errors[-1]
     print('...done!')
     return all_errors
+
+strain_rate_tensor(timescale=1,timestep=10**(-1),stabilised=1,output=True,transform_mesh=True)

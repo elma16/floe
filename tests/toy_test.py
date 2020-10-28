@@ -29,14 +29,11 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
 
     # initial conditions
 
-    if shape == "Half-Plane":
-        #half plane
+    if shape == "Half-Plane"
         u_.interpolate(conditional(le(x,L/2),as_vector([10,10]),as_vector([0,0])))
     elif shape == "Square":
-        # square
         u_.interpolate(conditional(le(abs(x-L/2)+abs(y-L/2),L/5), as_vector([10, 10]), as_vector([0, 0])))
     elif shape == "Circle":
-        # circle
         u_.interpolate(conditional(le(((x-L/2)**2+(y-L/2)**2),10000*L), as_vector([10, 10]), as_vector([0, 0])))
 
     u.assign(u_)
@@ -82,7 +79,7 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
     t = 0.0
 
     all_errors = []
-    end = T
+    end = timescale
     bcs = [DirichletBC(V, 0, "on_boundary")]
     params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
 
@@ -97,7 +94,7 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
             error = norm(u - v_exp)
             outfile.write(u_, time=t)
             print("Time:", t, "[s]")
-            print(int(min(t / T * 100,100)), "% complete")
+            print(int(min(t / timescale * 100,100)), "% complete")
             print("Error norm:", error)
             all_errors.append(error)
         print('... forward problem solved...\n')
@@ -109,7 +106,7 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
             t += timestep
             error = norm(u - v_exp)
             print("Time:", t, "[s]")
-            print(int(min(t / T * 100, 100)), "% complete")
+            print(int(min(t / timescale * 100, 100)), "% complete")
             print("Error norm:", error)
             all_errors.append(error)
         print('... forward problem solved...\n')
@@ -119,4 +116,4 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
     print('...done!')
     return all_errors
 
-toy_problem(T=1,timestep=10**(-2),output=True)
+toy_problem(timescale=1,timestep=10**(-2),output=True)
