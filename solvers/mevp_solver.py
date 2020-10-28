@@ -15,11 +15,8 @@ def mEVPsolver(sigma,ep_dot,zeta,P,T,subcycles,subcycle_timestep):
     # updating the mEVP stress tensor
     sigma1 = 1 + (sigma1 + 2 * zeta * (ep_dot1 - P)) / alpha
     sigma2 = 1 + (sigma2 * zeta * ep_dot2) / 2 * alpha
-    sigma[0, 1] = 1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha
 
-    # computing the entries of the stress tensor
-    sigma[1, 0] = sigma[0, 1]
-    sigma[0, 0] = (sigma1 + sigma2) / 2
-    sigma[1, 1] = (sigma1 - sigma2) / 2
+    sigma = as_matrix([[0.5 * (sigma1 + sigma2),1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha],
+                       [1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha,0.5 * (sigma1 - sigma2) ]])
 
     return sigma

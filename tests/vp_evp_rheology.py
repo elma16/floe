@@ -4,11 +4,11 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
 from tests.parameters import *
-from solvers.mEVP_solver import mEVPsolver
-from solvers.EVP_solver import EVPsolver
-from solvers.solver_parameters import *
+from solvers.mevp_solver import *
+from solvers.evp_solver import *
+from solvers.forward_euler_solver import *
 
-def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheology="VP",advection = False,
+def evp_vp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheology="VP",advection = False,
                  solver = "FE",stabilisation = 0,subcycle = 100,output = "False"):
     """
     from Mehlmann and Korn, 2020
@@ -22,7 +22,7 @@ def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     h = 1
     A = x/L_x
     """
-    print('\n******************************** VP MODEL TEST ********************************\n')
+    print('\n******************************** {rheo} MODEL TEST ********************************\n'.format(rheo = rheology))
 
     L = 500000
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
@@ -79,46 +79,16 @@ def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
 
     t = 0.0
+    bcs = [DirichletBC(V, 0, "on_boundary")]
 
     if rheology == "VP":
-        outfile = File('./output/vp_evp_test/vp_test1.pvd')
-        outfile.write(u_, time=t)
-        end = timescale
-        bcs = [DirichletBC(V, 0, "on_boundary")]
-
-        print('******************************** Forward solver ********************************\n')
-        while t <= end:
-            solve(a == 0, u,solver_parameters=params,bcs=bcs)
-            u_.assign(u)
-            t += timestep
-            outfile.write(u_, time=t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-
-        print('... forward problem solved...\n')
-    if rheology == "EVP":
-        outfile = File('./output/vp_evp_test/evp_test1.pvd')
-        outfile.write(u_, time=t)
-        end = timescale
-        bcs = [DirichletBC(V, 0, "on_boundary")]
-
-        print('******************************** Forward Solver ********************************\n')
-        while t <= end:
-            subcycle_timestep = timestep / subcycle
-            print("SUBCYCLING")
-            s = t
-            while s <= t + timestep:
-                solve(a == 0, u, solver_parameters=params, bcs=bcs)
-                EVPsolver(sigma,ep_dot,P,zeta,T,subcycle_timestep=s)
-                u_.assign(u)
-                s += subcycle_timestep
-            t += timestep
-            outfile.write(u_, time=t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-
-        print('... forward problem solved...\n')
+        forward_euler_solver(u,u_,a,bcs,t,timestep,timescale,pathname='./output/vp_evp_rheology/test1.pvd',output=output)
+    elif rheology == "EVP":
+        evp_solver(u, u_, a, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                   pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
 
     print('...done!')
 
-EVP_VP_test1(timescale=10,timestep=10**(-1),rheology="EVP",subcycle=5)
+#evp_vp_test1(timescale=10,timestep=10**(-1),rheology="EVP")
+
+evp_vp_test1(timescale=10,timestep=10**(-1),rheology="EVP",subcycle=5)

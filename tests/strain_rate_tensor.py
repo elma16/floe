@@ -5,6 +5,7 @@ sys.path.insert(0,parentdir)
 
 from firedrake import *
 from tests.parameters import *
+from solvers.solver_parameters import *
 
 def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_triangles=35,
                        transform_mesh = False,output=False):
@@ -98,7 +99,6 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     all_errors = []
     end = timescale
     bcs = [DirichletBC(V, 0, "on_boundary")]
-    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
 
     if output:
         outfile = File('./output/strain_rate/strain_rate_tensor_u.pvd')
