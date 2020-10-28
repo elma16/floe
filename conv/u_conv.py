@@ -17,6 +17,7 @@ Convergence plots for the strain rate tensor test:
     u vs. t (meshsize variable)
     u vs. t (stabilised vs. unstabilised)
 '''
+
 def plot_u_conv_vs_timestep():
     # plotting the convergence of velocity with T fixed, and timestep changing
     for k in [10,100,1000]:

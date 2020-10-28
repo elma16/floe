@@ -132,4 +132,4 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     print('...done!')
     return all_errors
 
-strain_rate_tensor(timescale=1,timestep=10**(-1),stabilised=1,output=True,transform_mesh=True)
+#strain_rate_tensor(timescale=1,timestep=10**(-1),stabilised=1,output=True,transform_mesh=True)

@@ -54,6 +54,7 @@ def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 1 / 2 * (grad(u) + transpose(grad(u)))
+    #ep_dot = as_matrix([[1,0],[0,1]])
 
     # deviatoric part of the strain rate tensor
     ep_dot_prime = ep_dot - 1 / 2 * tr(ep_dot) * Identity(2)
@@ -68,7 +69,8 @@ def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     eta = zeta * e ** (-2)
 
     # internal stress tensor
-    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
+    sigma = 2  * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
+    #sigma = as_matrix([[1,0],[0,1]])
 
     # momentum equation
     if advection == False:
@@ -95,19 +97,21 @@ def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
         print('... forward problem solved...\n')
     if rheology == "EVP":
-        outfile = File('./output/vp_evp_test/vp_test1.pvd')
+        outfile = File('./output/vp_evp_test/evp_test1.pvd')
         outfile.write(u_, time=t)
         end = timescale
         bcs = [DirichletBC(V, 0, "on_boundary")]
 
         print('******************************** Forward Solver ********************************\n')
         while t <= end:
-            subcycle_timestep = t / subcycle
+            subcycle_timestep = timestep / subcycle
             print("SUBCYCLING")
-            while subcycle_timestep <= t + timestep:
+            s = t
+            while s <= t + timestep:
                 solve(a == 0, u, solver_parameters=params, bcs=bcs)
-                EVPsolver(sigma,ep_dot,P,zeta,T,subcycle_timestep)
+                EVPsolver(sigma,ep_dot,P,zeta,T,subcycle_timestep=s)
                 u_.assign(u)
+                s += subcycle_timestep
             t += timestep
             outfile.write(u_, time=t)
             print("Time:", t, "[s]")
@@ -117,4 +121,4 @@ def EVP_VP_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     print('...done!')
 
-#EVP_VP_test1(timescale=10,timestep=10**(-1),rheology="EVP")
+EVP_VP_test1(timescale=10,timestep=10**(-1),rheology="EVP",subcycle=5)
