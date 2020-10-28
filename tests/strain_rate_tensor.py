@@ -6,7 +6,7 @@ sys.path.insert(0,parentdir)
 from firedrake import *
 from tests.parameters import *
 
-def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=30,output=False):
+def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_triangles=30,output=False):
     """
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -86,7 +86,7 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
     t = 0.0
 
     all_errors = []
-    end = T
+    end = timescale
     bcs = [DirichletBC(V, 0, "on_boundary")]
     params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
 
@@ -101,7 +101,7 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
             error = norm(u - v_exp)
             outfile.write(u_, time=t)
             print("Time:", t, "[s]")
-            print(int(min(t / T * 100,100)), "% complete")
+            print(int(min(t / timescale * 100, 100)), "% complete")
             print("Error norm:", error)
             all_errors.append(error)
         print('... forward problem solved...\n')
@@ -113,7 +113,7 @@ def strain_rate_tensor(T=10,timestep=10**(-6),stabilised=0,number_of_triangles=3
             t += timestep
             error = norm(u - v_exp)
             print("Time:", t, "[s]")
-            print(int(min(t / T * 100, 100)), "% complete")
+            print(int(min(t / timescale * 100, 100)), "% complete")
             print("Error norm:", error)
             all_errors.append(error)
         print('... forward problem solved...\n')

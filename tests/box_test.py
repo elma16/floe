@@ -6,7 +6,7 @@ sys.path.insert(0,parentdir)
 from firedrake import *
 from tests.parameters import *
 
-def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
+def box_test(number_of_triangles = 71,timestep = 600,timescale=2678400,subcycle = 500):
     """
     from Mehlmann and Korn, 2020
     Section 4.3
@@ -73,8 +73,8 @@ def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
 
     # geostrophic wind
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                          5 + (sin(2 * pi * t / T) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     # ocean current
 
@@ -118,7 +118,7 @@ def box_test(number_of_triangles = 71,timestep = 600,T=2678400,subcycle = 500):
     outfile = File('./output/box_test/box-test.pvd')
     outfile.write(h_, time=t)
     all_hs = []
-    end = T
+    end = timescale
 
     print('******************************** Forward solver ********************************\n')
     while t <= end:

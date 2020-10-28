@@ -6,7 +6,7 @@ sys.path.insert(0,parentdir)
 from firedrake import *
 from tests.parameters import *
 
-def toy_problem(T=10,timestep=10**(-3),stabilised=0,number_of_triangles=30,output=False,shape = "Square"):
+def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=30,output=False,shape = "Square"):
     """
     A trial toy test problem where I start off with a big square in the middle of the velocity field
     to demonstrate the nature of hyperbolic PDEs

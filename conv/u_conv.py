@@ -21,7 +21,7 @@ def plot_u_conv_vs_timestep():
     # plotting the convergence of velocity with T fixed, and timestep changing
     for k in [10,100,1000]:
         t = np.arange(0,k,10)
-        plt.semilogy(t,strain_rate_tensor(k,timestep=10))
+        plt.semilogy(t, strain_rate_tensor(k, timestep=10))
         plt.ylabel(r'Error of solution ')
         plt.xlabel(r'Time [s]')
         plt.title(r'Error of computed solution for Section 4.1 Test, k = {}, T = {}'.format(k,k))
@@ -33,7 +33,7 @@ def plot_u_conv_vs_meshsize():
     # plotting convergence of velocity with timestep fixed, and mesh size changing.
     for N in [10,20,30,50,100,200]:
         t = np.arange(0,10,10**(-1))
-        plt.semilogy(t,strain_rate_tensor(T=10,timestep=10**(-1),number_of_triangles=N),label = 'mesh = %s' % N)
+        plt.semilogy(t, strain_rate_tensor(timescale=10, timestep=10 ** (-1), number_of_triangles=N), label ='mesh = %s' % N)
         plt.ylabel(r'Error of solution')
         plt.xlabel(r'Time [s]')
         plt.title(r'Error of computed solution for Section 4.1 Test')

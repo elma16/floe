@@ -1,4 +1,4 @@
-
+from firedrake import *
 """
 All the parameters required to solve the sea ice momentum equation
 """
@@ -31,6 +31,9 @@ C = Constant(20)
 e = Constant(2)
 
 Delta_min = Constant(2 * 10 ** (-9))
+
+#tuning parameter
+T = 100
 
 
 #mEVP
