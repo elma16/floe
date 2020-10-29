@@ -54,8 +54,8 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
     h = Function(W, name="HeightNext")
 
     # sea ice concentration
-    A_ = Function(W, name="Concentration")
-    A = Function(W, name="ConcentrationNext")
+    a_ = Function(W, name="Concentration")
+    a = Function(W, name="ConcentrationNext")
 
     # test functions
     v = TestFunction(V)
@@ -70,7 +70,7 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
 
     h = Constant(1)
 
-    A.interpolate(x / L)
+    a.interpolate(x / L)
 
     # geostrophic wind
 
