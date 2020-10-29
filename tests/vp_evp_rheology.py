@@ -21,6 +21,15 @@ def evp_vp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     v(0) = 0
     h = 1
     A = x/L_x
+
+    solver options:
+        FE = Forward Euler
+        mEVP = modified EVP solver
+
+    stabilisation:
+        0 = No stabilisation
+        1 = Stabilisation via algorithm
+        2 = Stabilisation via change of stress tensor
     """
     print('\n******************************** {rheo} MODEL TEST ********************************\n'.format(rheo = rheology))
 
@@ -34,10 +43,18 @@ def evp_vp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     u_ = Function(V, name="Velocity")
     u = Function(V, name="VelocityNext")
 
-    A = Function(U)
+    # mean height of sea ice
+    h_ = Function(U, name="Height")
+    h = Function(U, name="HeightNext")
+
+    # sea ice concentration
+    A_ = Function(U, name="Concentration")
+    A = Function(U, name="ConcentrationNext")
 
     # test functions
     v = TestFunction(V)
+    w = TestFunction(U)
+    q = TestFunction(U)
 
     x, y = SpatialCoordinate(mesh)
 
@@ -45,16 +62,20 @@ def evp_vp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     u_.assign(0)
 
-    h = Constant(1)
+    if not advection:
+        h = Constant(1)
+        A.interpolate(x/L)
 
-    A.interpolate(x/L)
+    if solver == "mEVP":
+        beta = Constant(500)
+    else:
+        beta = Constant(1)
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 1 / 2 * (grad(u) + transpose(grad(u)))
-    #ep_dot = as_matrix([[1,0],[0,1]])
 
     # deviatoric part of the strain rate tensor
     ep_dot_prime = ep_dot - 1 / 2 * tr(ep_dot) * Identity(2)
@@ -70,33 +91,34 @@ def evp_vp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     # internal stress tensor
     sigma = 2  * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
-    #sigma = as_matrix([[1,0],[0,1]])
 
-    # momentum equation
-    if not advection:
-        a = (inner(rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr,u - ocean_curr)) * (ocean_curr - u), v)) * dx
-        a += inner(sigma, grad(v)) * dx
+    # momentum equation (used irrespective of advection occuring or not)
 
-    if solver == "mEVP":
-        a = (inner(beta * rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr,u - ocean_curr)) * (ocean_curr - u), v)) * dx
-        a += inner(sigma, grad(v)) * dx
+    lm = (inner(beta * rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr, u - ocean_curr)) * (ocean_curr - u), v)) * dx
+    lm += inner(sigma, grad(v)) * dx
 
+    if advection:
+        lh = (inner((h-h_)/timestep,w))*dx
+        lh -= inner(u*h,grad(w))
+        la = (inner((A-A_)/timestep,w))*dx
+        la -= inner(u*A,grad(w))
 
     t = 0.0
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
     if rheology == "VP":
         if solver == "FE":
-            forward_euler_solver(u,u_,a,bcs,t,timestep,timescale,pathname='./output/vp_evp_rheology/vp_test1fe.pvd',output=output)
+            forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,
+                                 pathname='./output/vp_evp_rheology/vp_test1fe.pvd', output=output)
         elif solver == "mEVP":
-            mevp_solver(u, u_, a, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                       pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
-    elif rheology == "EVP":
-        evp_solver(u, u_, a, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                   pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
+            mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                        pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
+        elif rheology == "EVP":
+            evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                       pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
+
+
 
     print('...done!')
 
-#evp_vp_test1(timescale=10,timestep=10**(-1),rheology="EVP")
-
-evp_vp_test1(timescale=10,timestep=10**(-1),rheology="VP",subcycle=5,solver="mEVP",output=True)
+evp_vp_test1(timescale=10,timestep=10**(-1),subcycle=5,rheology="VP")

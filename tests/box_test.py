@@ -5,8 +5,9 @@ sys.path.insert(0,parentdir)
 
 from firedrake import *
 from tests.parameters import *
+from solvers.mevp_solver import *
 
-def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle = 500):
+def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle = 500,advection = False,output = False):
     """
     from Mehlmann and Korn, 2020
     Section 4.3
@@ -69,7 +70,7 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
 
     h = Constant(1)
 
-    A = x / L
+    A.interpolate(x / L)
 
     # geostrophic wind
 
@@ -105,29 +106,20 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
     # constructing the discretised weak form
 
     # momentum equation
-    # L_evp = (beta*rho*h/k_s*)
 
-    Lm = (inner(rho * h * (u - u_) / timestep - rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]])
-                + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,
+    a = (inner(rho * h * (u - u_) / timestep - rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]])
+               + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,
                                                                                        u - ocean_curr) * (
                         ocean_curr - u), v) +
-          inner(sigma, grad(v))) * dx
+         inner(sigma, grad(v))) * dx
 
     t = 0.0
+    bcs = [DirichletBC(V, 0, "on_boundary")]
 
-    outfile = File('./output/box_test/box-test.pvd')
-    outfile.write(h_, time=t)
-    all_hs = []
-    end = timescale
+    if not advection:
+        mevp_solver(u,u_,a,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,output,pathname='./output/box_test/test1.pvd')
 
-    print('******************************** Forward solver ********************************\n')
-    while t <= end:
-        solve(Lm == 0, u)
-        u_.assign(u)
-        t += timestep
-        outfile.write(h_, time=t)
-        print(t)
-    print('... forward problem solved...\n')
 
     print('...done!')
 
+box_test(timescale = 10,timestep=10**(-1),subcycle=5)

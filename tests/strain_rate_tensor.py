@@ -6,6 +6,7 @@ sys.path.insert(0,parentdir)
 from firedrake import *
 from tests.parameters import *
 from solvers.solver_parameters import *
+from solvers.forward_euler_solver import *
 
 def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_triangles=35,
                        transform_mesh = False,output=False):
@@ -70,8 +71,8 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     # internal stress tensor, stabilised vs unstabilised
     if stabilised == 0:
         sigma = zeta / 2 * (grad(u) + transpose(grad(u)))
-    elif stabilised == 1:
-        sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
+    #elif stabilised == 1:
+    #    sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
     elif stabilised == 2:
         sigma = zeta / 2 * (grad(u))
     else:
@@ -91,45 +92,16 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
         return 1 / 2 * (omega + transpose(omega))
 
     # momentum equation
-    a = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
-    a -= inner(R, v) * dx
+    lm = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
+    lm -= inner(R, v) * dx
 
     t = 0.0
-
-    all_errors = []
-    end = timescale
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
-    if output:
-        outfile = File('./output/strain_rate/strain_rate_tensor_u.pvd')
-        outfile.write(u_, time=t)
-        print('******************************** Forward solver ********************************\n')
-        while t <= end:
-            solve(a == 0, u,solver_parameters = params,bcs = bcs)
-            u_.assign(u)
-            t += timestep
-            error = norm(u - v_exp)
-            outfile.write(u_, time=t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-            print("Error norm:", error)
-            all_errors.append(error)
-        print('... forward problem solved...\n')
-    else:
-        print('******************************** Forward solver ********************************\n')
-        while t <= end:
-            solve(a == 0, u, solver_parameters=params, bcs=bcs)
-            u_.assign(u)
-            t += timestep
-            error = norm(u - v_exp)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-            print("Error norm:", error)
-            all_errors.append(error)
-        print('... forward problem solved...\n')
+    all_errors = forward_euler_solver_error(u,u_,v_exp,lm,bcs,t,timestep,timescale,pathname='./output/strain_rate/strain_rate_tensor_u.pvd',output=output)
 
     del all_errors[-1]
     print('...done!')
     return all_errors
 
-#strain_rate_tensor(timescale=1,timestep=10**(-1),stabilised=1,output=True,transform_mesh=True)
+strain_rate_tensor(timescale=1,timestep=10**(-1),output=False)
