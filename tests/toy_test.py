@@ -5,6 +5,7 @@ sys.path.insert(0,parentdir)
 
 from firedrake import *
 from tests.parameters import *
+from solvers.forward_euler_solver import *
 
 def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=30,output=False,shape = "Square"):
     """
@@ -29,7 +30,7 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
 
     # initial conditions
 
-    if shape == "Half-Plane"
+    if shape == "Half-Plane":
         u_.interpolate(conditional(le(x,L/2),as_vector([10,10]),as_vector([0,0])))
     elif shape == "Square":
         u_.interpolate(conditional(le(abs(x-L/2)+abs(y-L/2),L/5), as_vector([10, 10]), as_vector([0, 0])))
@@ -40,31 +41,19 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
 
     h = Constant(1)
 
-    A = Constant(1)
+    a = Constant(1)
 
     # ice strength
-    P = P_star * h * exp(-C * (1 - A))
+    P = P_star * h * exp(-C * (1 - a))
 
     # viscosities
     zeta = P / (2 * Delta_min)
 
-    # internal stress tensor, stabilised vs unstabilised
-    if stabilised == 0:
-        sigma = zeta / 2 * (grad(u) + transpose(grad(u)))
-    elif stabilised == 1:
-        sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
-    elif stabilised == 2:
-        sigma = zeta / 2 * (grad(u))
-    else:
-        raise ValueError("Expected 0, 1 or 2 but got {:d}".format(stabilised))
+    sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
 
     pi_x = pi / L
 
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
-
-    #step used in the rate of strain tensor
-    #u_.interpolate(v_exp)
-    #u.assign(u_)
 
     sigma_exp = zeta / 2 * (grad(v_exp) + transpose(grad(v_exp)))
     R = -div(sigma_exp)
@@ -73,47 +62,19 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
         return 1 / 2 * (omega + transpose(omega))
 
     # momentum equation
-    a = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
-    a -= inner(R, v) * dx
+    lm = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
+    lm -= inner(R, v) * dx
 
     t = 0.0
 
-    all_errors = []
-    end = timescale
     bcs = [DirichletBC(V, 0, "on_boundary")]
-    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
 
-    if output:
-        outfile = File('./output/toy/toy_u_circle.pvd')
-        outfile.write(u_, time=t)
-        print('******************************** Forward solver ********************************\n')
-        while t <= end:
-            solve(a == 0, u,solver_parameters = params,bcs = bcs)
-            u_.assign(u)
-            t += timestep
-            error = norm(u - v_exp)
-            outfile.write(u_, time=t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100,100)), "% complete")
-            print("Error norm:", error)
-            all_errors.append(error)
-        print('... forward problem solved...\n')
-    else:
-        print('******************************** Forward solver ********************************\n')
-        while t <= end:
-            solve(a == 0, u, solver_parameters=params, bcs=bcs)
-            u_.assign(u)
-            t += timestep
-            error = norm(u - v_exp)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-            print("Error norm:", error)
-            all_errors.append(error)
-        print('... forward problem solved...\n')
 
+    all_errors = forward_euler_solver_error(u, u_, v_exp, lm, bcs, t, timestep, timescale,
+                                            pathname='./output/toy_test/toy.pvd', output=output)
 
     del all_errors[-1]
     print('...done!')
     return all_errors
 
-toy_problem(timescale=1,timestep=10**(-2),output=True)
+toy_problem(timescale=1,timestep=10**(-1),output=True)

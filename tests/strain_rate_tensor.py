@@ -86,6 +86,7 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     u.assign(u_)
 
     sigma_exp = zeta / 2 * (grad(v_exp) + transpose(grad(v_exp)))
+
     R = -div(sigma_exp)
 
     def strain(omega):
@@ -107,4 +108,4 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     print('...done!')
     return all_errors
 
-strain_rate_tensor(timescale=1,timestep=10**(-1),output=True,transform_mesh=True)
+strain_rate_tensor(timescale=1,timestep=10**(-1),output=True)

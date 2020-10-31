@@ -99,9 +99,9 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     if advection:
         lh = (inner((h-h_)/timestep,w))*dx
-        lh -= inner(u*h,grad(w))
+        lh -= inner(u*h,grad(w))*dx
         la = (inner((a-a_)/timestep,w))*dx
-        la -= inner(u*a,grad(w))
+        la -= inner(u*a,grad(w))*dx
 
     t = 0.0
     bcs = [DirichletBC(V, 0, "on_boundary")]
@@ -114,9 +114,9 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
             elif solver == "mEVP":
                 mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
                             pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
-            elif rheology == "EVP":
-                evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                           pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
+        elif rheology == "EVP":
+            evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                       pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
     if advection:
         if rheology == "VP":
             if solver == "FE":
@@ -126,7 +126,7 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
             elif solver == "mEVP":
                 mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
                             pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
-            elif rheology == "EVP":
+        elif rheology == "EVP":
                 evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
                            pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
 
@@ -134,4 +134,4 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     print('...done!')
 
 
-vp_evp_test1(timescale=1000, timestep=10, rheology="VP",solver="mEVP",subcycle=10,output=True)
+vp_evp_test1(timescale=10, timestep=10**(-1), rheology="VP",solver="FE",subcycle=10,output=True,advection=True)

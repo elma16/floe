@@ -59,3 +59,11 @@ def evp_solver(u,u_,a,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,pa
             print(int(min(t / timescale * 100, 100)), "% complete")
 
         print('... EVP problem solved...\n')
+
+
+def implicit_evp_solver():
+    """
+    Using the implicit midpoint rule and solving for sigma^n
+    """
+    A = as_matrix([[],[]])
+    inv(A)
