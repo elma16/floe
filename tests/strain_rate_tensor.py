@@ -33,7 +33,8 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
 
     # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral triangles
     if transform_mesh:
-        mesh = PeriodicSquareMesh(number_of_triangles,number_of_triangles,L,"both")
+        # want periodic bc on the sides, and dirichlet bc on the top and bottom
+        mesh = PeriodicSquareMesh(number_of_triangles,number_of_triangles,L,"y")
         Vc = mesh.coordinates.function_space()
         x, y = SpatialCoordinate(mesh)
         f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
@@ -97,10 +98,12 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     lm -= inner(R, v) * dx
 
     t = 0.0
+
     if transform_mesh:
-        bcs = [DirichletBC(V, 0,["top","bottom"])]
+        # no compile errors, i just don't understand why mesh says 0,1 doesn't work but 1,2 does
+        bcs = [DirichletBC(V, Constant(0), [1,2])]
     else:
-        bcs = [DirichletBC(V, 0, "on_boundary")]
+        bcs = [DirichletBC(V, Constant(0), "on_boundary")]
 
     all_errors = forward_euler_solver_error(u,u_,v_exp,lm,bcs,t,timestep,timescale,pathname='./output/strain_rate/strain_rate_tensor_u.pvd',output=output)
 
@@ -108,4 +111,4 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     print('...done!')
     return all_errors
 
-strain_rate_tensor(timescale=1,timestep=10**(-1),output=True)
+strain_rate_tensor(timescale=10,timestep=1,output=True,transform_mesh=True)

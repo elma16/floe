@@ -3,6 +3,7 @@ from firedrake import *
 from solvers.solver_parameters import *
 
 def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,advection=False,stabilisation = False,lh=None,la=None,h=None,h_=None,a=None,a_=None):
+    all_u = []
     if not advection:
         if output:
             outfile = File('{pathname}'.format(pathname = pathname))
@@ -11,6 +12,7 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
             while t <= timescale:
                 solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                 u_.assign(u)
+                all_u.append(Function(u))
                 t += timestep
                 outfile.write(u_, time=t)
                 print("Time:", t, "[s]")
@@ -21,6 +23,7 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
             while t <= timescale:
                 solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                 u_.assign(u)
+                all_u.append(Function(u))
                 t += timestep
                 print("Time:", t, "[s]")
                 print(int(min(t / timescale * 100, 100)), "% complete")
@@ -37,6 +40,7 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
                 h_.assign(h)
                 solve(la == 0, a, solver_parameters=params, bcs=bcs)
                 a_.assign(a)
+                all_u.append(Function(u))
                 t += timestep
                 outfile.write(u_, time=t)
                 print("Time:", t, "[s]")
@@ -51,10 +55,12 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
                 h_.assign(h)
                 solve(la == 0, a, solver_parameters=params, bcs=bcs)
                 a_.assign(a)
+                all_u.append(Function(u))
                 t += timestep
                 print("Time:", t, "[s]")
                 print(int(min(t / timescale * 100, 100)), "% complete")
             print('... forward problem solved...\n')
+    return all_u
 
 def forward_euler_solver_error(u,u_,v_exp,lm,bcs,t,timestep,timescale,pathname,output=False):
     all_errors = []

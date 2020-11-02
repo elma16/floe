@@ -65,19 +65,19 @@ def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):
 
     #constructing the equations used
 
-    lm = inner(p,rho*h*(u1-u0))
-    lm += timestep*inner(grad(p),sh)
-    lm -= timestep*inner(p,C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr))
-    lm += inner(q,s1-s0+timestep*(e**2/(2*T)*sh+((1-e**2)/(4*T)*tr(sh)+P/(4*T))*Identity(2)))
-    lm -= inner(q*zeta*timestep/T,ep_doth)
+    lm = inner(p,rho*h*(u1-u0))*dx
+    lm += timestep*inner(grad(p),sh)*dx
+    lm -= timestep*inner(p,C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr))*dx
+    lm += inner(q,s1-s0+timestep*(e**2/(2*T)*sh+((1-e**2)/(4*T)*tr(sh)+P/(4*T))*Identity(2)))*dx
+    lm -= inner(q*zeta*timestep/T,ep_doth)*dx
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
     uprob = NonlinearVariationalProblem(lm,w1,bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters= {'mat_type': 'aij','ksp_type': 'preonly','pc_type': 'lu'})
 
-    m0, u0 = w0.split()
-    m1, u1 = w1.split()
+    s0, u0 = w0.split()
+    s1, u1 = w1.split()
 
     ufile = File('u.pvd')
     t = 0.0
