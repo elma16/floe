@@ -32,8 +32,6 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
         2 = Stabilisation via change of stress tensor
     """
     print('\n******************************** {rheo} MODEL TEST ********************************\n'.format(rheo = rheology))
-
-    L = 500000
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)

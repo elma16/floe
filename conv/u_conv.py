@@ -3,6 +3,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
+from firedrake import *
 from tests.strain_rate_tensor import *
 import numpy as np
 
@@ -17,6 +18,16 @@ Convergence plots for the strain rate tensor test:
     u vs. t (meshsize variable)
     u vs. t (stabilised vs. unstabilised)
 '''
+
+def error():
+    """
+    Compute the error norm of the velocity against the stationary solution for test 1
+    """
+    all_errors = []
+    all_u,mesh,v_exp = strain_rate_tensor(timescale=10,timestep=1)
+    for i in range(len(all_u)):
+        print("Error norm:", errornorm(v_exp,all_u[i]))
+        all_errors.append(errornorm(v_exp, all_u[i]))
 
 def plot_u_conv_vs_timestep():
     # plotting the convergence of velocity with T fixed, and timestep changing
@@ -51,3 +62,5 @@ def plot_u_conv_vs_stab():
     plt.plot(t,all_errors4,'k.',label = r'$n = 10, \sigma = \frac{\zeta}{2}(\nabla v)$')
     plt.legend(loc='best')
     plt.show()
+
+error()

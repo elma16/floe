@@ -13,8 +13,6 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
     to demonstrate the nature of hyperbolic PDEs
     """
     print('\n******************************** TOY PROBLEM ********************************\n')
-
-    L = 500000
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)

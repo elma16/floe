@@ -3,7 +3,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from firedrake import *
 from tests.parameters import *
 from solvers.forward_euler_solver import *
 
@@ -27,9 +26,6 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     2 - stabilised (via the a velocity jump algorithm)
     """
     print('\n******************************** STRAIN RATE TENSOR ********************************\n')
-
-    L = 500000
-
     # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral triangles
     if transform_mesh:
         # want periodic bc on the sides, and dirichlet bc on the top and bottom
@@ -60,10 +56,10 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
 
     h = Constant(1)
 
-    A = Constant(1)
+    a = Constant(1)
 
     # ice strength
-    P = P_star * h * exp(-C * (1 - A))
+    P = P_star * h * exp(-C * (1 - a))
 
     # viscosities
     zeta = P / (2 * Delta_min)
@@ -104,11 +100,8 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_tri
     else:
         bcs = [DirichletBC(V, Constant(0), "on_boundary")]
 
-    all_errors = forward_euler_solver_error(u,u_,v_exp,lm,bcs,t,timestep,timescale,pathname='./output/strain_rate/strain_rate_tensor_u.pvd',output=output)
+    all_u = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,pathname='./output/vp_evp_rheology/vp_test1fe.pvd', output=output)
 
-    del all_errors[-1]
     print('...done!')
-    return all_errors
 
-
-strain_rate_tensor(timescale=10,timestep=1,output=True)
+    return all_u,mesh,v_exp

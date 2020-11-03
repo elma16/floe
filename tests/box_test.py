@@ -40,8 +40,8 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
     """
     print('\n******************************** BOX TEST ********************************\n')
 
-    L = 1000000
-    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
+
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L2)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     W = FunctionSpace(mesh, "CR", 1)
@@ -72,11 +72,11 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
 
     h = Constant(1)
 
-    a.interpolate(x / L)
+    a.interpolate(x / L2)
 
     # ocean current
 
-    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
+    ocean_curr = as_vector([0.1 * (2 * y - L2) / L2, -0.1 * (L2 - 2 * x) / L2])
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 1 / 2 * (grad(u) + transpose(grad(u)))
@@ -114,8 +114,8 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
                 s = t
                 while s <= t + timestep:
                     geo_wind = as_vector(
-                        [5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                         5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+                        [5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L2) * sin(2 * pi * y / L2),
+                         5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L2) * sin(2 * pi * x / L2)])
                     a = (inner(rho * h * (u - u_) / timestep - rho * h * cor * as_vector(
                         [u[1] - ocean_curr[1], ocean_curr[0] - u[0]])
                                + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,
@@ -138,8 +138,8 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
                 s = t
                 while s <= t + timestep:
                     geo_wind = as_vector(
-                        [5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                         5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+                        [5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L2) * sin(2 * pi * y / L2),
+                         5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L2) * sin(2 * pi * x / L2)])
                     a = (inner(rho * h * (u - u_) / timestep - rho * h * cor * as_vector(
                         [u[1] - ocean_curr[1], ocean_curr[0] - u[0]])
                                + rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,

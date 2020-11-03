@@ -12,7 +12,7 @@ def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):
     Solving the EVP model using an implicit midpoint method.
     """
     print('\n******************************** IMPLICIT EVP MODEL TEST ********************************\n')
-    L = 500000
+
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)

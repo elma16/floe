@@ -18,17 +18,20 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
     """
     print('\n******************************** IMPLICIT EVP MODEL TEST ********************************\n')
 
-    L = 500000
-
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
+    S = TensorFunctionSpace(mesh, "DG", 0)
     U = FunctionSpace(mesh,"CR",1)
 
     # sea ice velocity
     u_ = Function(V, name="Velocity")
     u = Function(V, name="VelocityNext")
     uh = 0.5*(u+u_)
+
+    sigma_ = Function(S)
+    sigma = Function(S)
+    sh = (sigma_ + sigma) / 2
 
     a = Function(U)
 
@@ -62,7 +65,7 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
     eta = zeta * e ** (-2)
 
     # internal stress tensor
-    sigma = 2  * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P  * Identity(2)
+    sigma_ = 2  * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P  * Identity(2)
 
     #using the implicit midpoint rule formulation of the tensor equation, find sigma^{n+1} in terms of sigma^{n},v^{n+1},v^{n}
     def sigma_next(timestep, e, zeta, T, ep_dot, sigma, P):
@@ -76,8 +79,6 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
         sigma = as_matrix([[sigma00, sigma01], [sigma01, sigma11]])
 
         return sigma
-
-    sh = (sigma + sigma_next(timestep,e,zeta,T,ep_dot,sigma,P))/2
 
     # momentum equation (used irrespective of advection occuring or not)
 
@@ -94,7 +95,8 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
         print('******************************** Implicit EVP Solver ********************************\n')
         while t <= timescale:
             solve(lm == 0, u, solver_parameters=params, bcs=bcs)
-            sigma_next(timestep, e, zeta, T, ep_dot, sigma, P)
+            sigma = sigma_next(timestep, e, zeta, T, ep_dot, sigma_, P)
+            sigma_.assign(sigma)
             u_.assign(u)
             t += timestep
             outfile.write(u_, time=t)
@@ -106,7 +108,8 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
         print('******************************** Implicit EVP Solver (NO OUTPUT) ********************************\n')
         while t <= timescale:
             solve(lm == 0, u, solver_parameters=params, bcs=bcs)
-            sigma_next(timestep, e, zeta, T, ep_dot, sigma, P)
+            sigma = sigma_next(timestep, e, zeta, T, ep_dot, sigma_, P)
+            sigma_.assign(sigma)
             u_.assign(u)
             t += timestep
             print("Time:", t, "[s]")
