@@ -3,8 +3,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from firedrake import *
-
 from tests.parameters import *
 
 def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):

@@ -3,7 +3,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from firedrake import *
 from tests.parameters import *
 from solvers.forward_euler_solver import *
 
@@ -68,11 +67,9 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
 
-    all_errors = forward_euler_solver_error(u, u_, v_exp, lm, bcs, t, timestep, timescale,
-                                            pathname='./output/toy_test/toy.pvd', output=output)
+    all_u = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,pathname='./output/toy_test/toy.pvd', output=output)
 
-    del all_errors[-1]
     print('...done!')
-    return all_errors
+    return all_u
 
-toy_problem(timescale=1,timestep=10**(-1),output=True)
+#toy_problem(timescale=1,timestep=10**(-1),output=True)

@@ -3,7 +3,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0,parentdir)
 
-from firedrake import *
 from tests.strain_rate_tensor import *
 import numpy as np
 
@@ -19,33 +18,31 @@ Convergence plots for the strain rate tensor test:
     u vs. t (stabilised vs. unstabilised)
 '''
 
-def error():
+def strain_rate_tensor_error(timescale,timestep,number_of_triangles = 35):
     """
     Compute the error norm of the velocity against the stationary solution for test 1
     """
-    all_errors = []
-    all_u,mesh,v_exp = strain_rate_tensor(timescale=10,timestep=1)
-    for i in range(len(all_u)):
-        print("Error norm:", errornorm(v_exp,all_u[i]))
-        all_errors.append(errornorm(v_exp, all_u[i]))
+    all_u,mesh,v_exp = strain_rate_tensor(timescale,timestep,number_of_triangles)
+    return [errornorm(v_exp, all_u[i]) for i in range(len(all_u)-1)]
 
 def plot_u_conv_vs_timestep():
-    # plotting the convergence of velocity with T fixed, and timestep changing
+    # plotting the convergence of velocity with timestep fixed, and timescale changing
     for k in [10,100,1000]:
         t = np.arange(0,k,10)
-        plt.semilogy(t, strain_rate_tensor(k, timestep=10))
+        plt.semilogy(t, strain_rate_tensor_error(k, timestep=10), label = "timescale = %s" % k)
         plt.ylabel(r'Error of solution ')
         plt.xlabel(r'Time [s]')
         plt.title(r'Error of computed solution for Section 4.1 Test, k = {}, T = {}'.format(k,k))
-        plt.show()
-        plt.savefig('./plots/strain_rate_velo_t={y}.png'.format(y=k))
+        plt.legend(loc='best')
+    plt.show()
+    plt.savefig('./plots/strain_rate_velo_t={y}.png'.format(y=k))
 
 
-def plot_u_conv_vs_meshsize():
+def plot_u_conv_vs_meshsize(timescale,timestep):
     # plotting convergence of velocity with timestep fixed, and mesh size changing.
     for N in [10,20,30,50,100,200]:
-        t = np.arange(0,10,10**(-1))
-        plt.semilogy(t, strain_rate_tensor(timescale=10, timestep=10 ** (-1), number_of_triangles=N), label ='mesh = %s' % N)
+        t = np.arange(0,timescale,timestep)
+        plt.semilogy(t, strain_rate_tensor_error(timescale, timestep, number_of_triangles=N), label ='mesh = %s' % N)
         plt.ylabel(r'Error of solution')
         plt.xlabel(r'Time [s]')
         plt.title(r'Error of computed solution for Section 4.1 Test')
@@ -53,9 +50,9 @@ def plot_u_conv_vs_meshsize():
     plt.show()
     plt.savefig('./plots/strain_rate_veloN')
 
-def plot_u_conv_vs_stab():
+def plot_u_conv_vs_stab(timescale,timestep):
     # INCOMPLETE: plotting convergence of velocity with stability changing
-    t = np.arange(0, 10**(-2), 10**(-4))
+    t = np.arange(0, timescale, timestep)
     plt.plot(t, all_errors1,'r--',label = r'$n = 100, \sigma = \frac{\zeta}{2}(\nabla v + \nabla v^T)$')
     plt.plot(t,all_errors2,'b.',label = r'$n = 10, \sigma = \frac{\zeta}{2}(\nabla v + \nabla v^T)$')
     plt.plot(t,all_errors3,'g--',label = r'$n = 100, \sigma = \frac{\zeta}{2}(\nabla v)$')
@@ -63,4 +60,4 @@ def plot_u_conv_vs_stab():
     plt.legend(loc='best')
     plt.show()
 
-error()
+plot_u_conv_vs_timestep()

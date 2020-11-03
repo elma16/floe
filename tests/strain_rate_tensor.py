@@ -6,7 +6,7 @@ sys.path.insert(0,parentdir)
 from tests.parameters import *
 from solvers.forward_euler_solver import *
 
-def strain_rate_tensor(timescale=10,timestep=10**(-6),stabilised=0,number_of_triangles=35,
+def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,stabilised=0,
                        transform_mesh = False,output=False):
     """
     from Mehlmann and Korn, 2020
