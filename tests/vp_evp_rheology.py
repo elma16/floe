@@ -94,7 +94,7 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     # momentum equation (used irrespective of advection occuring or not)
 
-    lm = (inner(beta * rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr, u - ocean_curr)) * (ocean_curr - u), v)) * dx
+    lm = (inner(beta * rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr, u - ocean_curr)) * (u - ocean_curr), v)) * dx
     lm += inner(sigma, grad(v)) * dx
 
     if advection:
@@ -115,8 +115,12 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
                 mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
                             pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
         elif rheology == "EVP":
-            evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                       pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
+            if solver == "EVP":
+                evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                           pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
+            elif solver == "mEVP":
+                mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                            pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
     if advection:
         if rheology == "VP":
             if solver == "FE":
@@ -127,13 +131,16 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
                 mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
                             pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
         elif rheology == "EVP":
+            if solver == "EVP":
                 evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
                            pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
+            elif solver == "mEVP":
+                mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                            pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
 
 
     print('...done!')
 
 
-a = vp_evp_test1(timescale=10, timestep=10, rheology="VP",solver="FE",subcycle=10,output=True)
+vp_evp_test1(timescale=10, timestep=10, rheology="EVP",solver="mEVP",subcycle=10,output=True)
 
-print(a)

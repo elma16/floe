@@ -18,7 +18,7 @@ def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):
     V = VectorFunctionSpace(mesh, "CR", 1)
     S = TensorFunctionSpace(mesh, "DG", 0)
     U = FunctionSpace(mesh,"CR",1)
-    W = MixedFunctionSpace((V,S))
+    W = MixedFunctionSpace([V,S])
 
     a = Function(U)
 
@@ -32,6 +32,12 @@ def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):
 
     u0.assign(0)
     a.interpolate(x / L)
+
+    # now we solve for s0, given u0
+
+    s0.assign(as_matrix([[1,2],[3,4]]))
+
+    # now we solve the whole system
 
     p, q = TestFunctions(W)
 
@@ -66,8 +72,8 @@ def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):
     #constructing the equations used
 
     lm = inner(p,rho*h*(u1-u0))*dx
-    lm += timestep*inner(grad(p),sh)*dx
-    lm -= timestep*inner(p,C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr))*dx
+    lm += (timestep*inner(grad(p),sh))*dx
+    lm -= (timestep*inner(p,C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)))*dx
     lm += inner(q,s1-s0+timestep*(e**2/(2*T)*sh+((1-e**2)/(4*T)*tr(sh)+P/(4*T))*Identity(2)))*dx
     lm -= inner(q*zeta*timestep/T,ep_doth)*dx
 
@@ -76,10 +82,10 @@ def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):
     uprob = NonlinearVariationalProblem(lm,w1,bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters= {'mat_type': 'aij','ksp_type': 'preonly','pc_type': 'lu'})
 
-    s0, u0 = w0.split()
-    s1, u1 = w1.split()
+    u0, s0 = w0.split()
+    u1, s1 = w1.split()
 
-    ufile = File('u.pvd')
+    ufile = File('./output/evp_alt/u.pvd')
     t = 0.0
     ufile.write(u1, time=t)
     all_us = []
