@@ -22,7 +22,7 @@ def strain_rate_tensor_error(timescale,timestep,number_of_triangles = 35):
     """
     Compute the error norm of the velocity against the stationary solution for test 1
     """
-    all_u,mesh,v_exp = strain_rate_tensor(timescale,timestep,number_of_triangles)
+    all_u,mesh,v_exp,zeta = strain_rate_tensor(timescale,timestep,number_of_triangles)
     return [errornorm(v_exp, all_u[i]) for i in range(len(all_u)-1)]
 
 def plot_u_conv_vs_timestep():
@@ -36,6 +36,18 @@ def plot_u_conv_vs_timestep():
         plt.legend(loc='best')
     plt.show()
     plt.savefig('./plots/strain_rate_velo_t={y}.png'.format(y=k))
+
+def plot_u_conv(timescale,timestep,number_of_triangles):
+    #interesting plots:
+        #plot_u_conv(2 * 10 ** (-2), 10 ** (-3))
+    t = np.arange(0,timescale,timestep)
+    plt.semilogy(t, strain_rate_tensor_error(timescale,timestep,number_of_triangles), label = "timescale = %s" % k)
+    plt.ylabel(r'Error of solution ')
+    plt.xlabel(r'Time [s]')
+    plt.title(r'Error of computed solution for Section 4.1 Test, k = {}, T = {}'.format(timestep,timescale))
+    plt.legend(loc='best')
+    plt.show()
+    plt.savefig('./plots/strain_rate_conv.png')
 
 
 def plot_u_conv_vs_meshsize(timescale,timestep):
@@ -60,4 +72,22 @@ def plot_u_conv_vs_stab(timescale,timestep):
     plt.legend(loc='best')
     plt.show()
 
-plot_u_conv_vs_timestep()
+def energy(timescale,timestep,number_of_triangles=35):
+    all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles)
+    return [norm(0.5*zeta*grad(all_u[i])) for i in range(len(all_u)-1)]
+
+def plot_u_energy(timescale,timestep):
+    #interesting plots:
+        #plot_u_conv(2 * 10 ** (-2), 10 ** (-3))
+    t = np.arange(0,timescale,timestep)
+    plt.semilogy(t, energy(timescale, timestep), label = "timescale = %s" % k)
+    plt.ylabel(r'Energy of solution ')
+    plt.xlabel(r'Time [s]')
+    plt.title(r'Energy of computed solution for Section 4.1 Test, k = {}, T = {}'.format(timestep,timescale))
+    plt.legend(loc='best')
+    plt.show()
+    plt.savefig('./plots/strain_rate_energy.png')
+
+
+
+plot_u_conv(10,1,35)

@@ -104,4 +104,4 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,sta
 
     print('...done!')
 
-    return all_u,mesh,v_exp
+    return all_u,mesh,v_exp,zeta
