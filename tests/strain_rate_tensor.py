@@ -48,12 +48,6 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,sta
 
     x, y = SpatialCoordinate(mesh)
 
-    # initial conditions
-
-    #u_.assign(as_vector([0, 0]))
-
-    #u.assign(u_)
-
     h = Constant(1)
 
     a = Constant(1)
@@ -78,8 +72,12 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,sta
 
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
+    #initialising at expected v value
     u_.interpolate(v_exp)
     u.assign(u_)
+
+    #u_.assign(0)
+    #u.assign(u_)
 
     sigma_exp = zeta / 2 * (grad(v_exp) + transpose(grad(v_exp)))
 
@@ -100,7 +98,7 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,sta
     else:
         bcs = [DirichletBC(V, Constant(0), "on_boundary")]
 
-    all_u = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,pathname='./output/vp_evp_rheology/vp_test1fe.pvd', output=output)
+    all_u = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,pathname='./output/strain_rate_tensor/str_u.pvd', output=output)
 
     print('...done!')
 

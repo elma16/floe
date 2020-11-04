@@ -46,7 +46,13 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
     # viscosities
     zeta = P / (2 * Delta_min)
 
-    sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
+    # strain rate tensor, where grad(u) is the jacobian matrix of u
+    ep_dot = 1 / 2 * (grad(u) + transpose(grad(u)))
+
+    eta = zeta * e ** (-2)
+
+    #sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
+    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
 
     pi_x = pi / L
 
@@ -59,8 +65,9 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
         return 1 / 2 * (omega + transpose(omega))
 
     # momentum equation
-    lm = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
-    lm -= inner(R, v) * dx
+    lm = (inner((u - u_) / timestep, v)) * dx
+    lm += (inner(sigma, strain(grad(v)))) * dx
+    lm -= (inner(R, v)) * dx
 
     t = 0.0
 
@@ -72,4 +79,4 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
     print('...done!')
     return all_u
 
-#toy_problem(timescale=1,timestep=10**(-1),output=True)
+toy_problem(timescale=1,timestep=10**(-1),output=False)
