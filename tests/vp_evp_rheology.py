@@ -9,7 +9,7 @@ from solvers.evp_solver import *
 from solvers.forward_euler_solver import *
 
 def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheology="VP",advection = False,
-                 solver = "FE",stabilisation = 0,subcycle = 100,output = "False"):
+                 solver = "FE",stabilised = 0,subcycle = 100,output = "False"):
     """
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -99,6 +99,8 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     lm = (inner(beta * rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr, u - ocean_curr)) * (u - ocean_curr), v)) * dx
     lm += inner(sigma, grad(v)) * dx
+    if stabilised == 1:
+        lm += avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u), jump(v))) * dS
 
     if advection:
         lh = (inner((h-h_)/timestep,w))*dx
@@ -125,7 +127,7 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
         if rheology == "VP" and solver == "FE":
             forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,
                                  pathname='./output/vp_evp_rheology/vp_test1fe.pvd', output=output,
-                                 advection=advection,stabilisation=stabilisation,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
+                                 advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
         elif rheology == "VP" and solver == "mEVP":
                 mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
                             pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
@@ -140,5 +142,5 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     print('...done!')
 
 
-vp_evp_test1(timescale=10, timestep=1, rheology="VP",solver="FE",subcycle=10,output=False,advection=True)
+vp_evp_test1(timescale=10, timestep=1, rheology="VP",solver="FE",subcycle=10,output=True,stabilised=1)
 

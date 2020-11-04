@@ -3,10 +3,10 @@ from firedrake import *
 All the parameters required to solve the sea ice momentum equation
 """
 #dimension of the mesh
-L = Constant(500000)
+L = 500000
 
 #box test mesh dimensions
-L2 = Constant(1000000)
+L2 = 1000000
 
 # the sea ice density
 rho = Constant(900)

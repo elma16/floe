@@ -58,26 +58,22 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,sta
     # viscosities
     zeta = P / (2 * Delta_min)
 
-    # internal stress tensor, stabilised vs unstabilised
-    if stabilised == 0:
-        sigma = zeta / 2 * (grad(u) + transpose(grad(u)))
-    #elif stabilised == 1:
-    #    sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
-    elif stabilised == 2:
+    sigma = zeta / 2 * (grad(u) + transpose(grad(u)))
+
+    if stabilised == 2:
         sigma = zeta / 2 * (grad(u))
-    else:
-        raise ValueError("Expected 0, 1 or 2 but got {:d}".format(stabilised))
 
     pi_x = pi / L
 
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
     #initialising at expected v value
-    u_.interpolate(v_exp)
-    u.assign(u_)
 
-    #u_.assign(0)
+    #u_.interpolate(v_exp)
     #u.assign(u_)
+
+    u_.assign(0)
+    u.assign(u_)
 
     sigma_exp = zeta / 2 * (grad(v_exp) + transpose(grad(v_exp)))
 
@@ -89,6 +85,9 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,sta
     # momentum equation
     lm = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
     lm -= inner(R, v) * dx
+    if stabilised == 1:
+        lm += avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
+
 
     t = 0.0
 
@@ -103,3 +102,5 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,sta
     print('...done!')
 
     return all_u,mesh,v_exp,zeta
+
+strain_rate_tensor(10,1,stabilised=0,output=True)

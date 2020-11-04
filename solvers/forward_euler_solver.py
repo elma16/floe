@@ -2,7 +2,7 @@ from firedrake import *
 
 from solvers.solver_parameters import *
 
-def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,advection=False,stabilisation = False,lh=None,la=None,h=None,h_=None,a=None,a_=None):
+def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,advection=False,lh=None,la=None,h=None,h_=None,a=None,a_=None):
     all_u = []
     if not advection:
         if output:
