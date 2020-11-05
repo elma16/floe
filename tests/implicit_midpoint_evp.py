@@ -5,7 +5,7 @@ sys.path.insert(0,parentdir)
 
 from tests.parameters import *
 
-def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):
+def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
     """
     Solving the EVP model using an implicit midpoint method.
     """
@@ -72,13 +72,13 @@ def implicit_midpoint(number_of_triangles=35,timestep=10,timescale=100):
     lm = inner(p,rho*h*(u1-u0))*dx
     lm += (timestep*inner(grad(p),sh))*dx
     lm -= (timestep*inner(p,C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)))*dx
-    lm += inner(q,s1-s0+timestep*(e**2/(2*T)*sh+((1-e**2)/(4*T)*tr(sh)+P/(4*T))*Identity(2)))*dx
+    lm += inner(q,(s1-s0)+timestep*(e**2/(2*T)*sh+((1-e**2)/(4*T)*tr(sh)+P/(4*T))*Identity(2)))*dx
     lm -= inner(q*zeta*timestep/T,ep_doth)*dx
 
-    bcs = [DirichletBC(V, 0, "on_boundary")]
-
+    bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
+    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu",'mat_type': 'aij'}
     uprob = NonlinearVariationalProblem(lm,w1,bcs)
-    usolver = NonlinearVariationalSolver(uprob, solver_parameters= {'mat_type': 'aij','ksp_type': 'preonly','pc_type': 'lu'})
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
     u0, s0 = w0.split()
     u1, s1 = w1.split()

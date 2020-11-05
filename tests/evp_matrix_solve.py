@@ -21,17 +21,21 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
+    S = TensorFunctionSpace(mesh,"DG",0)
     U = FunctionSpace(mesh,"CR",1)
 
     # sea ice velocity
     u_ = Function(V, name="Velocity")
     u = Function(V, name="VelocityNext")
+    sigma_ = Function(S)
+    sigma = Function(S)
     uh = 0.5*(u+u_)
 
     a = Function(U)
 
     # test functions
     v = TestFunction(V)
+    w = TestFunction(S)
 
     x, y = SpatialCoordinate(mesh)
 
@@ -45,7 +49,7 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
-    ep_dot = 0.5 * (grad(u) + transpose(grad(u)))
+    ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
     # deviatoric part of the strain rate tensor
     ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
@@ -60,9 +64,8 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
     eta = zeta * e ** (-2)
 
     # initalising the internal stress tensor
-    sigma_ = 2  * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P  * Identity(2)
-    sigma = sigma_
-    sh = 0.5 * (sigma + sigma_)
+    sigma_.interpolate(2  * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P  * Identity(2))
+    sigma.assign(sigma_)
 
     #using the implicit midpoint rule formulation of the tensor equation, find sigma^{n+1} in terms of sigma^{n},v^{n+1},v^{n}
     def sigma_next(timestep, e, zeta, T, ep_dot, sigma, P):
@@ -77,10 +80,16 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
 
         return sigma
 
-    # momentum equation (used irrespective of advection occuring or not)
+    # momentum equation (used irrespective of advection occurring or not)
 
-    lm = (inner(rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v)) * dx
-    lm += inner(sh, grad(v)) * dx
+    s = sigma_next(timestep,e,zeta,T,ep_dot,sigma_,P)
+
+    sh = 0.5*(s+sigma_)
+
+    lm = inner(rho * h * (u - u_),v) * dx + timestep * inner(rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(degree = 3)
+    lm += timestep * inner(sh, grad(v)) * dx
+
+    ls = (inner(w,sigma - s))*dx
 
     t = 0.0
     bcs = [DirichletBC(V, 0, "on_boundary")]
@@ -92,8 +101,7 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
         print('******************************** Implicit EVP Solver ********************************\n')
         while t <= timescale:
             solve(lm == 0, u, solver_parameters=params, bcs=bcs)
-            sigma = sigma_next(timestep, e, zeta, T, ep_dot, sigma_, P)
-            sigma_ = sigma
+            solve(ls == 0, sigma,solver_parameters=params)
             u_.assign(u)
             t += timestep
             outfile.write(u_, time=t)
@@ -105,8 +113,7 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
         print('******************************** Implicit EVP Solver (NO OUTPUT) ********************************\n')
         while t <= timescale:
             solve(lm == 0, u, solver_parameters=params, bcs=bcs)
-            sigma = sigma_next(timestep, e, zeta, T, ep_dot, sigma_, P)
-            sigma_ = sigma
+            solve(ls == 0, sigma, solver_parameters=params)
             u_.assign(u)
             t += timestep
             print("Time:", t, "[s]")
