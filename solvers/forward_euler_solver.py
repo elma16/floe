@@ -9,7 +9,7 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
             outfile = File('{pathname}'.format(pathname = pathname))
             outfile.write(u_, time=t)
             print('******************************** Forward solver ********************************\n')
-            while t <= timescale:
+            while t < timescale - 0.5 * timestep:
                 solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                 u_.assign(u)
                 all_u.append(Function(u))
@@ -20,7 +20,7 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
             print('... forward problem solved...\n')
         else:
             print('******************************** Forward solver (NO OUTPUT) ********************************\n')
-            while t <= timescale:
+            while t < timescale - 0.5 * timestep:
                 solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                 u_.assign(u)
                 all_u.append(Function(u))
@@ -33,7 +33,7 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
             outfile = File('{pathname}'.format(pathname = pathname))
             outfile.write(u_, time=t)
             print('******************************** Forward solver ********************************\n')
-            while t <= timescale:
+            while t < timescale - 0.5 * timestep:
                 solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                 u_.assign(u)
                 solve(lh == 0, h, solver_parameters=params)
@@ -48,7 +48,7 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
             print('... forward problem solved...\n')
         else:
             print('******************************** Forward solver (NO OUTPUT) ********************************\n')
-            while t <= timescale:
+            while t < timescale - 0.5 * timestep:
                 solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                 u_.assign(u)
                 solve(lh == 0, h, solver_parameters=params)

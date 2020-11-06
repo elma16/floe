@@ -153,7 +153,7 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     print('...done!')
 
 
-vp_evp_test1(timescale=100, timestep=1, rheology="VP",solver="FE",subcycle=10,output=True,advection=True)
+vp_evp_test1(timescale=10, timestep=1, rheology="VP",solver="FE",subcycle=10,output=True)
 
 
 

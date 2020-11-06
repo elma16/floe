@@ -80,7 +80,6 @@ def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
     uprob = NonlinearVariationalProblem(lm,w1,bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
-    u0, s0 = w0.split()
     u1, s1 = w1.split()
 
     ufile = File('./output/evp_alt/u.pvd')

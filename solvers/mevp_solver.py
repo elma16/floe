@@ -32,7 +32,7 @@ def mevp_solver(u,u_,a,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,p
         outfile.write(u_, time=t)
 
         print('******************************** mEVP Solver ********************************\n')
-        while t <= timescale:
+        while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
                 solve(a == 0, u, solver_parameters=params, bcs=bcs)
@@ -47,7 +47,7 @@ def mevp_solver(u,u_,a,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,p
         print('... mEVP problem solved...\n')
     else:
         print('******************************** mEVP Solver (NO OUTPUT) ********************************\n')
-        while t <= timescale:
+        while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
                 solve(a == 0, u, solver_parameters=params, bcs=bcs)
