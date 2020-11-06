@@ -36,9 +36,9 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
             while t <= timescale:
                 solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                 u_.assign(u)
-                solve(lh == 0, h, solver_parameters=params, bcs=bcs)
+                solve(lh == 0, h, solver_parameters=params)
                 h_.assign(h)
-                solve(la == 0, a, solver_parameters=params, bcs=bcs)
+                solve(la == 0, a, solver_parameters=params)
                 a_.assign(a)
                 all_u.append(Function(u))
                 t += timestep
@@ -51,9 +51,9 @@ def forward_euler_solver(u,u_,lm,bcs,t,timestep,timescale,pathname,output=False,
             while t <= timescale:
                 solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                 u_.assign(u)
-                solve(lh == 0, h, solver_parameters=params, bcs=bcs)
+                solve(lh == 0, h, solver_parameters=params)
                 h_.assign(h)
-                solve(la == 0, a, solver_parameters=params, bcs=bcs)
+                solve(la == 0, a, solver_parameters=params)
                 a_.assign(a)
                 all_u.append(Function(u))
                 t += timestep

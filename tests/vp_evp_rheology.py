@@ -137,7 +137,7 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     if advection:
         if rheology == "VP" and solver == "FE":
             forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,
-                                 pathname='./output/vp_evp_rheology/vp_test1fe.pvd', output=output,
+                                 pathname='./output/vp_evp_rheology/vp_test1fe_ad.pvd', output=output,
                                  advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
         elif rheology == "VP" and solver == "mEVP":
                 mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
@@ -153,7 +153,7 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     print('...done!')
 
 
-vp_evp_test1(timescale=100, timestep=1, rheology="VP",solver="FE",subcycle=10,output=True,stabilised=1)
+vp_evp_test1(timescale=100, timestep=1, rheology="VP",solver="FE",subcycle=10,output=True,advection=True)
 
 
 
