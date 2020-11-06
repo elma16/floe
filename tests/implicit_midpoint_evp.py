@@ -97,6 +97,8 @@ def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
         w0.assign(w1)
 
         dumpn += 1
+        print("Time:", t, "[s]")
+        print(int(min(t / timescale * 100, 100)), "% complete")
         if dumpn == ndump:
             dumpn -= ndump
             ufile.write(u1, time=t)

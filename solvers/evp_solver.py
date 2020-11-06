@@ -25,37 +25,92 @@ def evp_stress_solver(sigma,ep_dot,P,zeta,T,subcycle_timestep):
     return sigma
 
 
-def evp_solver(u,u_,a,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,pathname,output=False):
+def evp_solver(u,u_,lm,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,pathname,output=False,advection=False,lh=None,la=None,h=None,h_=None,a=None,a_=None):
     subcycle_timestep = timestep / subcycle
-    if output:
-        outfile = File('{pathname}'.format(pathname = pathname))
-        outfile.write(u_, time=t)
-
-        print('******************************** EVP Solver ********************************\n')
-        while t < timescale - 0.5 * timestep:
-            s = t
-            while s <= t + timestep:
-                solve(a == 0, u, solver_parameters=params, bcs=bcs)
-                evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
-                u_.assign(u)
-                s += subcycle_timestep
-            t += timestep
+    all_u = []
+    all_h = []
+    all_a = []
+    if not advection:
+        if output:
+            outfile = File('{pathname}'.format(pathname = pathname))
             outfile.write(u_, time=t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
 
-        print('... EVP problem solved...\n')
-    else:
-        print('******************************** EVP Solver (NO OUTPUT) ********************************\n')
-        while t < timescale - 0.5 * timestep:
-            s = t
-            while s <= t + timestep:
-                solve(a == 0, u, solver_parameters=params, bcs=bcs)
-                evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
-                u_.assign(u)
-                s += subcycle_timestep
-            t += timestep
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
+            print('******************************** EVP Solver ********************************\n')
+            while t < timescale - 0.5 * timestep:
+                s = t
+                while s <= t + timestep:
+                    solve(lm == 0, u, solver_parameters=params, bcs=bcs)
+                    evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                    u_.assign(u)
+                    s += subcycle_timestep
+                t += timestep
+                all_u.append(Function(u))
+                outfile.write(u_, time=t)
+                print("Time:", t, "[s]")
+                print(int(min(t / timescale * 100, 100)), "% complete")
 
-        print('... EVP problem solved...\n')
+            print('... EVP problem solved...\n')
+        else:
+            print('******************************** EVP Solver (NO OUTPUT) ********************************\n')
+            while t < timescale - 0.5 * timestep:
+                s = t
+                while s <= t + timestep:
+                    solve(lm == 0, u, solver_parameters=params, bcs=bcs)
+                    evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                    u_.assign(u)
+                    s += subcycle_timestep
+                t += timestep
+                all_u.append(Function(u))
+                print("Time:", t, "[s]")
+                print(int(min(t / timescale * 100, 100)), "% complete")
+
+            print('... EVP problem solved...\n')
+    if advection:
+        if output:
+            outfile = File('{pathname}'.format(pathname=pathname))
+            outfile.write(u_, time=t)
+
+            print('******************************** EVP Solver ********************************\n')
+            while t < timescale - 0.5 * timestep:
+                s = t
+                while s <= t + timestep:
+                    solve(lm == 0, u, solver_parameters=params, bcs=bcs)
+                    evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                    u_.assign(u)
+                    solve(lh == 0, h, solver_parameters=params)
+                    h_.assign(h)
+                    solve(la == 0, a, solver_parameters=params)
+                    a_.assign(a)
+                    s += subcycle_timestep
+                t += timestep
+                all_u.append(Function(u))
+                all_h.append(Function(h))
+                all_a.append(Function(a))
+                outfile.write(u_, time=t)
+                print("Time:", t, "[s]")
+                print(int(min(t / timescale * 100, 100)), "% complete")
+
+            print('... EVP problem solved...\n')
+        else:
+            print('******************************** EVP Solver (NO OUTPUT) ********************************\n')
+            while t < timescale - 0.5 * timestep:
+                s = t
+                while s <= t + timestep:
+                    solve(lm == 0, u, solver_parameters=params, bcs=bcs)
+                    evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                    u_.assign(u)
+                    solve(lh == 0, h, solver_parameters=params)
+                    h_.assign(h)
+                    solve(la == 0, a, solver_parameters=params)
+                    a_.assign(a)
+                    s += subcycle_timestep
+                t += timestep
+                all_u.append(Function(u))
+                all_h.append(Function(h))
+                all_a.append(Function(a))
+                print("Time:", t, "[s]")
+                print(int(min(t / timescale * 100, 100)), "% complete")
+
+            print('... EVP problem solved...\n')
+    return all_u,all_h,all_a
+
