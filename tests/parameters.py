@@ -44,3 +44,12 @@ T = 100
 alpha = Constant(500)
 
 beta = Constant(500)
+
+#stabilisation constants
+a_vp = 0.5*10**(-5)
+
+a_evp = 0.1
+
+a_mevp = 0.01
+
+d = 1

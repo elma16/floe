@@ -70,8 +70,8 @@ def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
     #constructing the equations used
 
     lm = inner(p,rho*h*(u1-u0))*dx
-    lm += (timestep*inner(grad(p),sh))*dx
-    lm -= (timestep*inner(p,C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)))*dx
+    lm += timestep*inner(grad(p),sh)*dx
+    lm -= timestep*inner(p,C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr))*dx
     lm += inner(q,(s1-s0)+timestep*(e**2/(2*T)*sh+((1-e**2)/(4*T)*tr(sh)+P/(4*T))*Identity(2)))*dx
     lm -= inner(q*zeta*timestep/T,ep_doth)*dx
 

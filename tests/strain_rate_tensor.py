@@ -83,7 +83,7 @@ def strain_rate_tensor(timescale=10,timestep=10**(-6),number_of_triangles=35,sta
         return 1 / 2 * (omega + transpose(omega))
 
     # momentum equation
-    lm = (inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v)))) * dx
+    lm = inner((u - u_) / timestep, v) + inner(sigma, strain(grad(v))) * dx
     lm -= inner(R, v) * dx
     if stabilised == 1:
         lm += avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS

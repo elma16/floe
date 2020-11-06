@@ -73,8 +73,10 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
         B = (timestep * (1 - e ** 2)) / (8 * T)
         rhs = (1 - (timestep * e ** 2) / (4 * T)) * sigma - timestep * (timestep * (1 - e ** 2)) / (8 * T) * tr(
             sigma) * Identity(2) - timestep * P / (4 * T) * Identity(2) + zeta / T * timestep * ep_dot
-        sigma00 = (((rhs[0, 0] - rhs[1, 1]) / A + (rhs[0, 0] + rhs[1, 1])) / (A + 2 * B)) / 2
-        sigma11 = ((-(rhs[0, 0] - rhs[1, 1]) / A + (rhs[0, 0] + rhs[1, 1])) / (A + 2 * B)) / 2
+        C = (rhs[0, 0] - rhs[1, 1]) / A
+        D = (rhs[0, 0] + rhs[1, 1]) / (A + 2 * B)
+        sigma00 = (C + D) / 2
+        sigma11 = (D - C) / 2
         sigma01 = rhs[0, 1]
         sigma = as_matrix([[sigma00, sigma01], [sigma01, sigma11]])
 

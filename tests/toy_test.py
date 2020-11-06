@@ -65,9 +65,9 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
         return 1 / 2 * (omega + transpose(omega))
 
     # momentum equation
-    lm = (inner((u - u_) / timestep, v)) * dx
-    lm += (inner(sigma, strain(grad(v)))) * dx
-    lm -= (inner(R, v)) * dx
+    lm = inner((u - u_) / timestep, v) * dx
+    lm += inner(sigma, strain(grad(v))) * dx
+    lm -= inner(R, v) * dx
 
     t = 0.0
 

@@ -9,7 +9,7 @@ from solvers.evp_solver import *
 from solvers.forward_euler_solver import *
 
 def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheology="VP",advection = False,
-                 solver = "FE",stabilised = 0,subcycle = 100,output = "False"):
+                 solver = "FE",stabilised = 0,subcycle = 100,output = False):
     """
     from Mehlmann and Korn, 2020
     Section 4.2
@@ -52,7 +52,6 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     # test functions
     v = TestFunction(V)
     w = TestFunction(U)
-    q = TestFunction(U)
 
     x, y = SpatialCoordinate(mesh)
 
@@ -95,17 +94,29 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     # internal stress tensor
     sigma = 2  * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
 
-    # momentum equation (used irrespective of advection occuring or not)
-
-    lm = (inner(beta * rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr, u - ocean_curr)) * (u - ocean_curr), v)) * dx
-    lm += inner(sigma, grad(v)) * dx
+    if stabilised == 0:
+        stab_term = 0
     if stabilised == 1:
-        lm += avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u), jump(v))) * dS
+        if rheology == "VP":
+            #what does the paper mean by zeta_e?
+            stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u), jump(v))) * dS
+            if solver == "mEVP":
+                stab_term = (a_mevp * avg(CellVolume(mesh)) * P) / (d * FacetArea(mesh)) * (dot(jump(u), jump(v))) * dS
+        elif rheology == "EVP":
+            stab_term = (a_evp * avg(CellVolume(mesh)) * P) / (d * FacetArea(mesh))  * (dot(jump(u), jump(v))) * dS
+            if solver == "mEVP":
+                stab_term = (a_mevp * avg(CellVolume(mesh)) * P) / (d * FacetArea(mesh)) * (dot(jump(u), jump(v))) * dS
+
+    # momentum equation (used irrespective of advection occurring or not)
+
+    lm = inner(beta * rho * h * (u - u_) / timestep + rho_w * C_w * sqrt(dot(u - ocean_curr, u - ocean_curr)) * (u - ocean_curr), v) * dx
+    lm += inner(sigma, grad(v)) * dx
+    lm += stab_term
 
     if advection:
-        lh = (inner((h-h_)/timestep,w))*dx
+        lh = inner((h-h_)/timestep,w)*dx
         lh -= inner(u*h,grad(w))*dx
-        la = (inner((a-a_)/timestep,w))*dx
+        la = inner((a-a_)/timestep,w)*dx
         la -= inner(u*a,grad(w))*dx
 
     t = 0.0
@@ -142,5 +153,7 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
     print('...done!')
 
 
-vp_evp_test1(timescale=10, timestep=1, rheology="VP",solver="FE",subcycle=10,output=True,stabilised=1)
+vp_evp_test1(timescale=100, timestep=1, rheology="VP",solver="FE",subcycle=10,output=True,stabilised=1)
+
+
 
