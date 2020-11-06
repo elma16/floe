@@ -7,7 +7,7 @@ from tests.parameters import *
 from solvers.mevp_solver import *
 
 def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle = 500,advection = False,
-             output = False,pathname = "./output/box_test.pvd",stabilisation = 0):
+             output = False,stabilisation = 0):
 
     """
     from Mehlmann and Korn, 2020
@@ -44,50 +44,49 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     U = FunctionSpace(mesh, "CR", 1)
+    W = MixedFunctionSpace([V, U, U])
 
-    # sea ice velocity
-    u_ = Function(V, name="Velocity")
-    u = Function(V, name="VelocityNext")
+    w0 = Function(W)
+    w1 = Function(W)
 
-    # mean height of sea ice
-    h_ = Function(U, name="Height")
-    h = Function(U, name="HeightNext")
+    u0, h0, a0 = w0.split()
+    u1, h1, a1 = w1.split()
 
-    # sea ice concentration
-    a_ = Function(U, name="Concentration")
-    a = Function(U, name="ConcentrationNext")
+    uh = 0.5 * (u0 + u1)
+    hh = 0.5 * (h0 + h1)
+    ah = 0.5 * (a0 + a1)
 
     # test functions
     v = TestFunction(V)
-    w = TestFunction(U)
+    w = TestFunction(W)
 
     x, y = SpatialCoordinate(mesh)
 
     # initial conditions
-
-    u_.assign(0)
-    u.assign(u_)
+    u0.assign(0)
+    u1.assign(u0)
     if not advection:
-        h = Constant(1)
-        a.interpolate(x/L)
+        h0 = Constant(1)
+        h1 = Constant(1)
+        a0.interpolate(x/L)
     if advection:
-        h_.assign(1)
-        h.assign(h_)
-        a_.interpolate(x/L)
-        a.assign(a_)
+        h0.assign(1)
+        h1.assign(h0)
+        a0.interpolate(x/L)
+        a1.assign(a0)
 
     # ocean current
 
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
-    ep_dot = 0.5 * (grad(u) + transpose(grad(u)))
+    ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
     # deviatoric part of the strain rate tensor
     ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
 
     # ice strength
-    P = P_star * h * exp(-C * (1 - a))
+    P = P_star * hh * exp(-C * (1 - ah))
 
     Delta_min = Constant(2 * 10 ** (-9))
 
@@ -105,16 +104,10 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
 
     geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
-    lm = inner(rho * h * (u - u_),v) * dx
-    lm -= timestep*inner(rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]]),v) * dx
-    lm += timestep*inner(rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,u - ocean_curr) * (ocean_curr - u), v) * dx
+    lm = inner(rho * h * (u1 - u0),v) * dx
+    lm -= timestep*inner(rho * hh * cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0] - uh[0]]),v) * dx
+    lm += timestep*inner(rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(uh - ocean_curr,uh - ocean_curr) * (ocean_curr - uh), v) * dx
     lm += inner(sigma, grad(v)) * dx
-
-    if advection:
-        lh = inner((h-h_)/timestep,w)*dx
-        lh -= inner(u*h,grad(w))*dx
-        la = inner((a-a_)/timestep,w)*dx
-        la -= inner(u*a,grad(w))*dx
 
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
@@ -125,7 +118,7 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
     if not advection:
         if output:
             outfile = File('{pathname}'.format(pathname=pathname))
-            outfile.write(u_, time=t)
+            outfile.write(u0, time=t)
 
             print('******************************** mEVP Solver ********************************\n')
             while t < timescale - 0.5 * timestep:
@@ -133,7 +126,7 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
                 while s <= t + timestep:
                     solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
-                    u_.assign(u)
+                    u1.assign(u0)
                     s += subcycle_timestep
                 t += timestep
                 geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
@@ -159,55 +152,7 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
                                       5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(
                                           2 * pi * x / L)])
                 all_u.append(Function(u))
-                print("Time:", t, "[s]")
-                print(int(min(t / timescale * 100, 100)), "% complete")
-
-            print('... mEVP problem solved...\n')
-    if advection:
-        if output:
-            outfile = File('{pathname}'.format(pathname=pathname))
-            outfile.write(u_, time=t)
-
-            print('******************************** mEVP Solver ********************************\n')
-            while t < timescale - 0.5 * timestep:
-                s = t
-                while s <= t + timestep:
-                    solve(lm == 0, u, solver_parameters=params, bcs=bcs)
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
-                    u_.assign(u)
-                    solve(lh == 0,h, solver_parameters = params)
-                    h_.assign(h)
-                    solve(la == 0, a, solver_parameters=params)
-                    a_.assign(a)
-                    s += subcycle_timestep
-                t += timestep
-                geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                                      5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(
-                                          2 * pi * x / L)])
-                all_u.append(Function(u))
-                outfile.write(u_, time=t)
-                print("Time:", t, "[s]")
-                print(int(min(t / timescale * 100, 100)), "% complete")
-
-            print('... mEVP problem solved...\n')
-        else:
-            print('******************************** mEVP Solver (NO OUTPUT) ********************************\n')
-            while t < timescale - 0.5 * timestep:
-                s = t
-                while s <= t + timestep:
-                    solve(lm == 0, u, solver_parameters=params, bcs=bcs)
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
-                    u_.assign(u)
-                    solve(lh == 0,h, solver_parameters = params)
-                    h_.assign(h)
-                    solve(la == 0, a, solver_parameters=params)
-                    a_.assign(a)
-                    s += subcycle_timestep
-                t += timestep
-                geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                                      5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(
-                                          2 * pi * x / L)])
-                all_u.append(Function(u))
+                print(geo_wind)
                 print("Time:", t, "[s]")
                 print(int(min(t / timescale * 100, 100)), "% complete")
 
@@ -216,4 +161,4 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
 
     return all_u
 
-box_test(timescale = 100,timestep=1,subcycle=1,advection=True,output=True)
+box_test(timescale = 10,timestep=1,subcycle=5)
