@@ -124,39 +124,36 @@ def vp_evp_test1(timescale=10,timestep = 10**(-1),number_of_triangles = 30,rheol
 
     if not advection:
         if rheology == "VP" and solver == "FE":
-            forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,pathname='./output/vp_evp_rheology/vp_test1fe.pvd', output=output)
+            all_u, all_h, all_a = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,pathname='./output/vp_evp_rheology/vp_test1fe.pvd', output=output)
         elif rheology == "VP" and solver == "mEVP":
-            mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                        pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
+            all_u, all_h, all_a = mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                                              pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
         elif rheology == "EVP" and solver == "EVP":
-            evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                       pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
+            all_u, all_h, all_a = evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                                             pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
         elif rheology == "EVP" and solver == "mEVP":
-            mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                        pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
+            all_u, all_h, all_a = mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+                                              pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
     if advection:
         if rheology == "VP" and solver == "FE":
-            forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,
-                                 pathname='./output/vp_evp_rheology/vp_test1fe_ad.pvd',output=output,
-                                 advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
+            all_u, all_h, all_a = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,
+            pathname='./output/vp_evp_rheology/vp_test1fe_ad.pvd',output=output,advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
         elif rheology == "VP" and solver == "mEVP":
-                mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                            pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output,
-                            advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
+            all_u, all_h, all_a = mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+            pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output,advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
         elif rheology == "EVP" and solver == "EVP":
-            evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                       pathname='./output/vp_evp_test/evp_test1.pvd', output=output,
-                       advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
+            all_u, all_h, all_a = evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+            pathname='./output/vp_evp_test/evp_test1.pvd', output=output,advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
         elif rheology == "EVP" and solver == "mEVP":
-            mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
-                        pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output,
-                        advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
+            all_u, all_h, all_a = mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale,
+            pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output,advection=advection,lh=lh,la=la,h=h,h_=h_,a=a,a_=a_)
 
 
     print('...done!')
 
+    return all_u, all_h, all_a, mesh, zeta
 
-vp_evp_test1(timescale=10, timestep=1, rheology="EVP",solver="mEVP",subcycle=10,output=False,advection=True)
+
 
 
 
