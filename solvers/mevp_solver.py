@@ -2,7 +2,8 @@ from firedrake import *
 
 from solvers.solver_parameters import *
 
-def mevp_stress_solver(sigma,ep_dot,zeta,P):
+
+def mevp_stress_solver(sigma, ep_dot, zeta, P):
     """
     Implementation of the mEVP solver used by Mehlmann and Korn:
 
@@ -20,19 +21,21 @@ def mevp_stress_solver(sigma,ep_dot,zeta,P):
     sigma1 = 1 + (sigma1 + 2 * zeta * (ep_dot1 - P)) / alpha
     sigma2 = 1 + (sigma2 * zeta * ep_dot2) / 2 * alpha
 
-    sigma = as_matrix([[0.5 * (sigma1 + sigma2),1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha],
-                       [1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha,0.5 * (sigma1 - sigma2) ]])
+    sigma = as_matrix([[0.5 * (sigma1 + sigma2), 1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha],
+                       [1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha, 0.5 * (sigma1 - sigma2)]])
 
     return sigma
 
-def mevp_solver(u,u_,lm,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,pathname,output=False,advection=False,lh=None,la=None,h=None,h_=None,a=None,a_=None):
+
+def mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale, pathname, output=False,
+                advection=False, lh=None, la=None, h=None, h_=None, a=None, a_=None):
     subcycle_timestep = timestep / subcycle
     all_u = []
     all_h = []
     all_a = []
     if not advection:
         if output:
-            outfile = File('{pathname}'.format(pathname = pathname))
+            outfile = File('{pathname}'.format(pathname=pathname))
             outfile.write(u_, time=t)
 
             print('******************************** mEVP Solver ********************************\n')

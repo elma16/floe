@@ -1,12 +1,14 @@
-import os,sys,inspect
+import os, sys, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir)
+sys.path.insert(0, parentdir)
 
 from tests.parameters import *
 from solvers.forward_euler_solver import *
 
-def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=30,output=False,shape = "Square"):
+
+def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_triangles=30, output=False, shape="Square"):
     """
     A trial toy test problem where I start off with a big square in the middle of the velocity field
     to demonstrate the nature of hyperbolic PDEs
@@ -28,11 +30,12 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
     # initial conditions
 
     if shape == "Half-Plane":
-        u_.interpolate(conditional(le(x,L/2),as_vector([10,10]),as_vector([0,0])))
+        u_.interpolate(conditional(le(x, L / 2), as_vector([10, 10]), as_vector([0, 0])))
     elif shape == "Square":
-        u_.interpolate(conditional(le(abs(x-L/2)+abs(y-L/2),L/5), as_vector([10, 10]), as_vector([0, 0])))
+        u_.interpolate(conditional(le(abs(x - L / 2) + abs(y - L / 2), L / 5), as_vector([10, 10]), as_vector([0, 0])))
     elif shape == "Circle":
-        u_.interpolate(conditional(le(((x-L/2)**2+(y-L/2)**2),10000*L), as_vector([10, 10]), as_vector([0, 0])))
+        u_.interpolate(
+            conditional(le(((x - L / 2) ** 2 + (y - L / 2) ** 2), 10000 * L), as_vector([10, 10]), as_vector([0, 0])))
 
     u.assign(u_)
 
@@ -51,7 +54,7 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
 
     eta = zeta * e ** (-2)
 
-    #sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
+    # sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
 
     pi_x = pi / L
@@ -73,10 +76,11 @@ def toy_problem(timescale=10,timestep=10**(-3),stabilised=0,number_of_triangles=
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
-
-    all_u = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale,pathname='./output/toy_test/toy.pvd', output=output)
+    all_u = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale, pathname='./output/toy_test/toy.pvd',
+                                 output=output)
 
     print('...done!')
     return all_u
 
-toy_problem(timescale=1,timestep=10**(-1),output=False)
+
+toy_problem(timescale=1, timestep=10 ** (-1), output=False)

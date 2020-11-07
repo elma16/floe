@@ -1,8 +1,9 @@
 from firedrake import *
+
 """
 All the parameters required to solve the sea ice momentum equation
 """
-#dimension of the mesh
+# dimension of the mesh
 L = 500000
 
 # the sea ice density
@@ -34,7 +35,7 @@ e = Constant(2)
 
 Delta_min = Constant(2 * 10 ** (-9))
 
-#tuning parameter
+# tuning parameter
 T = 100
 
 # mEVP constants
@@ -42,8 +43,8 @@ alpha = Constant(500)
 
 beta = Constant(500)
 
-#stabilisation constants
-a_vp = 0.5*10**(-5)
+# stabilisation constants
+a_vp = 0.5 * 10 ** (-5)
 
 a_evp = 0.1
 

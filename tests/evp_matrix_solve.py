@@ -1,12 +1,15 @@
-import os,sys,inspect
+import os, sys, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir)
+sys.path.insert(0, parentdir)
 
 from tests.parameters import *
 from solvers.solver_parameters import *
 
-def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles = 35,output = False,pathname='./output/implicit_evp/u.pvd'):
+
+def implicit_midpoint_evp(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False,
+                          pathname='./output/implicit_evp/u.pvd'):
     """
     Solving test 2 using the implicit midpoint rule.
 
@@ -21,15 +24,15 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
-    S = TensorFunctionSpace(mesh,"DG",0)
-    U = FunctionSpace(mesh,"CR",1)
+    S = TensorFunctionSpace(mesh, "DG", 0)
+    U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
     u_ = Function(V, name="Velocity")
     u = Function(V, name="VelocityNext")
     sigma_ = Function(S)
     sigma = Function(S)
-    uh = 0.5*(u+u_)
+    uh = 0.5 * (u + u_)
 
     a = Function(U)
 
@@ -43,7 +46,7 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
 
     u_.assign(0)
     h = Constant(1)
-    a.interpolate(x/L)
+    a.interpolate(x / L)
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
@@ -64,10 +67,10 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
     eta = zeta * e ** (-2)
 
     # initalising the internal stress tensor
-    sigma_.interpolate(2  * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P  * Identity(2))
+    sigma_.interpolate(2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2))
     sigma.assign(sigma_)
 
-    #using the implicit midpoint rule formulation of the tensor equation, find sigma^{n+1} in terms of sigma^{n},v^{n+1},v^{n}
+    # using the implicit midpoint rule formulation of the tensor equation, find sigma^{n+1} in terms of sigma^{n},v^{n+1},v^{n}
     def sigma_next(timestep, e, zeta, T, ep_dot, sigma, P):
         A = (1 + (timestep * e ** 2) / (4 * T))
         B = (timestep * (1 - e ** 2)) / (8 * T)
@@ -84,26 +87,27 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
 
     # momentum equation (used irrespective of advection occurring or not)
 
-    s = sigma_next(timestep,e,zeta,T,ep_dot,sigma_,P)
+    s = sigma_next(timestep, e, zeta, T, ep_dot, sigma_, P)
 
-    sh = 0.5*(s+sigma_)
+    sh = 0.5 * (s + sigma_)
 
-    lm = inner(rho * h * (u - u_),v) * dx + timestep * inner(rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(degree = 3)
+    lm = inner(rho * h * (u - u_), v) * dx + timestep * inner(
+        rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(degree=3)
     lm += timestep * inner(sh, grad(v)) * dx
 
-    ls = (inner(w,sigma - s))*dx
+    ls = (inner(w, sigma - s)) * dx
 
     t = 0.0
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
     if output:
-        outfile = File('{pathname}'.format(pathname = pathname))
+        outfile = File('{pathname}'.format(pathname=pathname))
         outfile.write(u_, time=t)
 
         print('******************************** Implicit EVP Solver ********************************\n')
         while t <= timescale:
             solve(lm == 0, u, solver_parameters=params, bcs=bcs)
-            solve(ls == 0, sigma,solver_parameters=params)
+            solve(ls == 0, sigma, solver_parameters=params)
             u_.assign(u)
             t += timestep
             outfile.write(u_, time=t)
@@ -125,6 +129,5 @@ def implicit_midpoint_evp(timescale=10,timestep = 10**(-1),number_of_triangles =
 
     print('...done!')
 
-implicit_midpoint_evp(timescale=10,timestep=1,output=True)
 
-
+implicit_midpoint_evp(timescale=10, timestep=1, output=True)

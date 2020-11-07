@@ -1,14 +1,15 @@
-import os,sys,inspect
+import os, sys, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir)
+sys.path.insert(0, parentdir)
 
 from tests.parameters import *
 from solvers.mevp_solver import *
 
-def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle = 500,advection = False,
-             output = False,pathname = "./output/box_test.pvd",stabilisation = 0):
 
+def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False,
+             output=False, pathname="./output/box_test.pvd", stabilisation=0):
     """
     from Mehlmann and Korn, 2020
     Section 4.3
@@ -69,11 +70,11 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
     u.assign(u_)
     if not advection:
         h = Constant(1)
-        a.interpolate(x/L)
+        a.interpolate(x / L)
     if advection:
         h_.assign(1)
         h.assign(h_)
-        a_.interpolate(x/L)
+        a_.interpolate(x / L)
         a.assign(a_)
 
     # ocean current
@@ -100,22 +101,24 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
     # internal stress tensor
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P * 0.5 * Identity(2)
 
-    #initalise geo_wind
+    # initalise geo_wind
     t = 0.0
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
-    lm = inner(rho * h * (u - u_),v) * dx
-    lm -= timestep*inner(rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]]),v) * dx
-    lm += timestep*inner(rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr,u - ocean_curr) * (ocean_curr - u), v) * dx
+    lm = inner(rho * h * (u - u_), v) * dx
+    lm -= timestep * inner(rho * h * cor * as_vector([u[1] - ocean_curr[1], ocean_curr[0] - u[0]]), v) * dx
+    lm += timestep * inner(
+        rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u - ocean_curr, u - ocean_curr) * (
+                    ocean_curr - u), v) * dx
     lm += inner(sigma, grad(v)) * dx
 
     if advection:
-        lh = inner((h-h_)/timestep,w)*dx
-        lh -= inner(u*h,grad(w))*dx
-        la = inner((a-a_)/timestep,w)*dx
-        la -= inner(u*a,grad(w))*dx
-
+        lh = inner((h - h_), w) * dx
+        lh -= timestep * inner(u * h, grad(w)) * dx
+        la = inner((a - a_), w) * dx
+        la -= timestep * inner(u * a, grad(w)) * dx
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
@@ -175,7 +178,7 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
                     solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u_.assign(u)
-                    solve(lh == 0,h, solver_parameters = params)
+                    solve(lh == 0, h, solver_parameters=params)
                     h_.assign(h)
                     solve(la == 0, a, solver_parameters=params)
                     a_.assign(a)
@@ -198,7 +201,7 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
                     solve(lm == 0, u, solver_parameters=params, bcs=bcs)
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u_.assign(u)
-                    solve(lh == 0,h, solver_parameters = params)
+                    solve(lh == 0, h, solver_parameters=params)
                     h_.assign(h)
                     solve(la == 0, a, solver_parameters=params)
                     a_.assign(a)
@@ -216,4 +219,5 @@ def box_test(timescale=2678400,timestep = 600,number_of_triangles = 71,subcycle 
 
     return all_u
 
-box_test(timescale = 100,timestep=1,subcycle=1,advection=True,output=True)
+
+box_test(timescale=100, timestep=1, subcycle=1, advection=True, output=True)

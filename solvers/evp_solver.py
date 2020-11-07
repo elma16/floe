@@ -2,7 +2,8 @@ from firedrake import *
 
 from solvers.solver_parameters import *
 
-def evp_stress_solver(sigma,ep_dot,P,zeta,T,subcycle_timestep):
+
+def evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep):
     """
     Implementation of the stress tensor solver used by Mehlmann and Korn:
 
@@ -19,20 +20,23 @@ def evp_stress_solver(sigma,ep_dot,P,zeta,T,subcycle_timestep):
     sigma2 = (2 * subcycle_timestep * zeta * ep_dot2 - P / 2 + 2 * T * sigma2) / (2 * T + subcycle_timestep)
 
     # compose the new sigma in terms of the old sigma components
-    sigma = as_matrix([[0.5*(sigma1 + sigma2),( subcycle_timestep * zeta * ep_dot[0,1] + T * sigma[0,1]) / (T + 2 * subcycle_timestep)],
-                       [( subcycle_timestep * zeta * ep_dot[0,1] + T * sigma[0,1]) / (T + 2 * subcycle_timestep),0.5*(sigma1 - sigma2)]])
+    sigma = as_matrix([[0.5 * (sigma1 + sigma2),
+                        (subcycle_timestep * zeta * ep_dot[0, 1] + T * sigma[0, 1]) / (T + 2 * subcycle_timestep)],
+                       [(subcycle_timestep * zeta * ep_dot[0, 1] + T * sigma[0, 1]) / (T + 2 * subcycle_timestep),
+                        0.5 * (sigma1 - sigma2)]])
 
     return sigma
 
 
-def evp_solver(u,u_,lm,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,pathname,output=False,advection=False,lh=None,la=None,h=None,h_=None,a=None,a_=None):
+def evp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale, pathname, output=False,
+               advection=False, lh=None, la=None, h=None, h_=None, a=None, a_=None):
     subcycle_timestep = timestep / subcycle
     all_u = []
     all_h = []
     all_a = []
     if not advection:
         if output:
-            outfile = File('{pathname}'.format(pathname = pathname))
+            outfile = File('{pathname}'.format(pathname=pathname))
             outfile.write(u_, time=t)
 
             print('******************************** EVP Solver ********************************\n')
@@ -112,5 +116,4 @@ def evp_solver(u,u_,lm,t,timestep,subcycle,bcs,sigma,ep_dot,P,zeta,T,timescale,p
                 print(int(min(t / timescale * 100, 100)), "% complete")
 
             print('... EVP problem solved...\n')
-    return all_u,all_h,all_a
-
+    return all_u, all_h, all_a

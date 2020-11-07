@@ -1,11 +1,13 @@
-import os,sys,inspect
+import os, sys, inspect
+
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
-sys.path.insert(0,parentdir)
+sys.path.insert(0, parentdir)
 
 from tests.parameters import *
 
-def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
+
+def implicit_midpoint(number_of_triangles=35, timestep=10 ** (-1), timescale=10):
     """
     Solving the EVP model using an implicit midpoint method.
     """
@@ -15,14 +17,14 @@ def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     S = TensorFunctionSpace(mesh, "DG", 0)
-    U = FunctionSpace(mesh,"CR",1)
-    W = MixedFunctionSpace([V,S])
+    U = FunctionSpace(mesh, "CR", 1)
+    W = MixedFunctionSpace([V, S])
 
     a = Function(U)
 
     w0 = Function(W)
 
-    u0,s0 = w0.split()
+    u0, s0 = w0.split()
 
     x, y = SpatialCoordinate(mesh)
 
@@ -33,7 +35,7 @@ def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
 
     # now we solve for s0, given u0
 
-    s0.assign(as_matrix([[1,2],[3,4]]))
+    s0.assign(as_matrix([[1, 2], [3, 4]]))
 
     # now we solve the whole system
 
@@ -63,21 +65,22 @@ def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
     # viscosities
     zeta = P / (2 * Delta)
 
-    uh = 0.5*(u1+u0)
-    sh = 0.5*(s1+s0)
-    ep_doth = 1 / 2 * (grad(uh) + transpose(grad(uh)))
+    uh = 0.5 * (u1 + u0)
+    sh = 0.5 * (s1 + s0)
+    ep_doth = 0.5 * (grad(uh) + transpose(grad(uh)))
 
-    #constructing the equations used
+    # constructing the equations used
 
-    lm = inner(p,rho*h*(u1-u0))*dx
-    lm += timestep*inner(grad(p),sh)*dx
-    lm -= timestep*inner(p,C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr))*dx
-    lm += inner(q,(s1-s0)+timestep*(e**2/(2*T)*sh+((1-e**2)/(4*T)*tr(sh)+P/(4*T))*Identity(2)))*dx
-    lm -= inner(q*zeta*timestep/T,ep_doth)*dx
+    lm = inner(p, rho * h * (u1 - u0)) * dx
+    lm += timestep * inner(grad(p), sh) * dx
+    lm -= timestep * inner(p, C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx
+    lm += inner(q, (s1 - s0) + timestep * (
+                e ** 2 / (2 * T) * sh + ((1 - e ** 2) / (4 * T) * tr(sh) + P / (4 * T)) * Identity(2))) * dx
+    lm -= inner(q * zeta * timestep / T, ep_doth) * dx
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
-    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu",'mat_type': 'aij'}
-    uprob = NonlinearVariationalProblem(lm,w1,bcs)
+    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
+    uprob = NonlinearVariationalProblem(lm, w1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
     u1, s1 = w1.split()
@@ -104,8 +107,7 @@ def implicit_midpoint(number_of_triangles=35,timestep=10**(-1),timescale=10):
             ufile.write(u1, time=t)
             all_us.append(Function(u1))
 
-
     print('...done!')
 
-implicit_midpoint()
 
+implicit_midpoint()
