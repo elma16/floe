@@ -19,8 +19,8 @@ def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_trian
     V = VectorFunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u_ = Function(V, name="Velocity")
-    u = Function(V, name="VelocityNext")
+    u0 = Function(V)
+    u1 = Function(V)
 
     # test functions
     v = TestFunction(V)
@@ -30,14 +30,14 @@ def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_trian
     # initial conditions
 
     if shape == "Half-Plane":
-        u_.interpolate(conditional(le(x, L / 2), as_vector([10, 10]), as_vector([0, 0])))
+        u0.interpolate(conditional(le(x, L / 2), as_vector([10, 10]), as_vector([0, 0])))
     elif shape == "Square":
-        u_.interpolate(conditional(le(abs(x - L / 2) + abs(y - L / 2), L / 5), as_vector([10, 10]), as_vector([0, 0])))
+        u0.interpolate(conditional(le(abs(x - L / 2) + abs(y - L / 2), L / 5), as_vector([10, 10]), as_vector([0, 0])))
     elif shape == "Circle":
-        u_.interpolate(
+        u0.interpolate(
             conditional(le(((x - L / 2) ** 2 + (y - L / 2) ** 2), 10000 * L), as_vector([10, 10]), as_vector([0, 0])))
 
-    u.assign(u_)
+    u1.assign(u0)
 
     h = Constant(1)
 
@@ -50,7 +50,7 @@ def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_trian
     zeta = P / (2 * Delta_min)
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
-    ep_dot = 1 / 2 * (grad(u) + transpose(grad(u)))
+    ep_dot = 1 / 2 * (grad(u1) + transpose(grad(u1)))
 
     eta = zeta * e ** (-2)
 
@@ -61,14 +61,14 @@ def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_trian
 
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
-    sigma_exp = zeta / 2 * (grad(v_exp) + transpose(grad(v_exp)))
+    sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
     R = -div(sigma_exp)
 
     def strain(omega):
-        return 1 / 2 * (omega + transpose(omega))
+        return 0.5 * (omega + transpose(omega))
 
     # momentum equation
-    lm = inner((u - u_) / timestep, v) * dx
+    lm = inner((u1 - u0) / timestep, v) * dx
     lm += inner(sigma, strain(grad(v))) * dx
     lm -= inner(R, v) * dx
 
@@ -76,11 +76,9 @@ def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_trian
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
-    all_u = forward_euler_solver(u, u_, lm, bcs, t, timestep, timescale, pathname='./output/toy_test/toy.pvd',
+    all_u = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname='./output/toy_test/toy.pvd',
                                  output=output)
 
     print('...done!')
     return all_u
 
-
-toy_problem(timescale=1, timestep=10 ** (-1), output=False)

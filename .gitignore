@@ -14,3 +14,4 @@ output
 # for the time being
 
 plots
+tests/compile.py
