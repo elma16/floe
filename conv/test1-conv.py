@@ -99,3 +99,13 @@ def plot_u_energy(timescale, timestep):
     plt.legend(loc='best')
     plt.show()
     plt.savefig('./plots/strain_rate_energy.png')
+
+def korn_ineq(timescale, timestep, number_of_triangles=35, stabilised=0):
+    all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles, stabilised)
+    return [gt(norm(grad(all_u[i])),sqrt(norm(grad(all_u[i])+transpose(grad(all_u[i]))))) for i in range(len(all_u))]
+
+def vel_comp_max(timescale, timestep, number_of_triangles=35, stabilised=0):
+    all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles, stabilised)
+    print(max([all_u[i] for i in range(len(all_u))]))
+
+
