@@ -38,7 +38,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     number_of_triangles : for the paper's 15190 edges, between 70 and 71 are required
 
     """
-    print('\n******************************** BOX TEST ********************************\n')
+    print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
     L = 1000000
 
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
@@ -221,8 +221,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     return all_u
 
-def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False,
-                output=False, stabilisation=0):
+def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advection=False,output=False, stabilisation=0):
     """
     from Mehlmann and Korn, 2020
     Section 4.3
@@ -342,8 +341,6 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, subcycl
     ufile = File('./output/box_test/box_test_alt_u.pvd')
     hfile = File('./output/box_test/box_test_alt_h.pvd')
     afile = File('./output/box_test/box_test_alt_a.pvd')
-
-    t = 0.0
 
     ufile.write(u1, time=t)
     hfile.write(h1, time=t)
