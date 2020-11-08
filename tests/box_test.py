@@ -7,37 +7,38 @@ sys.path.insert(0, parentdir)
 from tests.parameters import *
 from solvers.mevp_solver import *
 
+"""
+from Mehlmann and Korn, 2020
+Section 4.3
+Box-Test conditions
+Domain:
+    L_x = L_y = 1000000 (meters)
+ocean current:
+    o_1 = 0.1*(2*y - L_y)/L_y
+    o_2 = -0.1*(L_x - 2*x)/L_x
+wind velocity:
+    v_1 = 5 + sin(2*pi*t/T)-3)*(sin(2*pi*x/L_x)*sin(2*pi*y/L_y)
+    v_2 = 5 + sin(2*pi*t/T)-3)*(sin(2*pi*y/L_x)*sin(2*pi*x/L_y)
+timestep:
+    k = 600 (seconds)
+subcycles:
+    N_evp = 500
+total time:
+    one month T = 2678400 (seconds)
+Initial Conditions:
+    v(0) = 0
+    h(0) = 1
+    A(0) = x/L_x
+
+Solved using the mEVP solver
+
+number_of_triangles : for the paper's 15190 edges, between 70 and 71 are required
+
+"""
 
 def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False,
              output=False, stabilisation=0):
-    """
-    from Mehlmann and Korn, 2020
-    Section 4.3
-    Box-Test conditions
-    Domain:
-        L_x = L_y = 1000000 (meters)
-    ocean current:
-        o_1 = 0.1*(2*y - L_y)/L_y
-        o_2 = -0.1*(L_x - 2*x)/L_x
-    wind velocity:
-        v_1 = 5 + sin(2*pi*t/T)-3)*(sin(2*pi*x/L_x)*sin(2*pi*y/L_y)
-        v_2 = 5 + sin(2*pi*t/T)-3)*(sin(2*pi*y/L_x)*sin(2*pi*x/L_y)
-    timestep:
-        k = 600 (seconds)
-    subcycles:
-        N_evp = 500
-    total time:
-        one month T = 2678400 (seconds)
-    Initial Conditions:
-        v(0) = 0
-        h(0) = 1
-        A(0) = x/L_x
-
-    Solved using the mEVP solver
-
-    number_of_triangles : for the paper's 15190 edges, between 70 and 71 are required
-
-    """
+    #solving it explicitly, in the method of the paper
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
     L = 1000000
 
@@ -222,34 +223,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     return all_u
 
 def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advection=False,output=False, stabilisation=0):
-    """
-    from Mehlmann and Korn, 2020
-    Section 4.3
-    Box-Test conditions
-    Domain:
-        L_x = L_y = 1000000 (meters)
-    ocean current:
-        o_1 = 0.1*(2*y - L_y)/L_y
-        o_2 = -0.1*(L_x - 2*x)/L_x
-    wind velocity:
-        v_1 = 5 + sin(2*pi*t/T)-3)*(sin(2*pi*x/L_x)*sin(2*pi*y/L_y)
-        v_2 = 5 + sin(2*pi*t/T)-3)*(sin(2*pi*y/L_x)*sin(2*pi*x/L_y)
-    timestep:
-        k = 600 (seconds)
-    subcycles:
-        N_evp = 500
-    total time:
-        one month T = 2678400 (seconds)
-    Initial Conditions:
-        v(0) = 0
-        h(0) = 1
-        A(0) = x/L_x
-
-    Solved using the mEVP solver
-
-    number_of_triangles : for the paper's 15190 edges, between 70 and 71 are required
-
-    """
+    # solving the box test using the implicit midpoint rule
     print('\n******************************** BOX TEST ********************************\n')
 
     L = 1000000
@@ -323,11 +297,11 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advecti
                 ocean_curr - uh), p) * dx
     lm += inner(sigma, grad(p)) * dx
 
-    if advection:
-        lm += inner((h1 - h0), q) * dx
-        lm -= timestep * inner(uh * hh, grad(q)) * dx
-        lm += inner((a1 - a0), r) * dx
-        lm -= timestep * inner(uh * ah, grad(r)) * dx
+    #adding the transport equations
+    lm += inner((h1 - h0), q) * dx
+    lm -= timestep * inner(uh * hh, grad(q)) * dx
+    lm += inner((a1 - a0), r) * dx
+    lm -= timestep * inner(uh * ah, grad(r)) * dx
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
 
@@ -338,33 +312,28 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advecti
 
     u1, h1, a1 = w1.split()
 
-    ufile = File('./output/box_test/box_test_alt_u.pvd')
-    hfile = File('./output/box_test/box_test_alt_h.pvd')
-    afile = File('./output/box_test/box_test_alt_a.pvd')
-
-    ufile.write(u1, time=t)
-    hfile.write(h1, time=t)
-    afile.write(a1, time=t)
-
     all_u = []
     all_h = []
     all_a = []
 
-    ndump = 10
-    dumpn = 0
+    if output:
+        ufile = File('./output/box_test/box_test_alt_u.pvd')
+        hfile = File('./output/box_test/box_test_alt_h.pvd')
+        afile = File('./output/box_test/box_test_alt_a.pvd')
 
-    while t < timescale - 0.5 * timestep:
-        t += timestep
+        ufile.write(u1, time=t)
+        hfile.write(h1, time=t)
+        afile.write(a1, time=t)
 
-        usolver.solve()
-        w0.assign(w1)
+        while t < timescale - 0.5 * timestep:
+            t += timestep
 
-        dumpn += 1
-        print("Time:", t, "[s]")
-        print(int(min(t / timescale * 100, 100)), "% complete")
+            usolver.solve()
+            w0.assign(w1)
 
-        if dumpn == ndump:
-            dumpn -= ndump
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
+
             ufile.write(u1, time=t)
             hfile.write(h1, time=t)
             afile.write(a1, time=t)
@@ -372,6 +341,21 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advecti
             all_u.append(Function(u1))
             all_h.append(Function(h1))
             all_a.append(Function(a1))
+    else:
+        while t < timescale - 0.5 * timestep:
+            t += timestep
+
+            usolver.solve()
+            w0.assign(w1)
+
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
+
+            all_u.append(Function(u1))
+            all_h.append(Function(h1))
+            all_a.append(Function(a1))
 
     print('...done!')
+
+box_test_im(timescale=100,timestep=1,number_of_triangles=30,output=True)
 

@@ -247,10 +247,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     ufile = File(pathname)
     t = 0.0
     ufile.write(u1, time=t)
-    all_us = []
-
-    ndump = 10
-    dumpn = 0
+    all_u = []
 
     while t < timescale - 0.5 * timestep:
         t += timestep
@@ -258,15 +255,15 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
         usolver.solve()
         w0.assign(w1)
 
-        dumpn += 1
         print("Time:", t, "[s]")
         print(int(min(t / timescale * 100, 100)), "% complete")
-        if dumpn == ndump:
-            dumpn -= ndump
-            ufile.write(u1, time=t)
-            all_us.append(Function(u1))
+
+        ufile.write(u1, time=t)
+        all_u.append(Function(u1))
 
     print('...done!')
+
+    return all_u
 
 
 def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False,):
