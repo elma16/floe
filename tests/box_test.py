@@ -9,7 +9,7 @@ from solvers.mevp_solver import *
 
 
 def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False,
-             output=False, pathname="./output/box_test.pvd", stabilisation=0):
+             output=False, stabilisation=0):
     """
     from Mehlmann and Korn, 2020
     Section 4.3
@@ -82,7 +82,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
-    ep_dot = 0.5 * (grad(u1) + transpose(grad(u1)))
+    ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
 
     # deviatoric part of the strain rate tensor
     ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
@@ -125,9 +125,11 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     subcycle_timestep = timestep / subcycle
     all_u = []
 
+    pathname = "./output/box_test.pvd"
+
     if not advection:
         if output:
-            outfile = File('{pathname}'.format(pathname=pathname))
+            outfile = File(pathname)
             outfile.write(u0, time=t)
 
             print('******************************** mEVP Solver ********************************\n')
@@ -168,7 +170,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
             print('... mEVP problem solved...\n')
     if advection:
         if output:
-            outfile = File('{pathname}'.format(pathname=pathname))
+            outfile = File(pathname)
             outfile.write(u0, time=t)
 
             print('******************************** mEVP Solver ********************************\n')

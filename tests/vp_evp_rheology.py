@@ -202,16 +202,18 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     u1, s1 = split(w1)
     u0, s0 = split(w0)
 
+    uh = 0.5*(u0+u1)
+
     h = Constant(1)
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
-    ep_dot = 1 / 2 * (grad(u0) + transpose(grad(u0)))
+    ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
     # deviatoric part of the strain rate tensor
-    ep_dot_prime = ep_dot - 1 / 2 * tr(ep_dot) * Identity(2)
+    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
 
     # ice strength
     P = P_star * h * exp(-C * (1 - a))
@@ -221,18 +223,16 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     # viscosities
     zeta = P / (2 * Delta)
 
-    uh = 0.5 * (u1 + u0)
     sh = 0.5 * (s1 + s0)
-    ep_doth = 0.5 * (grad(uh) + transpose(grad(uh)))
 
     # constructing the equations used
 
     lm = inner(p, rho * h * (u1 - u0)) * dx
     lm += timestep * inner(grad(p), sh) * dx
-    lm -= timestep * inner(p, C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx
+    lm -= timestep * inner(p, C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(degree=3)
     lm += inner(q, (s1 - s0) + timestep * (
                 e ** 2 / (2 * T) * sh + ((1 - e ** 2) / (4 * T) * tr(sh) + P / (4 * T)) * Identity(2))) * dx
-    lm -= inner(q * zeta * timestep / T, ep_doth) * dx
+    lm -= inner(q * zeta * timestep / T, ep_dot) * dx
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
     params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
@@ -241,7 +241,10 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
 
     u1, s1 = w1.split()
 
-    ufile = File('./output/evp_alt/u.pvd')
+    #writing a pathname which depends on the variables chosen
+    pathname = "./output/evp_alt/u_T={}_k={}_N={}.pvd".format(timescale,timestep,number_of_triangles)
+
+    ufile = File(pathname)
     t = 0.0
     ufile.write(u1, time=t)
     all_us = []
@@ -266,8 +269,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     print('...done!')
 
 
-def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False,
-                             pathname='./output/implicit_evp/u.pvd'):
+def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False,):
     """
     Solving test 2 using the implicit midpoint rule, but solving a matrix system rather than using a mixed function space.
 
@@ -358,8 +360,10 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     t = 0.0
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
+    pathname = './output/implicit_evp/u.pvd'
+
     if output:
-        outfile = File('{pathname}'.format(pathname=pathname))
+        outfile = File(pathname)
         outfile.write(u0, time=t)
 
         print('******************************** Implicit EVP Solver ********************************\n')
