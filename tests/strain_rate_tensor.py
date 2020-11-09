@@ -100,8 +100,8 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     else:
         bcs = [DirichletBC(V, Constant(0), "on_boundary")]
 
-    all_u = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale,
-                                 pathname='./output/strain_rate_tensor/str_u.pvd', output=output)
+    all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale,
+                                               pathname='./output/strain_rate_tensor/str_u.pvd', output=output)
 
     print('...done!')
 

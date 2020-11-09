@@ -115,3 +115,5 @@ def mevp_solver(u, u_, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T
                 print(int(min(t / timescale * 100, 100)), "% complete")
 
             print('... mEVP problem solved...\n')
+
+    return all_u, all_h, all_a
