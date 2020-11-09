@@ -59,12 +59,12 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     P = P_star * h * exp(-C * (1 - a))
 
     # viscosities
-    zeta = P / (2 * Delta_min)
+    zeta = 0.5 * P / Delta_min
 
-    sigma = zeta / 2 * (grad(u1) + transpose(grad(u1)))
+    sigma = 0.5 * zeta * (grad(u1) + transpose(grad(u1)))
 
     if stabilised == 2:
-        sigma = zeta / 2 * (grad(u1))
+        sigma = 0.5 * zeta * grad(u1)
 
     pi_x = pi / L
 
@@ -78,12 +78,12 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     u0.assign(0)
     u1.assign(u0)
 
-    sigma_exp = zeta / 2 * (grad(v_exp) + transpose(grad(v_exp)))
+    sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
 
     R = -div(sigma_exp)
 
     def strain(omega):
-        return 1 / 2 * (omega + transpose(omega))
+        return 0.5 * (omega + transpose(omega))
 
     # momentum equation
     lm = inner(u1 - u0, v) * dx
@@ -107,7 +107,7 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
 
     return all_u, mesh, v_exp, zeta
 
-def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_triangles=30, output=False, shape="Square"):
+def toy_problem(timescale=10, timestep=10 ** (-3), number_of_triangles=30, output=False, shape="Square"):
     """
     A trial toy test problem where I start off with a big square in the middle of the velocity field
     to demonstrate the nature of hyperbolic PDEs
@@ -146,7 +146,7 @@ def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_trian
     P = P_star * h * exp(-C * (1 - a))
 
     # viscosities
-    zeta = P / (2 * Delta_min)
+    zeta = 2 * P / Delta_min
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 1 / 2 * (grad(u1) + transpose(grad(u1)))
@@ -154,7 +154,7 @@ def toy_problem(timescale=10, timestep=10 ** (-3), stabilised=0, number_of_trian
     eta = zeta * e ** (-2)
 
     # sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
-    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
+    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
 
     pi_x = pi / L
 

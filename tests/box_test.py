@@ -37,8 +37,8 @@ number_of_triangles : for the paper's 15190 edges, between 70 and 71 are require
 """
 
 def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False,
-             output=False, stabilisation=0):
-    #solving it explicitly, in the method of the paper
+             output=False, stabilised=0):
+    """solving it explicitly, in the method of the paper"""
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
     L = 1000000
 
@@ -95,6 +95,11 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
 
+    if stabilised == 0:
+        stab_term = 0
+    if stabilised == 1:
+        stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
+
     # viscosities
     zeta = P / (2 * Delta)
     eta = zeta * e ** (-2)
@@ -114,6 +119,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
         rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u1 - ocean_curr, u1 - ocean_curr) * (
                 ocean_curr - u1), v) * dx
     lm += inner(sigma, grad(v)) * dx
+    lm += stab_term
 
     if advection:
         lh = inner((h1 - h0), w) * dx
@@ -222,7 +228,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     return all_u
 
-def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advection=False,output=False, stabilisation=0):
+def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=False, stabilised=0):
     # solving the box test using the implicit midpoint rule
     print('\n******************************** BOX TEST ********************************\n')
 
@@ -277,6 +283,11 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advecti
 
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
 
+    if stabilised == 0:
+        stab_term = 0
+    if stabilised == 1:
+        stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
+
     # viscosities
     zeta = P / (2 * Delta)
     eta = zeta * e ** (-2)
@@ -296,6 +307,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advecti
         rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(uh - ocean_curr, uh - ocean_curr) * (
                 ocean_curr - uh), p) * dx
     lm += inner(sigma, grad(p)) * dx
+    lm += stab_term
 
     #adding the transport equations
     lm += inner((h1 - h0), q) * dx
@@ -357,5 +369,4 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, advecti
 
     print('...done!')
 
-box_test_im(timescale=100,timestep=1,number_of_triangles=30,output=True)
 

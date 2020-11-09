@@ -101,14 +101,17 @@ def plot_u_energy(timescale, timestep):
     plt.savefig('./plots/strain_rate_energy.png')
 
 def korn_ineq(timescale, timestep, number_of_triangles=35, stabilised=0):
+    "Illustrating the failure of CR1 in Korn's Inequality"
     all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles, stabilised)
-    return [gt(norm(grad(all_u[i])),sqrt(norm(grad(all_u[i])+transpose(grad(all_u[i]))))) for i in range(len(all_u))]
+    print([norm(grad(all_u[i]))>sqrt(norm(grad(all_u[i])+transpose(grad(all_u[i])))) for i in range(len(all_u))])
+
 
 def vel_comp_max(timescale, timestep, number_of_triangles=35, stabilised=0):
     """
     Computing the maximum component of all the velocities in the velocity field
     """
     all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles, stabilised)
-    print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
+    #print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
+    return None
 
-vel_comp_max(10,1)
+korn_ineq(10,1)

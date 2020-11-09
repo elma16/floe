@@ -19,10 +19,10 @@ def mevp_stress_solver(sigma, ep_dot, zeta, P):
 
     # updating the mEVP stress tensor
     sigma1 = 1 + (sigma1 + 2 * zeta * (ep_dot1 - P)) / alpha
-    sigma2 = 1 + (sigma2 * zeta * ep_dot2) / 2 * alpha
+    sigma2 = 1 + 0.5 * (sigma2 * zeta * ep_dot2) / alpha
 
-    sigma = as_matrix([[0.5 * (sigma1 + sigma2), 1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha],
-                       [1 + (sigma[0, 1] * zeta * ep_dot[0, 1]) / 2 * alpha, 0.5 * (sigma1 - sigma2)]])
+    sigma = as_matrix([[0.5 * (sigma1 + sigma2), 1 + 0.5 * (sigma[0, 1] * zeta * ep_dot[0, 1]) / alpha],
+                       [1 + 0.5 * (sigma[0, 1] * zeta * ep_dot[0, 1]) / alpha, 0.5 * (sigma1 - sigma2)]])
 
     return sigma
 

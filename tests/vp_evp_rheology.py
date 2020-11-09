@@ -23,7 +23,7 @@ A = x/L_x
 """
 
 def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=30, rheology="VP", advection=False,
-                 solver="FE", stabilised=0, subcycle=100, output=False):
+                 solver="FE", stabilised=0, subcycle=100, output=False, last_frame = False):
     """
     Solving explicitly using the method in the paper
     """
@@ -77,7 +77,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     ep_dot = 1 / 2 * (grad(u1) + transpose(grad(u1)))
 
     # deviatoric part of the strain rate tensor
-    ep_dot_prime = ep_dot - 1 / 2 * tr(ep_dot) * Identity(2)
+    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
 
     # ice strength
     P = P_star * h1 * exp(-C * (1 - a1))
@@ -89,7 +89,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     eta = zeta * e ** (-2)
 
     # internal stress tensor
-    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P / 2 * Identity(2)
+    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
 
     if stabilised == 0:
         stab_term = 0
@@ -244,29 +244,33 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     #writing a pathname which depends on the variables chosen
     pathname = "./output/evp_alt/u_T={}_k={}_N={}.pvd".format(timescale,timestep,number_of_triangles)
 
-    ufile = File(pathname)
     t = 0.0
-    ufile.write(u1, time=t)
     all_u = []
 
-    while t < timescale - 0.5 * timestep:
-        t += timestep
-
-        usolver.solve()
-        w0.assign(w1)
-
-        print("Time:", t, "[s]")
-        print(int(min(t / timescale * 100, 100)), "% complete")
-
+    if output:
+        ufile = File(pathname)
         ufile.write(u1, time=t)
-        all_u.append(Function(u1))
+        while t < timescale - 0.5 * timestep:
+            t += timestep
+            usolver.solve()
+            w0.assign(w1)
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
+            ufile.write(u1, time=t)
+            all_u.append(Function(u1))
+    else:
+        while t < timescale - 0.5 * timestep:
+            t += timestep
+            usolver.solve()
+            w0.assign(w1)
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
 
     print('...done!')
-
     return all_u
 
 
-def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False,):
+def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False):
     """
     Solving test 2 using the implicit midpoint rule, but solving a matrix system rather than using a mixed function space.
 
