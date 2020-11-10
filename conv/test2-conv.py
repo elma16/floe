@@ -1,4 +1,5 @@
 import os, sys, inspect
+import time
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -67,6 +68,7 @@ def plot_energies2(timescale, timestep):
     plt.savefig('./plots/strain_rate_energy.png')
 
 def plot_energies3(timescale, timestep):
+    #paper uses 24 hours as the timescale 86400 [s]
     t = np.arange(0, timescale, timestep)
 
     # computing the energies
@@ -93,5 +95,8 @@ def plot_energies3(timescale, timestep):
 
 
 
-
-plot_energies3(5, 1)
+start = time.time()
+plot_energies3(10,1)
+#plot_energies3(86400, 100)
+end = time.time()
+print(end - start)

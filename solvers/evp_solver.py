@@ -16,8 +16,8 @@ def evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep):
     ep_dot2 = ep_dot[0, 0] - ep_dot[1, 1]
 
     # solve for the next subcycle timestep
-    sigma1 = (2 * subcycle_timestep * zeta * ep_dot1 - 0.5 * P + 2 * T * sigma1) / (2 * T + subcycle_timestep)
-    sigma2 = (2 * subcycle_timestep * zeta * ep_dot2 - 0.5 * P + 2 * T * sigma2) / (2 * T + subcycle_timestep)
+    sigma1 = (subcycle_timestep * (2 * zeta * ep_dot1 - P) + 2 * T * sigma1) / (2 * T + subcycle_timestep)
+    sigma2 = (subcycle_timestep * zeta * ep_dot2 + T * sigma2) / (T + 2 * subcycle_timestep)
 
     # compose the new sigma in terms of the old sigma components
     sigma = as_matrix([[0.5 * (sigma1 + sigma2),

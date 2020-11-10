@@ -22,8 +22,9 @@ h = 1
 A = x/L_x
 """
 
-def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=30, rheology="VP", advection=False,
-                 solver="FE", stabilised=0, subcycle=100, output=False, last_frame = False):
+
+def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, rheology="VP", advection=False,
+                         solver="FE", stabilised=0, subcycle=100, output=False, last_frame=False):
     """
     Solving explicitly using the method in the paper
     """
@@ -85,7 +86,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
 
     # viscosities
-    zeta = P / (2 * Delta)
+    zeta = 0.5 * P / Delta
     eta = zeta * e ** (-2)
 
     # internal stress tensor
@@ -106,9 +107,9 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     # momentum equation (used irrespective of advection occurring or not)
 
-    lm = inner(beta * rho * h1 * (u1 - u0) / timestep + rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
+    lm = inner(beta * rho * h1 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
             u1 - ocean_curr), v) * dx
-    lm += inner(sigma, grad(v)) * dx
+    lm += timestep * inner(sigma, grad(v)) * dx
     lm += stab_term
 
     if advection:
@@ -163,7 +164,8 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     return all_u, all_h, all_a, mesh, zeta
 
-def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, output = False):
+
+def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False):
     """
     Solving using an implicit midpoint method and mixed function spaces.
     """
@@ -189,11 +191,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     u0.assign(0)
     a.interpolate(x / L)
 
-    # now we solve for s0, given u0
-
     s0.assign(as_matrix([[1, 2], [3, 4]]))
-
-    # now we solve the whole system
 
     p, q = TestFunctions(W)
 
@@ -202,7 +200,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     u1, s1 = split(w1)
     u0, s0 = split(w0)
 
-    uh = 0.5*(u0+u1)
+    uh = 0.5 * (u0 + u1)
 
     h = Constant(1)
 
@@ -221,7 +219,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
 
     # viscosities
-    zeta = P / (2 * Delta)
+    zeta = 0.5 * P / Delta
 
     sh = 0.5 * (s1 + s0)
 
@@ -231,7 +229,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
     lm += timestep * inner(grad(p), sh) * dx
     lm -= timestep * inner(p, C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(degree=3)
     lm += inner(q, (s1 - s0) + timestep * (
-                e ** 2 / (2 * T) * sh + ((1 - e ** 2) / (4 * T) * tr(sh) + P / (4 * T)) * Identity(2))) * dx
+            e ** 2 / (2 * T) * sh + ((1 - e ** 2) / (4 * T) * tr(sh) + P / (4 * T)) * Identity(2))) * dx
     lm -= inner(q * zeta * timestep / T, ep_dot) * dx
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
@@ -241,8 +239,8 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1),number_of_triangles=35, 
 
     u1, s1 = w1.split()
 
-    #writing a pathname which depends on the variables chosen
-    pathname = "./output/evp_alt/u_T={}_k={}_N={}.pvd".format(timescale,timestep,number_of_triangles)
+    # writing a pathname which depends on the variables chosen
+    pathname = "./output/evp_alt/u_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
 
     t = 0.0
     all_u = []
@@ -324,7 +322,7 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
 
     # viscosities
-    zeta = P / (2 * Delta)
+    zeta = 0.5 * P / Delta
     eta = zeta * e ** (-2)
 
     # initalising the internal stress tensor
@@ -333,14 +331,14 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     # using the implicit midpoint rule formulation of the tensor equation, find sigma^{n+1} in terms of sigma^{n},v^{n+1},v^{n}
     def sigma_next(timestep, e, zeta, T, ep_dot, sigma, P):
-        A = (1 + (timestep * e ** 2) / (4 * T))
-        B = (timestep * (1 - e ** 2)) / (8 * T)
-        rhs = (1 - (timestep * e ** 2) / (4 * T)) * sigma - timestep * (timestep * (1 - e ** 2)) / (8 * T) * tr(
-            sigma) * Identity(2) - timestep * P / (4 * T) * Identity(2) + zeta / T * timestep * ep_dot
+        A = 1 + 0.25 * (timestep * e ** 2) / T
+        B = timestep * 0.125 * (1 - e ** 2) / T
+        rhs = (1 - (timestep * e ** 2) / (4 * T)) * sigma - timestep / T * (
+                    0.125 * (1 - e ** 2) * tr(sigma) * Identity(2) - 0.25 * P * Identity(2) + zeta * ep_dot)
         C = (rhs[0, 0] - rhs[1, 1]) / A
         D = (rhs[0, 0] + rhs[1, 1]) / (A + 2 * B)
-        sigma00 = (C + D) / 2
-        sigma11 = (D - C) / 2
+        sigma00 = 0.5 * (C + D)
+        sigma11 = 0.5 * (D - C)
         sigma01 = rhs[0, 1]
         sigma = as_matrix([[sigma00, sigma01], [sigma01, sigma11]])
 
@@ -391,3 +389,4 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
         print('... EVP problem solved...\n')
 
     print('...done!')
+

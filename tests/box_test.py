@@ -91,8 +91,6 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     # ice strength
     P = P_star * h1 * exp(-C * (1 - a1))
 
-    Delta_min = Constant(2 * 10 ** (-9))
-
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
 
     if stabilised == 0:
@@ -229,7 +227,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     return all_u
 
 def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=False, stabilised=0):
-    # solving the box test using the implicit midpoint rule
+    """solving the box test using the implicit midpoint rule"""
     print('\n******************************** BOX TEST ********************************\n')
 
     L = 1000000
@@ -279,8 +277,6 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
     # ice strength
     P = P_star * hh * exp(-C * (1 - ah))
 
-    Delta_min = Constant(2 * 10 ** (-9))
-
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
 
     if stabilised == 0:
@@ -289,7 +285,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
         stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
 
     # viscosities
-    zeta = P / (2 * Delta)
+    zeta = 0.5 * P / Delta
     eta = zeta * e ** (-2)
 
     # internal stress tensor

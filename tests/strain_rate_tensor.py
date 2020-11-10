@@ -100,8 +100,9 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     else:
         bcs = [DirichletBC(V, Constant(0), "on_boundary")]
 
-    all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale,
-                                               pathname='./output/strain_rate_tensor/str_u.pvd', output=output)
+    pathname = './output/strain_rate_tensor/T={}_k={}_N={}_transform={}.pvd'.format(timescale,timestep,number_of_triangles,transform_mesh)
+
+    all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale,pathname, output)
 
     print('...done!')
 
@@ -149,7 +150,7 @@ def toy_problem(timescale=10, timestep=10 ** (-3), number_of_triangles=30, outpu
     zeta = 2 * P / Delta_min
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
-    ep_dot = 1 / 2 * (grad(u1) + transpose(grad(u1)))
+    ep_dot = 0.5 * (grad(u1) + transpose(grad(u1)))
 
     eta = zeta * e ** (-2)
 
@@ -175,8 +176,9 @@ def toy_problem(timescale=10, timestep=10 ** (-3), number_of_triangles=30, outpu
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
-    all_u = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname='./output/toy_test/toy.pvd',
-                                 output=output)
+    pathname = '.output/toy_test/T={}_k={}_N={}_S={}.pvd'.format(timescale,timestep,number_of_triangles,shape)
+
+    all_u = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname,output)
 
     print('...done!')
     return all_u
