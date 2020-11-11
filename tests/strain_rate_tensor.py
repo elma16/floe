@@ -102,7 +102,7 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
 
     pathname = './output/strain_rate_tensor/T={}_k={}_N={}_transform={}.pvd'.format(timescale,timestep,number_of_triangles,transform_mesh)
 
-    all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale,pathname, output)
+    all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname, output)
 
     print('...done!')
 
@@ -178,7 +178,7 @@ def toy_problem(timescale=10, timestep=10 ** (-3), number_of_triangles=30, outpu
 
     pathname = '.output/toy_test/T={}_k={}_N={}_S={}.pvd'.format(timescale,timestep,number_of_triangles,shape)
 
-    all_u = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname,output)
+    all_u = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname, output)
 
     print('...done!')
     return all_u

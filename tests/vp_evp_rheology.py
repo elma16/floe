@@ -107,58 +107,55 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     # momentum equation (used irrespective of advection occurring or not)
 
-    lm = inner(beta * rho * h1 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
+    lm = inner(beta * rho * h0 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
             u1 - ocean_curr), v) * dx
-    lm += timestep * inner(sigma, grad(v)) * dx
+    lm += inner(sigma, grad(v)) * dx
     lm += stab_term
 
     if advection:
-        lh = inner((h1 - h0) / timestep, w) * dx
+        lh = timestep * inner(h1 - h0, w) * dx
         lh -= inner(u1 * h1, grad(w)) * dx
-        la = inner((a1 - a0) / timestep, w) * dx
+        la = timestep * inner(a1 - a0, w) * dx
         la -= inner(u1 * a1, grad(w)) * dx
 
     t = 0.0
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
+    pathname = './output/vp_evp_test/{}test_{}.pvd'.format(rheology, solver)
+
     if not advection:
         if rheology == "VP" and solver == "FE":
-            all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale,
-                                                       pathname='./output/vp_evp_rheology/vp_test1fe.pvd',
-                                                       output=output)
+            all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname, output)
         elif rheology == "VP" and solver == "mEVP":
             all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
-                                              timescale,
-                                              pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
+                                              timescale, pathname,
+                                              output)
         elif rheology == "EVP" and solver == "EVP":
             all_u, all_h, all_a = evp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
-                                             timescale,
-                                             pathname='./output/vp_evp_test/evp_test1.pvd', output=output)
+                                             timescale, pathname, output)
         elif rheology == "EVP" and solver == "mEVP":
             all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
-                                              timescale,
-                                              pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output)
+                                              timescale, pathname,
+                                              output)
     if advection:
         if rheology == "VP" and solver == "FE":
-            all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale,
-                                                       pathname='./output/vp_evp_rheology/vp_test1fe_ad.pvd',
-                                                       output=output, advection=advection, lh=lh, la=la, h=h1, h_=h0,
+            all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname,
+                                                       output, advection, lh=lh, la=la, h=h1, h_=h0,
                                                        a=a1, a_=a0)
         elif rheology == "VP" and solver == "mEVP":
             all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
-                                              timescale,
-                                              pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output,
-                                              advection=advection, lh=lh, la=la, h=h1, h_=h0, a=a1, a_=a0)
+                                              timescale, pathname,
+                                              output, advection, lh=lh, la=la, h1=h1, h0=h0, a1=a1,
+                                              a0=a0)
         elif rheology == "EVP" and solver == "EVP":
             all_u, all_h, all_a = evp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
-                                             timescale,
-                                             pathname='./output/vp_evp_test/evp_test1.pvd', output=output,
-                                             advection=advection, lh=lh, la=la, h=h1, h_=h0, a=a1, a_=a0)
+                                             timescale, pathname, output,
+                                             advection, lh=lh, la=la, h=h1, h_=h0, a=a1, a_=a0)
         elif rheology == "EVP" and solver == "mEVP":
             all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
-                                              timescale,
-                                              pathname='./output/vp_evp_test/vp_test1mevp.pvd', output=output,
-                                              advection=advection, lh=lh, la=la, h=h1, h_=h0, a=a1, a_=a0)
+                                              timescale, pathname,
+                                              output, advection, lh=lh, la=la, h1=h1, h0=h0, a1=a1,
+                                              a0=a0)
 
     print('...done!')
 
@@ -194,7 +191,6 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     a.interpolate(x / L)
     h = Constant(1)
 
-
     ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
     ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
     P = P_star * h * exp(-C * (1 - a))
@@ -202,7 +198,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     zeta = 0.5 * P / Delta
     eta = zeta * e ** (-2)
 
-    #s0.interpolate(2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2))
+    # s0.interpolate(2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2))
 
     s0.assign(as_matrix([[1, 2], [3, 4]]))
 
@@ -346,7 +342,7 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
         A = 1 + 0.25 * (timestep * e ** 2) / T
         B = timestep * 0.125 * (1 - e ** 2) / T
         rhs = (1 - (timestep * e ** 2) / (4 * T)) * sigma - timestep / T * (
-                    0.125 * (1 - e ** 2) * tr(sigma) * Identity(2) - 0.25 * P * Identity(2) + zeta * ep_dot)
+                0.125 * (1 - e ** 2) * tr(sigma) * Identity(2) - 0.25 * P * Identity(2) + zeta * ep_dot)
         C = (rhs[0, 0] - rhs[1, 1]) / A
         D = (rhs[0, 0] + rhs[1, 1]) / (A + 2 * B)
         sigma00 = 0.5 * (C + D)
@@ -401,4 +397,3 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
         print('... EVP problem solved...\n')
 
     print('...done!')
-

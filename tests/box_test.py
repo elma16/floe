@@ -116,7 +116,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     lm += timestep * inner(
         rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u1 - ocean_curr, u1 - ocean_curr) * (
                 ocean_curr - u1), v) * dx
-    lm += inner(sigma, grad(v)) * dx
+    lm += timestep * inner(sigma, grad(v)) * dx
     lm += stab_term
 
     if advection:
@@ -302,7 +302,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
     lm += timestep * inner(
         rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(uh - ocean_curr, uh - ocean_curr) * (
                 ocean_curr - uh), p) * dx
-    lm += inner(sigma, grad(p)) * dx
+    lm += timestep * inner(sigma, grad(p)) * dx
     lm += stab_term
 
     #adding the transport equations
@@ -323,16 +323,19 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
     all_u = []
     all_h = []
     all_a = []
+    all_delta = []
 
     if output and last_frame:
         # just output the beginning and end frames
         ufile = File('./output/box_test/box_test_alt_u.pvd')
         hfile = File('./output/box_test/box_test_alt_h.pvd')
         afile = File('./output/box_test/box_test_alt_a.pvd')
+        deltafile = File('./output/box_test/box_test_alt_delta.pvd')
 
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
+        #deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
             t += timestep
@@ -349,16 +352,19 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
+        #deltafile.write(Delta, time=t)
 
     elif output and not last_frame:
         #output the whole simulation
         ufile = File('./output/box_test/box_test_alt_u.pvd')
         hfile = File('./output/box_test/box_test_alt_h.pvd')
         afile = File('./output/box_test/box_test_alt_a.pvd')
+        #deltafile = File('./output/box_test/box_test_alt_delta.pvd')
 
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
+        #deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
             t += timestep
@@ -391,4 +397,6 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
             all_a.append(Function(a1))
 
     print('...done!')
+
+    return all_u, all_h, all_a, all_delta
 
