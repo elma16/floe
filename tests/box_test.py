@@ -130,7 +130,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     subcycle_timestep = timestep / subcycle
     all_u = []
 
-    pathname = "./output/box_test.pvd"
+    pathname = "./output/box_test/box_test_exp.pvd"
 
     if not advection:
         if output:
@@ -226,7 +226,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     return all_u
 
-def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=False, stabilised=0):
+def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=False, stabilised=0,last_frame = False):
     """solving the box test using the implicit midpoint rule"""
     print('\n******************************** BOX TEST ********************************\n')
 
@@ -324,7 +324,34 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
     all_h = []
     all_a = []
 
-    if output:
+    if output and last_frame:
+        # just output the beginning and end frames
+        ufile = File('./output/box_test/box_test_alt_u.pvd')
+        hfile = File('./output/box_test/box_test_alt_h.pvd')
+        afile = File('./output/box_test/box_test_alt_a.pvd')
+
+        ufile.write(u1, time=t)
+        hfile.write(h1, time=t)
+        afile.write(a1, time=t)
+
+        while t < timescale - 0.5 * timestep:
+            t += timestep
+
+            usolver.solve()
+            w0.assign(w1)
+
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
+            all_u.append(Function(u1))
+            all_h.append(Function(h1))
+            all_a.append(Function(a1))
+
+        ufile.write(u1, time=t)
+        hfile.write(h1, time=t)
+        afile.write(a1, time=t)
+
+    elif output and not last_frame:
+        #output the whole simulation
         ufile = File('./output/box_test/box_test_alt_u.pvd')
         hfile = File('./output/box_test/box_test_alt_h.pvd')
         afile = File('./output/box_test/box_test_alt_a.pvd')
@@ -364,5 +391,4 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
             all_a.append(Function(a1))
 
     print('...done!')
-
 

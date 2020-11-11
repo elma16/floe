@@ -186,14 +186,25 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
 
     x, y = SpatialCoordinate(mesh)
 
+    p, q = TestFunctions(W)
+
     # initial conditions
 
     u0.assign(0)
     a.interpolate(x / L)
+    h = Constant(1)
+
+
+    ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
+    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
+    P = P_star * h * exp(-C * (1 - a))
+    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
+    zeta = 0.5 * P / Delta
+    eta = zeta * e ** (-2)
+
+    #s0.interpolate(2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2))
 
     s0.assign(as_matrix([[1, 2], [3, 4]]))
-
-    p, q = TestFunctions(W)
 
     w1 = Function(W)
     w1.assign(w0)
@@ -201,8 +212,6 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     u0, s0 = split(w0)
 
     uh = 0.5 * (u0 + u1)
-
-    h = Constant(1)
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
@@ -287,10 +296,13 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V, name="Velocity")
-    u1 = Function(V, name="VelocityNext")
+    u0 = Function(V)
+    u1 = Function(V)
+
+    # stress tensors
     sigma0 = Function(S)
     sigma1 = Function(S)
+
     uh = 0.5 * (u1 + u0)
 
     a = Function(U)
