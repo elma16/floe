@@ -107,9 +107,10 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     # momentum equation (used irrespective of advection occurring or not)
 
-    lm = inner(beta * rho * h0 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
+    #diverges if i pick h1 -> h0
+    lm = inner(beta * rho * h1 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
             u1 - ocean_curr), v) * dx
-    lm += inner(sigma, grad(v)) * dx
+    lm += timestep * inner(sigma, grad(v)) * dx
     lm += stab_term
 
     if advection:
