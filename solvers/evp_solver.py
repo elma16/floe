@@ -28,15 +28,16 @@ def evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep):
     return sigma
 
 
-def evp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale, pathname, output=False,
+def evp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T, timescale, output=False,
                advection=False, lh=None, la=None, h=None, h_=None, a=None, a_=None):
     subcycle_timestep = timestep / subcycle
     all_u = []
     all_h = []
     all_a = []
+    pathname = './output/vp_evp_test/{}test_{}.pvd'.format(timescale, timestep)
     if not advection:
         if output:
-            outfile = File('{pathname}'.format(pathname=pathname))
+            outfile = File(pathname)
             outfile.write(u0, time=t)
 
             print('******************************** EVP Solver ********************************\n')
@@ -71,7 +72,7 @@ def evp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T
             print('... EVP problem solved...\n')
     if advection:
         if output:
-            outfile = File('{pathname}'.format(pathname=pathname))
+            outfile = File(pathname)
             outfile.write(u0, time=t)
 
             print('******************************** EVP Solver ********************************\n')

@@ -3,14 +3,15 @@ from firedrake import *
 from solvers.solver_parameters import *
 
 
-def forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname, output=False, advection=False, lh=None,
+def forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, output=False, advection=False, lh=None,
                          la=None, h=None, h_=None, a=None, a_=None):
     all_u = []
     all_h = []
     all_a = []
+    pathname = './output/vp_evp_test/{}test_{}.pvd'.format(timescale, timestep)
     if not advection:
         if output:
-            outfile = File('{pathname}'.format(pathname=pathname))
+            outfile = File(pathname)
             outfile.write(u0, time=t)
             print('******************************** Forward solver ********************************\n')
             while t < timescale - 0.5 * timestep:
@@ -34,7 +35,7 @@ def forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname, outp
             print('... forward problem solved...\n')
     if advection:
         if output:
-            outfile = File('{pathname}'.format(pathname=pathname))
+            outfile = File(pathname)
             outfile.write(u0, time=t)
             print('******************************** Forward solver ********************************\n')
             while t < timescale - 0.5 * timestep:
