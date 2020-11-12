@@ -107,7 +107,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     # momentum equation (used irrespective of advection occurring or not)
 
-    #diverges if i pick h1 -> h0
+    # diverges if i pick h1 -> h0
     lm = inner(beta * rho * h1 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
             u1 - ocean_curr), v) * dx
     lm += timestep * inner(sigma, grad(v)) * dx
@@ -140,10 +140,10 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
                                                        output, advection, lh, la, h1, h0, a1, a0)
         elif rheology == "VP" and solver == "mEVP":
             all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta,
-                                              timescale, output, advection, lh, la, h1, h0, a1,a0)
+                                              timescale, output, advection, lh, la, h1, h0, a1, a0)
         elif rheology == "EVP" and solver == "EVP":
             all_u, all_h, all_a = evp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta,
-                                             timescale, output,advection, lh, la, h1, h0, a1, a0)
+                                             timescale, output, advection, lh, la, h1, h0, a1, a0)
         elif rheology == "EVP" and solver == "mEVP":
             all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta,
                                               timescale, output, advection, lh, la, h1, h0, a1, a0)
@@ -153,7 +153,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     return all_u, all_h, all_a, mesh, zeta
 
 
-def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False):
+def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False, last_frame=False):
     """
     Solving using an implicit midpoint method and mixed function spaces.
     """
@@ -182,12 +182,12 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     a.interpolate(x / L)
     h = Constant(1)
 
-    ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
-    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
-    P = P_star * h * exp(-C * (1 - a))
-    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
-    zeta = 0.5 * P / Delta
-    eta = zeta * e ** (-2)
+    # ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
+    # ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
+    # P = P_star * h * exp(-C * (1 - a))
+    # Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
+    # zeta = 0.5 * P / Delta
+    # eta = zeta * e ** (-2)
 
     # s0.interpolate(2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2))
 
@@ -241,7 +241,21 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     t = 0.0
     all_u = []
 
-    if output:
+    if output and last_frame:
+        ufile = File(pathname)
+        ufile.write(u1, time=t)
+        while t < timescale - 0.5 * timestep:
+            t += timestep
+            usolver.solve()
+            w0.assign(w1)
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
+            all_u.append(Function(u1))
+
+        print('... EVP problem solved...\n')
+        ufile.write(u1, time=t)
+
+    elif output and not last_frame:
         ufile = File(pathname)
         ufile.write(u1, time=t)
         while t < timescale - 0.5 * timestep:
@@ -252,6 +266,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
             print(int(min(t / timescale * 100, 100)), "% complete")
             ufile.write(u1, time=t)
             all_u.append(Function(u1))
+        print('... EVP problem solved...\n')
     else:
         while t < timescale - 0.5 * timestep:
             t += timestep
@@ -259,12 +274,12 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
             w0.assign(w1)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
-
+        print('... EVP problem solved...\n')
     print('...done!')
     return all_u
 
 
-def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False):
+def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False, last_frame=False):
     """
     Solving test 2 using the implicit midpoint rule, but solving a matrix system rather than using a mixed function space.
 
@@ -360,7 +375,21 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     pathname = './output/implicit_evp/u.pvd'
 
-    if output:
+    if output and last_frame:
+        outfile = File(pathname)
+        outfile.write(u0, time=t)
+
+        print('******************************** Implicit EVP Solver ********************************\n')
+        while t <= timescale:
+            solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+            solve(ls == 0, sigma1, solver_parameters=params)
+            u0.assign(u1)
+            t += timestep
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
+        outfile.write(u0, time=t)
+        print('... EVP problem solved...\n')
+    elif output and not last_frame:
         outfile = File(pathname)
         outfile.write(u0, time=t)
 

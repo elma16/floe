@@ -26,7 +26,7 @@ stabilised = {0,1,2}
 """
 
 def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
-                       transform_mesh=False, output=False):
+                       transform_mesh=False, output=False, last_frame=False):
 
     print('\n******************************** STRAIN RATE TENSOR ********************************\n')
     # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral triangles
