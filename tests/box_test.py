@@ -106,15 +106,15 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P * 0.5 * Identity(2)
 
     # initalise geo_wind
-    t = 0.0
+    t0 = Constant(0)
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                          5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     lm = inner(rho * h1 * (u1 - u0), v) * dx
     lm -= timestep * inner(rho * h1 * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]), v) * dx
     lm += timestep * inner(
-        rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(u1 - ocean_curr, u1 - ocean_curr) * (
+        rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
                 ocean_curr - u1), v) * dx
     lm += timestep * inner(sigma, grad(v)) * dx
     lm += stab_term
@@ -131,7 +131,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     all_u = []
 
     pathname = "./output/box_test/box_test_exp.pvd"
-
+    t = 0
     if not advection:
         if output:
             outfile = File(pathname)
@@ -146,9 +146,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
                     u0.assign(u1)
                     s += subcycle_timestep
                 t += timestep
-                geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                                      5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(
-                                          2 * pi * x / L)])
+                t0.assign(t)
                 all_u.append(Function(u1))
                 outfile.write(u0, time=t)
                 print("Time:", t, "[s]")
@@ -165,9 +163,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
                     u0.assign(u1)
                     s += subcycle_timestep
                 t += timestep
-                geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                                      5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(
-                                          2 * pi * x / L)])
+                t0.assign(t)
                 all_u.append(Function(u1))
                 print("Time:", t, "[s]")
                 print(int(min(t / timescale * 100, 100)), "% complete")
@@ -191,9 +187,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
                     a0.assign(a1)
                     s += subcycle_timestep
                 t += timestep
-                geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                                      5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(
-                                          2 * pi * x / L)])
+                t0.assign(t)
                 all_u.append(Function(u1))
                 outfile.write(u0, time=t)
                 print("Time:", t, "[s]")
@@ -214,9 +208,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
                     a0.assign(a1)
                     s += subcycle_timestep
                 t += timestep
-                geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                                      5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(
-                                          2 * pi * x / L)])
+                t0.assign(t)
                 all_u.append(Function(u1))
                 print("Time:", t, "[s]")
                 print(int(min(t / timescale * 100, 100)), "% complete")
@@ -300,7 +292,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
     lm = inner(rho * hh * (u1 - u0), p) * dx
     lm -= timestep * inner(rho * hh * cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0] - uh[0]]), p) * dx
     lm += timestep * inner(
-        rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * dot(uh - ocean_curr, uh - ocean_curr) * (
+        rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (
                 ocean_curr - uh), p) * dx
     lm += timestep * inner(sigma, grad(p)) * dx
     lm += stab_term
