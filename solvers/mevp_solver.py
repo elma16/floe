@@ -28,8 +28,8 @@ def mevp_stress_solver(sigma, ep_dot, zeta, P):
     return sigma
 
 
-def mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, timescale, output=False,
-                advection=False, lh=None, la=None, h1=None, h0=None, a1=None, a0=None):
+def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale, output=False,
+                advection=False, hsolver=None, asolver=None, h1=None, h0=None, a1=None, a0=None):
     subcycle_timestep = timestep / subcycle
     all_u = []
     all_h = []
@@ -44,7 +44,7 @@ def mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, 
             while t < timescale - 0.5 * timestep:
                 s = t
                 while s <= t + timestep:
-                    solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+                    usolver.solve()
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     s += subcycle_timestep
@@ -60,7 +60,7 @@ def mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, 
             while t < timescale - 0.5 * timestep:
                 s = t
                 while s <= t + timestep:
-                    solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+                    usolver.solve()
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     s += subcycle_timestep
@@ -79,12 +79,12 @@ def mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, 
             while t < timescale - 0.5 * timestep:
                 s = t
                 while s <= t + timestep:
-                    solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+                    usolver.solve()
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
-                    solve(lh == 0, h1, solver_parameters=params)
+                    hsolver.solve()
                     h0.assign(h1)
-                    solve(la == 0, a1, solver_parameters=params)
+                    asolver.solve()
                     a0.assign(a1)
                     s += subcycle_timestep
                 t += timestep
@@ -101,12 +101,12 @@ def mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, 
             while t < timescale - 0.5 * timestep:
                 s = t
                 while s <= t + timestep:
-                    solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+                    usolver.solve()
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
-                    solve(lh == 0, h1, solver_parameters=params)
+                    hsolver.solve()
                     h0.assign(h1)
-                    solve(la == 0, a1, solver_parameters=params)
+                    asolver.solve()
                     a0.assign(a1)
                     s += subcycle_timestep
                 t += timestep

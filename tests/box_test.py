@@ -6,6 +6,7 @@ sys.path.insert(0, parentdir)
 
 from tests.parameters import *
 from solvers.mevp_solver import *
+from solvers.solver_general import *
 
 """
 from Mehlmann and Korn, 2020
@@ -93,17 +94,19 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
 
-    if stabilised == 0:
-        stab_term = 0
-    if stabilised == 1:
-        stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
-
     # viscosities
     zeta = P / (2 * Delta)
     eta = zeta * e ** (-2)
 
     # internal stress tensor
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P * 0.5 * Identity(2)
+
+    if stabilised == 0:
+        stab_term = 0
+    elif stabilised == 1:
+        stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
+    elif stabilised == 2:
+        sigma = 0.5 * zeta * grad(u1)
 
     # initalise geo_wind
     t0 = Constant(0)
@@ -124,11 +127,19 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
         lh -= timestep * inner(u1 * h1, grad(w)) * dx
         la = inner((a1 - a0), w) * dx
         la -= timestep * inner(u1 * a1, grad(w)) * dx
+        hprob = NonlinearVariationalProblem(lh, h1)
+        hsolver = NonlinearVariationalSolver(hprob, solver_parameters=params)
+        aprob = NonlinearVariationalProblem(la, a1)
+        asolver = NonlinearVariationalSolver(aprob, solver_parameters=params)
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
+    uprob = NonlinearVariationalProblem(lm, u1, bcs)
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
+
 
     subcycle_timestep = timestep / subcycle
     all_u = []
+
 
     pathname = "./output/box_test/box_test_exp.pvd"
     t = 0
@@ -141,7 +152,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
             while t < timescale - 0.5 * timestep:
                 s = t
                 while s <= t + timestep:
-                    solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+                    usolver.solve()
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     s += subcycle_timestep
@@ -158,7 +169,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
             while t < timescale - 0.5 * timestep:
                 s = t
                 while s <= t + timestep:
-                    solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+                    usolver.solve()
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     s += subcycle_timestep
@@ -178,12 +189,12 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
             while t < timescale - 0.5 * timestep:
                 s = t
                 while s <= t + timestep:
-                    solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+                    usolver.solve()
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
-                    solve(lh == 0, h1, solver_parameters=params)
+                    hsolver.solve()
                     h0.assign(h1)
-                    solve(la == 0, a1, solver_parameters=params)
+                    asolver.solve()
                     a0.assign(a1)
                     s += subcycle_timestep
                 t += timestep
@@ -199,12 +210,12 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
             while t < timescale - 0.5 * timestep:
                 s = t
                 while s <= t + timestep:
-                    solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
+                    usolver.solve()
                     mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
-                    solve(lh == 0, h1, solver_parameters=params)
+                    hsolver.solve()
                     h0.assign(h1)
-                    solve(la == 0, a1, solver_parameters=params)
+                    asolver.solve()
                     a0.assign(a1)
                     s += subcycle_timestep
                 t += timestep

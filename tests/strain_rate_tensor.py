@@ -25,9 +25,9 @@ stabilised = {0,1,2}
 2 - stabilised (via the a velocity jump algorithm)
 """
 
+
 def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
                        transform_mesh=False, output=False, last_frame=False):
-
     print('\n******************************** STRAIN RATE TENSOR ********************************\n')
     # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral triangles
     if transform_mesh:
@@ -63,7 +63,11 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
 
     sigma = 0.5 * zeta * (grad(u1) + transpose(grad(u1)))
 
-    if stabilised == 2:
+    if stabilised == 0:
+        stab_term = 0
+    elif stabilised == 1:
+        stab_term = avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
+    elif stabilised == 2:
         sigma = 0.5 * zeta * grad(u1)
 
     pi_x = pi / L
@@ -86,11 +90,9 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
         return 0.5 * (omega + transpose(omega))
 
     # momentum equation
-    lm = inner(u1 - u0, v) * dx
-    lm += timestep * inner(sigma, strain(grad(v))) * dx
+    lm = (inner(u1 - u0, v) + timestep * inner(sigma, strain(grad(v)))) * dx
     lm -= timestep * inner(R, v) * dx
-    if stabilised == 1:
-        lm += avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
+    lm += stab_term
 
     t = 0.0
 
@@ -100,13 +102,15 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     else:
         bcs = [DirichletBC(V, Constant(0), "on_boundary")]
 
-    pathname = './output/strain_rate_tensor/T={}_k={}_N={}_transform={}.pvd'.format(timescale,timestep,number_of_triangles,transform_mesh)
+    uprob = NonlinearVariationalProblem(lm, u1, bcs)
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
-    all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname, output)
+    all_u, all_h, all_a = forward_euler_solver(u1, u0,usolver,t,timestep,timescale,output)
 
     print('...done!')
 
     return all_u, mesh, v_exp, zeta
+
 
 def toy_problem(timescale=10, timestep=10 ** (-3), number_of_triangles=30, output=False, shape="Square"):
     """
@@ -176,10 +180,10 @@ def toy_problem(timescale=10, timestep=10 ** (-3), number_of_triangles=30, outpu
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
-    pathname = '.output/toy_test/T={}_k={}_N={}_S={}.pvd'.format(timescale,timestep,number_of_triangles,shape)
+    uprob = NonlinearVariationalProblem(lm, u1, bcs)
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
-    all_u = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, pathname, output)
+    all_u = forward_euler_solver(u1,u0,usolver,t,timestep,timescale,output)
 
     print('...done!')
     return all_u
-

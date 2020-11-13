@@ -8,6 +8,8 @@ from tests.parameters import *
 from solvers.mevp_solver import *
 from solvers.evp_solver import *
 from solvers.forward_euler_solver import *
+from solvers.solver_general import *
+from solvers.solver_parameters import *
 
 """
 from Mehlmann and Korn, 2020
@@ -94,7 +96,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     if stabilised == 0:
         stab_term = 0
-    if stabilised == 1:
+    elif stabilised == 1:
         if rheology == "VP":
             # what does the paper mean by zeta_e?
             stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
@@ -104,13 +106,14 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
             stab_term = (a_evp * avg(CellVolume(mesh)) * P) / (d * FacetArea(mesh)) * (dot(jump(u1), jump(v))) * dS
             if solver == "mEVP":
                 stab_term = (a_mevp * avg(CellVolume(mesh)) * P) / (d * FacetArea(mesh)) * (dot(jump(u1), jump(v))) * dS
+    elif stabilised == 2:
+        sigma = 0.5 * zeta * grad(u1)
 
     # momentum equation (used irrespective of advection occurring or not)
 
     # diverges if i pick h1 -> h0
-    lm = inner(beta * rho * h1 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
-            u1 - ocean_curr), v) * dx
-    lm += timestep * inner(sigma, grad(v)) * dx
+    lm = (inner(beta * rho * h1 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
+            u1 - ocean_curr), v) + timestep * inner(sigma, grad(v))) * dx
     lm += stab_term
 
     if advection:
@@ -118,35 +121,42 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         lh -= inner(u1 * h1, grad(w)) * dx
         la = timestep * inner(a1 - a0, w) * dx
         la -= inner(u1 * a1, grad(w)) * dx
+        hprob = NonlinearVariationalProblem(lh, h1)
+        hsolver = NonlinearVariationalSolver(hprob, solver_parameters=params)
+        aprob = NonlinearVariationalProblem(la, a1)
+        asolver = NonlinearVariationalSolver(aprob, solver_parameters=params)
 
     t = 0.0
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
+    uprob = NonlinearVariationalProblem(lm, u1, bcs)
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
+
     if not advection:
         if rheology == "VP" and solver == "FE":
-            all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale, output)
+            all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output)
         elif rheology == "VP" and solver == "mEVP":
-            all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
-                                              timescale, output)
+            all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
+                                              output)
         elif rheology == "EVP" and solver == "EVP":
-            all_u, all_h, all_a = evp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
+            all_u, all_h, all_a = evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T,
                                              timescale, output)
         elif rheology == "EVP" and solver == "mEVP":
-            all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta, T,
-                                              timescale, output)
+            all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
+                                              output)
     if advection:
         if rheology == "VP" and solver == "FE":
-            all_u, all_h, all_a = forward_euler_solver(u1, u0, lm, bcs, t, timestep, timescale,
-                                                       output, advection, lh, la, h1, h0, a1, a0)
+            all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output, advection,
+                                                       hsolver, asolver, h1, h0, a1, a0)
         elif rheology == "VP" and solver == "mEVP":
-            all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta,
-                                              timescale, output, advection, lh, la, h1, h0, a1, a0)
+            all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
+                                              output, advection, hsolver, asolver, h1, h0, a1, a0)
         elif rheology == "EVP" and solver == "EVP":
-            all_u, all_h, all_a = evp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta,
-                                             timescale, output, advection, lh, la, h1, h0, a1, a0)
+            all_u, all_h, all_a = evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T,
+                                             timescale, output, advection, hsolver, asolver, h1, h0, a1, a0)
         elif rheology == "EVP" and solver == "mEVP":
-            all_u, all_h, all_a = mevp_solver(u1, u0, lm, t, timestep, subcycle, bcs, sigma, ep_dot, P, zeta,
-                                              timescale, output, advection, lh, la, h1, h0, a1, a0)
+            all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
+                                              output, advection, hsolver, asolver, h1, h0, a1, a0)
 
     print('...done!')
 
@@ -221,61 +231,22 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
 
     # constructing the equations used
 
-    lm = inner(p, rho * h * (u1 - u0)) * dx
-    lm += timestep * inner(grad(p), sh) * dx
+    lm = (inner(p, rho * h * (u1 - u0)) + timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestep * (
+            0.5 * e ** 2 / T * sh + (0.25 * (1 - e ** 2) / T * tr(sh) + 0.25 * P / T) * Identity(2)))) * dx
     lm -= timestep * inner(p, C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(degree=3)
-    lm += inner(q, (s1 - s0) + timestep * (
-            e ** 2 / (2 * T) * sh + ((1 - e ** 2) / (4 * T) * tr(sh) + P / (4 * T)) * Identity(2))) * dx
     lm -= inner(q * zeta * timestep / T, ep_dot) * dx
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
-    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
     uprob = NonlinearVariationalProblem(lm, w1, bcs)
-    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params2)
 
     u1, s1 = w1.split()
 
     # writing a pathname which depends on the variables chosen
     pathname = "./output/evp_alt/u_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
 
-    t = 0.0
-    all_u = []
+    all_u = ievp_solver(output, last_frame, pathname, timescale, timestep, t, w0, w1, u1, usolver)
 
-    if output and last_frame:
-        ufile = File(pathname)
-        ufile.write(u1, time=t)
-        while t < timescale - 0.5 * timestep:
-            t += timestep
-            usolver.solve()
-            w0.assign(w1)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-            all_u.append(Function(u1))
-
-        print('... EVP problem solved...\n')
-        ufile.write(u1, time=t)
-
-    elif output and not last_frame:
-        ufile = File(pathname)
-        ufile.write(u1, time=t)
-        while t < timescale - 0.5 * timestep:
-            t += timestep
-            usolver.solve()
-            w0.assign(w1)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-            ufile.write(u1, time=t)
-            all_u.append(Function(u1))
-        print('... EVP problem solved...\n')
-    else:
-        while t < timescale - 0.5 * timestep:
-            t += timestep
-            usolver.solve()
-            w0.assign(w1)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-        print('... EVP problem solved...\n')
-    print('...done!')
     return all_u
 
 
@@ -368,54 +339,17 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
         rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(degree=3)
     lm += timestep * inner(sh, grad(v)) * dx
 
-    ls = (inner(w, sigma1 - s)) * dx
+    ls = inner(w, sigma1 - s) * dx
 
     t = 0.0
     bcs = [DirichletBC(V, 0, "on_boundary")]
+    uprob = NonlinearVariationalProblem(lm, u1, bcs)
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
+    sprob = NonlinearVariationalProblem(ls, sigma1)
+    ssolver = NonlinearVariationalSolver(sprob, solver_parameters=params)
 
     pathname = './output/implicit_evp/u.pvd'
 
-    if output and last_frame:
-        outfile = File(pathname)
-        outfile.write(u0, time=t)
-
-        print('******************************** Implicit EVP Solver ********************************\n')
-        while t <= timescale:
-            solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
-            solve(ls == 0, sigma1, solver_parameters=params)
-            u0.assign(u1)
-            t += timestep
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-        outfile.write(u0, time=t)
-        print('... EVP problem solved...\n')
-    elif output and not last_frame:
-        outfile = File(pathname)
-        outfile.write(u0, time=t)
-
-        print('******************************** Implicit EVP Solver ********************************\n')
-        while t <= timescale:
-            solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
-            solve(ls == 0, sigma1, solver_parameters=params)
-            u0.assign(u1)
-            t += timestep
-            outfile.write(u0, time=t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-
-        print('... EVP problem solved...\n')
-    else:
-        print('******************************** Implicit EVP Solver (NO OUTPUT) ********************************\n')
-        while t <= timescale:
-            solve(lm == 0, u1, solver_parameters=params, bcs=bcs)
-            solve(ls == 0, sigma1, solver_parameters=params)
-            u0.assign(u1)
-            t += timestep
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-
-        print('... EVP problem solved...\n')
+    imevp(output, last_frame, timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
 
     print('...done!')
-
-
