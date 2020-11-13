@@ -245,6 +245,8 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     # writing a pathname which depends on the variables chosen
     pathname = "./output/evp_alt/u_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
 
+    t = 0.0
+
     all_u = ievp_solver(output, last_frame, pathname, timescale, timestep, t, w0, w1, u1, usolver)
 
     return all_u

@@ -1,8 +1,13 @@
+import os, sys, inspect
+
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
+
 from firedrake import *
 
-from solvers.solver_parameters import *
+from solvers.mevp_solver import *
 
-t = 0.0
 all_u = []
 
 def ievp_solver(output,last_frame,pathname,timescale,timestep,t,w0,w1,u1,usolver):
@@ -84,3 +89,91 @@ def imevp(output,last_frame,timescale,timestep,u0,t,usolver,ssolver,u1,pathname)
             print(int(min(t / timescale * 100, 100)), "% complete")
 
         print('... EVP problem solved...\n')
+
+def bt_solver(output,u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,subcycle,advection=False,hsolver=None,h0=None,h1=None,asolver=None,a0=None,a1=None):
+
+    pathname = "./output/box_test/box_test_exp.pvd"
+
+    subcycle_timestep = timestep / subcycle
+
+    if not advection:
+        if output:
+            outfile = File(pathname)
+            outfile.write(u0, time=t)
+            print('******************************** mEVP Solver ********************************\n')
+            while t < timescale - 0.5 * timestep:
+                s = t
+                while s <= t + timestep:
+                    usolver.solve()
+                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    u0.assign(u1)
+                    s += subcycle_timestep
+                t += timestep
+                t0.assign(t)
+                all_u.append(Function(u1))
+                outfile.write(u0, time=t)
+                print("Time:", t, "[s]")
+                print(int(min(t / timescale * 100, 100)), "% complete")
+
+            print('... mEVP problem solved...\n')
+        else:
+            print('******************************** mEVP Solver (NO OUTPUT) ********************************\n')
+            while t < timescale - 0.5 * timestep:
+                s = t
+                while s <= t + timestep:
+                    usolver.solve()
+                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    u0.assign(u1)
+                    s += subcycle_timestep
+                t += timestep
+                t0.assign(t)
+                all_u.append(Function(u1))
+                print("Time:", t, "[s]")
+                print(int(min(t / timescale * 100, 100)), "% complete")
+
+            print('... mEVP problem solved...\n')
+    if advection:
+        if output:
+            outfile = File(pathname)
+            outfile.write(u0, time=t)
+
+            print('******************************** mEVP Solver ********************************\n')
+            while t < timescale - 0.5 * timestep:
+                s = t
+                while s <= t + timestep:
+                    usolver.solve()
+                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    u0.assign(u1)
+                    hsolver.solve()
+                    h0.assign(h1)
+                    asolver.solve()
+                    a0.assign(a1)
+                    s += subcycle_timestep
+                t += timestep
+                t0.assign(t)
+                all_u.append(Function(u1))
+                outfile.write(u0, time=t)
+                print("Time:", t, "[s]")
+                print(int(min(t / timescale * 100, 100)), "% complete")
+
+            print('... mEVP problem solved...\n')
+        else:
+            print('******************************** mEVP Solver (NO OUTPUT) ********************************\n')
+            while t < timescale - 0.5 * timestep:
+                s = t
+                while s <= t + timestep:
+                    usolver.solve()
+                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    u0.assign(u1)
+                    hsolver.solve()
+                    h0.assign(h1)
+                    asolver.solve()
+                    a0.assign(a1)
+                    s += subcycle_timestep
+                t += timestep
+                t0.assign(t)
+                all_u.append(Function(u1))
+                print("Time:", t, "[s]")
+                print(int(min(t / timescale * 100, 100)), "% complete")
+
+            print('... mEVP problem solved...\n')

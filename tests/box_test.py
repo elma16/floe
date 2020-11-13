@@ -37,6 +37,7 @@ number_of_triangles : for the paper's 15190 edges, between 70 and 71 are require
 
 """
 
+
 def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False,
              output=False, stabilised=0):
     """solving it explicitly, in the method of the paper"""
@@ -136,100 +137,18 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
-
-    subcycle_timestep = timestep / subcycle
-    all_u = []
-
-
-    pathname = "./output/box_test/box_test_exp.pvd"
     t = 0
     if not advection:
-        if output:
-            outfile = File(pathname)
-            outfile.write(u0, time=t)
-
-            print('******************************** mEVP Solver ********************************\n')
-            while t < timescale - 0.5 * timestep:
-                s = t
-                while s <= t + timestep:
-                    usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
-                    u0.assign(u1)
-                    s += subcycle_timestep
-                t += timestep
-                t0.assign(t)
-                all_u.append(Function(u1))
-                outfile.write(u0, time=t)
-                print("Time:", t, "[s]")
-                print(int(min(t / timescale * 100, 100)), "% complete")
-
-            print('... mEVP problem solved...\n')
-        else:
-            print('******************************** mEVP Solver (NO OUTPUT) ********************************\n')
-            while t < timescale - 0.5 * timestep:
-                s = t
-                while s <= t + timestep:
-                    usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
-                    u0.assign(u1)
-                    s += subcycle_timestep
-                t += timestep
-                t0.assign(t)
-                all_u.append(Function(u1))
-                print("Time:", t, "[s]")
-                print(int(min(t / timescale * 100, 100)), "% complete")
-
-            print('... mEVP problem solved...\n')
-    if advection:
-        if output:
-            outfile = File(pathname)
-            outfile.write(u0, time=t)
-
-            print('******************************** mEVP Solver ********************************\n')
-            while t < timescale - 0.5 * timestep:
-                s = t
-                while s <= t + timestep:
-                    usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
-                    u0.assign(u1)
-                    hsolver.solve()
-                    h0.assign(h1)
-                    asolver.solve()
-                    a0.assign(a1)
-                    s += subcycle_timestep
-                t += timestep
-                t0.assign(t)
-                all_u.append(Function(u1))
-                outfile.write(u0, time=t)
-                print("Time:", t, "[s]")
-                print(int(min(t / timescale * 100, 100)), "% complete")
-
-            print('... mEVP problem solved...\n')
-        else:
-            print('******************************** mEVP Solver (NO OUTPUT) ********************************\n')
-            while t < timescale - 0.5 * timestep:
-                s = t
-                while s <= t + timestep:
-                    usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
-                    u0.assign(u1)
-                    hsolver.solve()
-                    h0.assign(h1)
-                    asolver.solve()
-                    a0.assign(a1)
-                    s += subcycle_timestep
-                t += timestep
-                t0.assign(t)
-                all_u.append(Function(u1))
-                print("Time:", t, "[s]")
-                print(int(min(t / timescale * 100, 100)), "% complete")
-
-            print('... mEVP problem solved...\n')
+        all_u = bt_solver(output, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
+    elif advection:
+        all_u = bt_solver(output, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
+                          advection, hsolver, h0, h1, asolver, a0, a1)
     print('...done!')
 
     return all_u
 
-def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=False, stabilised=0,last_frame = False):
+
+def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=False, stabilised=0, last_frame=False):
     """solving the box test using the implicit midpoint rule"""
     print('\n******************************** BOX TEST ********************************\n')
 
@@ -308,7 +227,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
     lm += timestep * inner(sigma, grad(p)) * dx
     lm += stab_term
 
-    #adding the transport equations
+    # adding the transport equations
     lm += inner((h1 - h0), q) * dx
     lm -= timestep * inner(uh * hh, grad(q)) * dx
     lm += inner((a1 - a0), r) * dx
@@ -338,7 +257,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
-        #deltafile.write(Delta, time=t)
+        # deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
             t += timestep
@@ -355,19 +274,19 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
-        #deltafile.write(Delta, time=t)
+        # deltafile.write(Delta, time=t)
 
     elif output and not last_frame:
-        #output the whole simulation
+        # output the whole simulation
         ufile = File('./output/box_test/box_test_alt_u.pvd')
         hfile = File('./output/box_test/box_test_alt_h.pvd')
         afile = File('./output/box_test/box_test_alt_a.pvd')
-        #deltafile = File('./output/box_test/box_test_alt_delta.pvd')
+        # deltafile = File('./output/box_test/box_test_alt_delta.pvd')
 
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
-        #deltafile.write(Delta, time=t)
+        # deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
             t += timestep
@@ -402,4 +321,3 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71,output=F
     print('...done!')
 
     return all_u, all_h, all_a, all_delta
-

@@ -2,7 +2,6 @@ from firedrake import *
 
 from solvers.solver_parameters import *
 
-
 def mevp_stress_solver(sigma, ep_dot, zeta, P):
     """
     Implementation of the mEVP solver used by Mehlmann and Korn:

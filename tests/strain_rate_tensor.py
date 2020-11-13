@@ -7,6 +7,7 @@ sys.path.insert(0, parentdir)
 from tests.parameters import *
 from solvers.forward_euler_solver import *
 
+
 """
 from Mehlmann and Korn, 2020
 Section 4.2
