@@ -28,7 +28,7 @@ stabilised = {0,1,2}
 
 
 def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
-                       transform_mesh=False, output=False, last_frame=False):
+                       transform_mesh=False, output=False, shape=None, last_frame=False):
     print('\n******************************** STRAIN RATE TENSOR ********************************\n')
     # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral triangles
     if transform_mesh:
@@ -41,6 +41,7 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     else:
         mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
+
     V = VectorFunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
@@ -52,8 +53,16 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
 
     x, y = SpatialCoordinate(mesh)
 
-    h = Constant(1)
+    # optional
+    if shape == "Half-Plane":
+        u0.interpolate(conditional(le(x, L / 2), as_vector([10, 10]), as_vector([0, 0])))
+    elif shape == "Square":
+        u0.interpolate(conditional(le(abs(x - L / 2) + abs(y - L / 2), L / 5), as_vector([10, 10]), as_vector([0, 0])))
+    elif shape == "Circle":
+        u0.interpolate(
+            conditional(le(((x - L / 2) ** 2 + (y - L / 2) ** 2), 10000 * L), as_vector([10, 10]), as_vector([0, 0])))
 
+    h = Constant(1)
     a = Constant(1)
 
     # ice strength
@@ -95,7 +104,7 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     lm -= timestep * inner(R, v) * dx
     lm += stab_term
 
-    t = 0.0
+    t = 0
 
     if transform_mesh:
         # no compile errors, i just don't understand why mesh says 0,1 doesn't work but 1,2 does
@@ -111,80 +120,3 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     print('...done!')
 
     return all_u, mesh, v_exp, zeta
-
-
-def toy_problem(timescale=10, timestep=10 ** (-3), number_of_triangles=30, output=False, shape="Square"):
-    """
-    A trial toy test problem where I start off with a big square in the middle of the velocity field
-    to demonstrate the nature of hyperbolic PDEs
-    """
-    print('\n******************************** TOY PROBLEM ********************************\n')
-    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
-
-    V = VectorFunctionSpace(mesh, "CR", 1)
-
-    # sea ice velocity
-    u0 = Function(V)
-    u1 = Function(V)
-
-    # test functions
-    v = TestFunction(V)
-
-    x, y = SpatialCoordinate(mesh)
-
-    # initial conditions
-
-    if shape == "Half-Plane":
-        u0.interpolate(conditional(le(x, L / 2), as_vector([10, 10]), as_vector([0, 0])))
-    elif shape == "Square":
-        u0.interpolate(conditional(le(abs(x - L / 2) + abs(y - L / 2), L / 5), as_vector([10, 10]), as_vector([0, 0])))
-    elif shape == "Circle":
-        u0.interpolate(
-            conditional(le(((x - L / 2) ** 2 + (y - L / 2) ** 2), 10000 * L), as_vector([10, 10]), as_vector([0, 0])))
-
-    u1.assign(u0)
-
-    h = Constant(1)
-
-    a = Constant(1)
-
-    # ice strength
-    P = P_star * h * exp(-C * (1 - a))
-
-    # viscosities
-    zeta = 2 * P / Delta_min
-
-    # strain rate tensor, where grad(u) is the jacobian matrix of u
-    ep_dot = 0.5 * (grad(u1) + transpose(grad(u1)))
-
-    eta = zeta * e ** (-2)
-
-    # sigma = avg(CellVolume(mesh))/FacetArea(mesh)*(dot(jump(u),jump(v)))*dS
-    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
-
-    pi_x = pi / L
-
-    v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
-
-    sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
-    R = -div(sigma_exp)
-
-    def strain(omega):
-        return 0.5 * (omega + transpose(omega))
-
-    # momentum equation
-    lm = inner((u1 - u0) / timestep, v) * dx
-    lm += inner(sigma, strain(grad(v))) * dx
-    lm -= inner(R, v) * dx
-
-    t = 0.0
-
-    bcs = [DirichletBC(V, 0, "on_boundary")]
-
-    uprob = NonlinearVariationalProblem(lm, u1, bcs)
-    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
-
-    all_u = forward_euler_solver(u1,u0,usolver,t,timestep,timescale,output)
-
-    print('...done!')
-    return all_u

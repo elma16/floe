@@ -35,7 +35,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
-    U = FunctionSpace(mesh, "CG", 1)
+    U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
     u0 = Function(V)
@@ -59,14 +59,13 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     u0.assign(0)
     u1.assign(u0)
+    a0.interpolate(x / L)
+    a1.assign(a0)
     if not advection:
         h1 = Constant(1)
-        a1.interpolate(x / L)
     if advection:
         h0.assign(1)
         h1.assign(h0)
-        a0.interpolate(x / L)
-        a1.assign(a0)
 
     if solver == "mEVP":
         beta = Constant(500)
@@ -116,6 +115,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
             u1 - ocean_curr), v) + timestep * inner(sigma, grad(v))) * dx
     lm += stab_term
 
+    # need to solve the transport equations using an upwind scheme
     if advection:
         lh = timestep * inner(h1 - h0, w) * dx
         lh -= inner(u1 * h1, grad(w)) * dx
@@ -126,7 +126,8 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         aprob = NonlinearVariationalProblem(la, a1)
         asolver = NonlinearVariationalSolver(aprob, solver_parameters=params)
 
-    t = 0.0
+    t = 0
+
     bcs = [DirichletBC(V, 0, "on_boundary")]
 
     uprob = NonlinearVariationalProblem(lm, u1, bcs)

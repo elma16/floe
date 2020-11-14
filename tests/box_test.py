@@ -40,7 +40,7 @@ number_of_triangles : for the paper's 15190 edges, between 70 and 71 are require
 
 def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False,
              output=False, stabilised=0):
-    """solving it explicitly, in the method of the paper"""
+    """solving the full system of coupled PDEs explicitly, in the method of the paper"""
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
     L = 1000000
 
@@ -71,14 +71,14 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     u0.assign(0)
     u1.assign(u0)
+    a0.interpolate(x / L)
+    a1.assign(a0)
     if not advection:
         h1 = Constant(1)
-        a1.interpolate(x / L)
     if advection:
         h0.assign(1)
         h1.assign(h0)
-        a0.interpolate(x / L)
-        a1.assign(a0)
+
 
     # ocean current
 
@@ -123,6 +123,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     lm += timestep * inner(sigma, grad(v)) * dx
     lm += stab_term
 
+    # need to solve the transport equations using an upwinding method
     if advection:
         lh = inner((h1 - h0), w) * dx
         lh -= timestep * inner(u1 * h1, grad(w)) * dx
@@ -214,7 +215,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P * 0.5 * Identity(2)
 
     # initalise geo_wind
-    t = 0.0
+    t = 0
 
     geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
                           5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
