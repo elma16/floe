@@ -53,6 +53,8 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
 
     x, y = SpatialCoordinate(mesh)
 
+    timestepc = Constant(timestep)
+
     # optional
     if shape == "Half-Plane":
         u0.interpolate(conditional(le(x, L / 2), as_vector([10, 10]), as_vector([0, 0])))
@@ -100,8 +102,8 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
         return 0.5 * (omega + transpose(omega))
 
     # momentum equation
-    lm = (inner(u1 - u0, v) + timestep * inner(sigma, strain(grad(v)))) * dx
-    lm -= timestep * inner(R, v) * dx
+    lm = (inner(u1 - u0, v) + timestepc * inner(sigma, strain(grad(v)))) * dx
+    lm -= timestepc * inner(R, v) * dx
     lm += stab_term
 
     t = 0

@@ -55,6 +55,8 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     x, y = SpatialCoordinate(mesh)
 
+    timestepc = Constant(timestep)
+
     # initial conditions
 
     u0.assign(0)
@@ -66,6 +68,10 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     if advection:
         h0.assign(1)
         h1.assign(h0)
+
+    # boundary conditions
+    h_in = Constant(1)
+    a_in = Constant(1)
 
     if solver == "mEVP":
         beta = Constant(500)
@@ -111,20 +117,38 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     # momentum equation (used irrespective of advection occurring or not)
 
     # diverges if i pick h1 -> h0
-    lm = (inner(beta * rho * h1 * (u1 - u0) + timestep * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
-            u1 - ocean_curr), v) + timestep * inner(sigma, grad(v))) * dx
+    lm = inner(beta * rho * h1 * (u1 - u0) + timestepc * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
+            u1 - ocean_curr), v) * dx
+    lm += timestepc * inner(sigma, grad(v)) * dx
     lm += stab_term
 
     # need to solve the transport equations using an upwind scheme
     if advection:
-        lh = timestep * inner(h1 - h0, w) * dx
-        lh -= inner(u1 * h1, grad(w)) * dx
-        la = timestep * inner(a1 - a0, w) * dx
-        la -= inner(u1 * a1, grad(w)) * dx
-        hprob = NonlinearVariationalProblem(lh, h1)
-        hsolver = NonlinearVariationalSolver(hprob, solver_parameters=params)
-        aprob = NonlinearVariationalProblem(la, a1)
-        asolver = NonlinearVariationalSolver(aprob, solver_parameters=params)
+        dh_trial = TrialFunction(U)
+        da_trial = TrialFunction(U)
+
+        #LHS
+        lhsh = w * dh_trial * dx
+        lhsa = w * da_trial * dx
+
+        n = FacetNormal(mesh)
+
+        un = 0.5 * (dot(u1, n) + abs(dot(u1, n)))
+
+        lh = timestepc * (h1 * div(w * u1) * dx
+            - conditional(dot(u1, n) < 0, w * dot(u1, n) * h_in, 0.0) * ds
+            - conditional(dot(u1, n) > 0, w * dot(u1, n) * h1, 0.0) * ds
+            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * h1('-')) * dS)
+
+        la = timestepc * (a1 * div(w * u1) * dx
+            - conditional(dot(u1, n) < 0, w * dot(u1, n) * a_in, 0.0) * ds
+            - conditional(dot(u1, n) > 0, w * dot(u1, n) * a1, 0.0) * ds
+            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * a1('-')) * dS)
+
+        hprob = LinearVariationalProblem(lhsh, lh, h1)
+        hsolver = LinearVariationalSolver(hprob, solver_parameters=params)
+        aprob = LinearVariationalProblem(lhsa, la, a1)
+        asolver = LinearVariationalSolver(aprob, solver_parameters=params)
 
     t = 0
 
@@ -185,6 +209,8 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
 
     x, y = SpatialCoordinate(mesh)
 
+    timestepc = Constant(timestep)
+
     p, q = TestFunctions(W)
 
     # initial conditions
@@ -232,10 +258,10 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
 
     # constructing the equations used
 
-    lm = (inner(p, rho * h * (u1 - u0)) + timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestep * (
+    lm = (inner(p, rho * h * (u1 - u0)) + timestepc * inner(grad(p), sh) + inner(q, (s1 - s0) + timestepc * (
             0.5 * e ** 2 / T * sh + (0.25 * (1 - e ** 2) / T * tr(sh) + 0.25 * P / T) * Identity(2)))) * dx
-    lm -= timestep * inner(p, C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(degree=3)
-    lm -= inner(q * zeta * timestep / T, ep_dot) * dx
+    lm -= timestepc * inner(p, C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(degree=3)
+    lm -= inner(q * zeta * timestepc / T, ep_dot) * dx
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
     uprob = NonlinearVariationalProblem(lm, w1, bcs)
@@ -289,6 +315,8 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     x, y = SpatialCoordinate(mesh)
 
+    timestepc = Constant(timestep)
+
     # initial conditions
 
     u0.assign(0)
@@ -338,13 +366,13 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     sh = 0.5 * (s + sigma0)
 
-    lm = inner(rho * h * (u1 - u0), v) * dx + timestep * inner(
-        rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(degree=3)
-    lm += timestep * inner(sh, grad(v)) * dx
+    lm = inner(rho * h * (u1 - u0), v) * dx
+    lm += timestepc * inner(rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(degree=3)
+    lm += timestepc * inner(sh, grad(v)) * dx
 
     ls = inner(w, sigma1 - s) * dx
 
-    t = 0.0
+    t = 0
     bcs = [DirichletBC(V, 0, "on_boundary")]
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
@@ -356,3 +384,4 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     imevp(output, last_frame, timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
 
     print('...done!')
+

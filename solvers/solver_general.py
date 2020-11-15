@@ -105,7 +105,7 @@ def bt_solver(output,u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,s
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     s += subcycle_timestep
                 t += timestep
@@ -122,7 +122,7 @@ def bt_solver(output,u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,s
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     s += subcycle_timestep
                 t += timestep
@@ -142,7 +142,7 @@ def bt_solver(output,u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,s
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     hsolver.solve()
                     h0.assign(h1)
@@ -163,7 +163,7 @@ def bt_solver(output,u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,s
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     hsolver.solve()
                     h0.assign(h1)

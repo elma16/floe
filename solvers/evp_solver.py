@@ -45,7 +45,7 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                    sigma = evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
                     u0.assign(u1)
                     s += subcycle_timestep
                 t += timestep
@@ -61,7 +61,7 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                    sigma = evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
                     u0.assign(u1)
                     s += subcycle_timestep
                 t += timestep
@@ -80,7 +80,7 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                    sigma = evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
                     u0.assign(u1)
                     hsolver.solve()
                     h0.assign(h1)
@@ -102,7 +102,7 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
+                    sigma = evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep=s)
                     u0.assign(u1)
                     hsolver.solve()
                     h0.assign(h1)

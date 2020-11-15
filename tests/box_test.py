@@ -67,6 +67,8 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     x, y = SpatialCoordinate(mesh)
 
+    timestepc = Constant(timestep)
+
     # initial conditions
 
     u0.assign(0)
@@ -81,7 +83,6 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
 
     # ocean current
-
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
@@ -116,11 +117,11 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
                           5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     lm = inner(rho * h1 * (u1 - u0), v) * dx
-    lm -= timestep * inner(rho * h1 * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]), v) * dx
-    lm += timestep * inner(
+    lm -= timestepc * inner(rho * h1 * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]), v) * dx
+    lm += timestepc * inner(
         rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
                 ocean_curr - u1), v) * dx
-    lm += timestep * inner(sigma, grad(v)) * dx
+    lm += timestepc * inner(sigma, grad(v)) * dx
     lm += stab_term
 
     # need to solve the transport equations using an upwinding method
@@ -171,6 +172,8 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
 
     x, y = SpatialCoordinate(mesh)
 
+    timestepc = Constant(timestep)
+
     # initial conditions
 
     u0.assign(0)
@@ -215,17 +218,17 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P * 0.5 * Identity(2)
 
     # initalise geo_wind
-    t = 0
+    t0 = Constant(0)
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                          5 + (sin(2 * pi * t / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     lm = inner(rho * hh * (u1 - u0), p) * dx
-    lm -= timestep * inner(rho * hh * cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0] - uh[0]]), p) * dx
-    lm += timestep * inner(
+    lm -= timestepc * inner(rho * hh * cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0] - uh[0]]), p) * dx
+    lm += timestepc * inner(
         rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (
                 ocean_curr - uh), p) * dx
-    lm += timestep * inner(sigma, grad(p)) * dx
+    lm += timestepc * inner(sigma, grad(p)) * dx
     lm += stab_term
 
     # adding the transport equations
@@ -248,6 +251,8 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     all_a = []
     all_delta = []
 
+    t = 0
+
     if output and last_frame:
         # just output the beginning and end frames
         ufile = File('./output/box_test/box_test_alt_u.pvd')
@@ -261,17 +266,15 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
         # deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
-            t += timestep
-
             usolver.solve()
             w0.assign(w1)
-
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
             all_u.append(Function(u1))
             all_h.append(Function(h1))
             all_a.append(Function(a1))
-
+            t += timestep
+            t0.assign(t)
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
@@ -290,35 +293,31 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
         # deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
-            t += timestep
-
             usolver.solve()
             w0.assign(w1)
-
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-
             ufile.write(u1, time=t)
             hfile.write(h1, time=t)
             afile.write(a1, time=t)
-
+            t += timestep
+            t0.assign(t)
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
             all_u.append(Function(u1))
             all_h.append(Function(h1))
             all_a.append(Function(a1))
     else:
         while t < timescale - 0.5 * timestep:
-            t += timestep
-
             usolver.solve()
             w0.assign(w1)
-
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-
             all_u.append(Function(u1))
             all_h.append(Function(h1))
             all_a.append(Function(a1))
+            t += timestep
+            t0.assign(t)
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
 
     print('...done!')
 
     return all_u, all_h, all_a, all_delta
+

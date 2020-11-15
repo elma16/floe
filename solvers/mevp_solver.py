@@ -44,7 +44,7 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     s += subcycle_timestep
                 t += timestep
@@ -60,7 +60,7 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     s += subcycle_timestep
                 t += timestep
@@ -79,7 +79,7 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     hsolver.solve()
                     h0.assign(h1)
@@ -101,7 +101,7 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
                 s = t
                 while s <= t + timestep:
                     usolver.solve()
-                    mevp_stress_solver(sigma, ep_dot, P, zeta)
+                    sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
                     hsolver.solve()
                     h0.assign(h1)
