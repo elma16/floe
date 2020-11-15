@@ -69,9 +69,9 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         h0.assign(1)
         h1.assign(h0)
 
-    # boundary conditions
-    h_in = Constant(1)
-    a_in = Constant(1)
+    # boundary conditions (what do these have to be?)
+    h_in = Constant(0)
+    a_in = Constant(0)
 
     if solver == "mEVP":
         beta = Constant(500)
@@ -385,3 +385,4 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     print('...done!')
 
+vp_evp_test_explicit(rheology="EVP",advection=True,solver="mEVP",subcycle=10)

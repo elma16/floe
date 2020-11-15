@@ -81,6 +81,9 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
         h0.assign(1)
         h1.assign(h0)
 
+    # boundary condition
+    h_in = Constant(0)
+    a_in = Constant(0)
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
@@ -125,26 +128,45 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     lm += stab_term
 
     # need to solve the transport equations using an upwinding method
+    # need to solve the transport equations using an upwind scheme
     if advection:
-        lh = inner((h1 - h0), w) * dx
-        lh -= timestep * inner(u1 * h1, grad(w)) * dx
-        la = inner((a1 - a0), w) * dx
-        la -= timestep * inner(u1 * a1, grad(w)) * dx
-        hprob = NonlinearVariationalProblem(lh, h1)
-        hsolver = NonlinearVariationalSolver(hprob, solver_parameters=params)
-        aprob = NonlinearVariationalProblem(la, a1)
-        asolver = NonlinearVariationalSolver(aprob, solver_parameters=params)
+        dh_trial = TrialFunction(U)
+        da_trial = TrialFunction(U)
+
+        #LHS
+        lhsh = w * dh_trial * dx
+        lhsa = w * da_trial * dx
+
+        n = FacetNormal(mesh)
+
+        un = 0.5 * (dot(u1, n) + abs(dot(u1, n)))
+
+        lh = timestepc * (h1 * div(w * u1) * dx
+            - conditional(dot(u1, n) < 0, w * dot(u1, n) * h_in, 0.0) * ds
+            - conditional(dot(u1, n) > 0, w * dot(u1, n) * h1, 0.0) * ds
+            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * h1('-')) * dS)
+
+        la = timestepc * (a1 * div(w * u1) * dx
+            - conditional(dot(u1, n) < 0, w * dot(u1, n) * a_in, 0.0) * ds
+            - conditional(dot(u1, n) > 0, w * dot(u1, n) * a1, 0.0) * ds
+            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * a1('-')) * dS)
+
+        hprob = LinearVariationalProblem(lhsh, lh, h1)
+        hsolver = LinearVariationalSolver(hprob, solver_parameters=params)
+        aprob = LinearVariationalProblem(lhsa, la, a1)
+        asolver = LinearVariationalSolver(aprob, solver_parameters=params)
 
     bcs = [DirichletBC(V, 0, "on_boundary")]
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
     t = 0
-    if not advection:
-        all_u = bt_solver(output, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
-    elif advection:
+    if advection:
         all_u = bt_solver(output, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
                           advection, hsolver, h0, h1, asolver, a0, a1)
+    elif not advection:
+        all_u = bt_solver(output, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
+
     print('...done!')
 
     return all_u
