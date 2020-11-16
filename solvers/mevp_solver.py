@@ -103,13 +103,10 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
                     usolver.solve()
                     sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
                     u0.assign(u1)
-                    print("u determined!")
                     hsolver.solve()
                     h0.assign(h1)
-                    print("h determined!")
                     asolver.solve()
                     a0.assign(a1)
-                    print("a determined!")
                     s += subcycle_timestep
                 t += timestep
                 all_u.append(Function(u1))

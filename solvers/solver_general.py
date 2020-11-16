@@ -177,3 +177,42 @@ def bt_solver(output,u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,s
                 print(int(min(t / timescale * 100, 100)), "% complete")
 
             print('... mEVP problem solved...\n')
+
+def taylor_galerkin(timescale,timestep,t):
+    """
+    The Taylor-Galerkin method for the FE discretisation of ice transport equations:
+    Given u^n,a^n, compute a^{n+1}.
+    """
+    L = 500000
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
+
+    V = VectorFunctionSpace(mesh, "CR", 1)
+    U = FunctionSpace(mesh, "CR", 1)
+
+    # sea ice velocity
+    u0 = Function(V)
+    u1 = Function(V)
+
+    # mean height of sea ice
+    h0 = Function(U)
+    h1 = Function(U)
+
+    # sea ice concentration
+    a0 = Function(U)
+    a1 = Function(U)
+
+    # test functions
+    v = TestFunction(V)
+    w = TestFunction(U)
+
+    x, y = SpatialCoordinate(mesh)
+
+    gn = u0*a0-0.5*timestep*u0*grad(u0*a0)
+
+    la = inner(a1 - a0 + timestep*grad(gn),w)*dx
+
+    aprob = NonlinearVariationalProblem(la,a1)
+    asolver = NonlinearVariationalSolver(aprob,solver_parameters = params)
+    while t < timescale - 0.5 * timestep:
+        return None
+

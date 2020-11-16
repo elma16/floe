@@ -111,10 +111,10 @@ def vel_comp_max(timescale, timestep, number_of_triangles=35, stabilised=0):
     Computing the maximum component of all the velocities in the velocity field
     """
     all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles, stabilised)
-    # creating the DG1 function space to project onto
+    # projecting the solutions of the problem onto 'DG1'
     W = VectorFunctionSpace(mesh,"DG",1)
     p = [project(all_u[i],W).dat.data for i in range(len(all_u))]
-    print(p)
+    print(shape(p[0]))
     #print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
     return all_u
 
