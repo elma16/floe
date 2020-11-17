@@ -209,8 +209,11 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     u1, h1, a1 = split(w1)
 
     uh = 0.5 * (u0 + u1)
-    hh = 0.5 * (h0 + h1)
     ah = 0.5 * (a0 + a1)
+    if advection:
+        hh = 0.5 * (h0 + h1)
+    else:
+        hh = 1
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
@@ -339,3 +342,5 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     print('...done!')
 
     return all_u, all_h, all_a, all_delta
+
+box_test_im(timescale=10,timestep=1,number_of_triangles=30,advection=False)
