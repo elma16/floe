@@ -91,13 +91,10 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
 
-    # deviatoric part of the strain rate tensor
-    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
-
     # ice strength
     P = P_star * h1 * exp(-C * (1 - a1))
 
-    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
+    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
 
     # viscosities
     zeta = P / (2 * Delta)
@@ -188,6 +185,8 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
 
     u0, h0, a0 = w0.split()
 
+    Delta = Function(U)
+
     # test functions
 
     p, q, r = TestFunctions(W)
@@ -212,20 +211,17 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     uh = 0.5 * (u0 + u1)
     hh = 0.5 * (h0 + h1)
     ah = 0.5 * (a0 + a1)
-    # ocean current
 
+    # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
-    # deviatoric part of the strain rate tensor
-    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
-
     # ice strength
     P = P_star * hh * exp(-C * (1 - ah))
 
-    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
+    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
 
     if stabilised == 0:
         stab_term = 0
@@ -285,7 +281,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
-        # deltafile.write(Delta, time=t)
+        deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
             usolver.solve()
@@ -300,19 +296,19 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
-        # deltafile.write(Delta, time=t)
+        deltafile.write(Delta, time=t)
 
     elif output and not last_frame:
         # output the whole simulation
         ufile = File('./output/box_test/box_test_alt_u.pvd')
         hfile = File('./output/box_test/box_test_alt_h.pvd')
         afile = File('./output/box_test/box_test_alt_a.pvd')
-        # deltafile = File('./output/box_test/box_test_alt_delta.pvd')
+        deltafile = File('./output/box_test/box_test_alt_delta.pvd')
 
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
-        # deltafile.write(Delta, time=t)
+        deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
             usolver.solve()
@@ -342,4 +338,6 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     print('...done!')
 
     return all_u, all_h, all_a, all_delta
+
+box_test_im(timescale=10,timestep=1,number_of_triangles=35,output=True)
 

@@ -85,7 +85,8 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     ep_dot = 0.5 * (grad(u1) + transpose(grad(u1)))
 
     # deviatoric part of the strain rate tensor
-    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
+    # ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
+    ep_dot_prime = dev(ep_dot)
 
     # ice strength
     P = P_star * h1 * exp(-C * (1 - a1))
@@ -127,7 +128,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         dh_trial = TrialFunction(U)
         da_trial = TrialFunction(U)
 
-        #LHS
+        # LHS
         lhsh = w * dh_trial * dx
         lhsa = w * da_trial * dx
 
@@ -136,19 +137,22 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         un = 0.5 * (dot(u1, n) + abs(dot(u1, n)))
 
         lh = timestepc * (h1 * div(w * u1) * dx
-            - conditional(dot(u1, n) < 0, w * dot(u1, n) * h_in, 0.0) * ds
-            - conditional(dot(u1, n) > 0, w * dot(u1, n) * h1, 0.0) * ds
-            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * h1('-')) * dS)
+                          - conditional(dot(u1, n) < 0, w * dot(u1, n) * h_in, 0.0) * ds
+                          - conditional(dot(u1, n) > 0, w * dot(u1, n) * h1, 0.0) * ds
+                          - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * h1('-')) * dS)
 
         la = timestepc * (a1 * div(w * u1) * dx
-            - conditional(dot(u1, n) < 0, w * dot(u1, n) * a_in, 0.0) * ds
-            - conditional(dot(u1, n) > 0, w * dot(u1, n) * a1, 0.0) * ds
-            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * a1('-')) * dS)
+                          - conditional(dot(u1, n) < 0, w * dot(u1, n) * a_in, 0.0) * ds
+                          - conditional(dot(u1, n) > 0, w * dot(u1, n) * a1, 0.0) * ds
+                          - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * a1('-')) * dS)
 
         hprob = LinearVariationalProblem(lhsh, lh, h1)
         hsolver = LinearVariationalSolver(hprob, solver_parameters=params)
         aprob = LinearVariationalProblem(lhsa, la, a1)
         asolver = LinearVariationalSolver(aprob, solver_parameters=params)
+    else:
+        hsolver, asolver = None
+        h1, h0, a1, a0 = None
 
     t = 0
 
@@ -157,31 +161,18 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
-    if not advection:
-        if rheology == "VP" and solver == "FE":
-            all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output)
-        elif rheology == "VP" and solver == "mEVP":
-            all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                                              output)
-        elif rheology == "EVP" and solver == "EVP":
-            all_u, all_h, all_a = evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T,
-                                             timescale, output)
-        elif rheology == "EVP" and solver == "mEVP":
-            all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                                              output)
-    if advection:
-        if rheology == "VP" and solver == "FE":
-            all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output, advection,
-                                                       hsolver, asolver, h1, h0, a1, a0)
-        elif rheology == "VP" and solver == "mEVP":
-            all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                                              output, advection, hsolver, asolver, h1, h0, a1, a0)
-        elif rheology == "EVP" and solver == "EVP":
-            all_u, all_h, all_a = evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T,
-                                             timescale, output, advection, hsolver, asolver, h1, h0, a1, a0)
-        elif rheology == "EVP" and solver == "mEVP":
-            all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                                              output, advection, hsolver, asolver, h1, h0, a1, a0)
+    if rheology == "VP" and solver == "FE":
+        all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output, advection,
+                                                   hsolver, asolver, h1, h0, a1, a0)
+    elif rheology == "VP" and solver == "mEVP":
+        all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
+                                          output, advection, hsolver, asolver, h1, h0, a1, a0)
+    elif rheology == "EVP" and solver == "EVP":
+        all_u, all_h, all_a = evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T,
+                                         timescale, output, advection, hsolver, asolver, h1, h0, a1, a0)
+    elif rheology == "EVP" and solver == "mEVP":
+        all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
+                                          output, advection, hsolver, asolver, h1, h0, a1, a0)
 
     print('...done!')
 
@@ -243,13 +234,10 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
-    # deviatoric part of the strain rate tensor
-    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
-
     # ice strength
     P = P_star * h * exp(-C * (1 - a))
 
-    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
+    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
 
     # viscosities
     zeta = 0.5 * P / Delta
@@ -329,13 +317,10 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
-    # deviatoric part of the strain rate tensor
-    ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
-
     # ice strength
     P = P_star * h * exp(-C * (1 - a))
 
-    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
+    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
 
     # viscosities
     zeta = 0.5 * P / Delta
@@ -367,7 +352,8 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     sh = 0.5 * (s + sigma0)
 
     lm = inner(rho * h * (u1 - u0), v) * dx
-    lm += timestepc * inner(rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(degree=3)
+    lm += timestepc * inner(rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(
+        degree=3)
     lm += timestepc * inner(sh, grad(v)) * dx
 
     ls = inner(w, sigma1 - s) * dx
@@ -385,4 +371,6 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     print('...done!')
 
-vp_evp_test_explicit(rheology="EVP",advection=True,solver="mEVP",subcycle=10)
+
+vp_evp_test_explicit()
+vp_evp_test_explicit(advection=True)
