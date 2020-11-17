@@ -84,14 +84,10 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     # strain rate tensor, where grad(u) is the jacobian matrix of u
     ep_dot = 0.5 * (grad(u1) + transpose(grad(u1)))
 
-    # deviatoric part of the strain rate tensor
-    # ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
-    ep_dot_prime = dev(ep_dot)
-
     # ice strength
     P = P_star * h1 * exp(-C * (1 - a1))
 
-    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
+    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
 
     # viscosities
     zeta = 0.5 * P / Delta
@@ -372,5 +368,3 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     print('...done!')
 
 
-vp_evp_test_explicit()
-vp_evp_test_explicit(advection=True)

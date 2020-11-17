@@ -124,8 +124,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     lm += timestepc * inner(sigma, grad(v)) * dx
     lm += stab_term
 
-    # need to solve the transport equations using an upwinding method
-    # need to solve the transport equations using an upwind scheme
+    # solving the transport equations using an upwind method
     if advection:
         dh_trial = TrialFunction(U)
         da_trial = TrialFunction(U)
@@ -169,7 +168,8 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     return all_u
 
 
-def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=False, stabilised=0, last_frame=False):
+def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=False, stabilised=0, last_frame=False,
+                advection = True):
     """solving the box test using the implicit midpoint rule"""
     print('\n******************************** BOX TEST ********************************\n')
 
@@ -185,7 +185,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
 
     u0, h0, a0 = w0.split()
 
-    Delta = Function(U)
+    #Delta = Function(U)
 
     # test functions
 
@@ -250,10 +250,11 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     lm += stab_term
 
     # adding the transport equations
-    lm += inner((h1 - h0), q) * dx
-    lm -= timestep * inner(uh * hh, grad(q)) * dx
-    lm += inner((a1 - a0), r) * dx
-    lm -= timestep * inner(uh * ah, grad(r)) * dx
+    if advection:
+        lm += inner(h1 - h0, q) * dx
+        lm -= timestep * inner(uh * hh, grad(q)) * dx
+        lm += inner(a1 - a0, r) * dx
+        lm -= timestep * inner(uh * ah, grad(r)) * dx
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
 
@@ -303,12 +304,12 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
         ufile = File('./output/box_test/box_test_alt_u.pvd')
         hfile = File('./output/box_test/box_test_alt_h.pvd')
         afile = File('./output/box_test/box_test_alt_a.pvd')
-        deltafile = File('./output/box_test/box_test_alt_delta.pvd')
+        #deltafile = File('./output/box_test/box_test_alt_delta.pvd')
 
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
-        deltafile.write(Delta, time=t)
+        #deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
             usolver.solve()
@@ -338,6 +339,3 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     print('...done!')
 
     return all_u, all_h, all_a, all_delta
-
-box_test_im(timescale=10,timestep=1,number_of_triangles=35,output=True)
-
