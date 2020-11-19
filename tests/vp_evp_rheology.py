@@ -105,8 +105,8 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     # internal stress tensor
     if init == "0":
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
-    elif init == "1":
-        div(sigma) = rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (u1 - ocean_curr)
+    #elif init == "1":
+    #    div(sigma) = rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (u1 - ocean_curr)
 
     if stabilised == 0:
         stab_term = 0
@@ -272,7 +272,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     u1, s1 = w1.split()
 
     # writing a pathname which depends on the variables chosen
-    pathname = "./output/evp_alt/u_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
+    pathname = "./output/implicit_evp/u_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
 
     t = 0.0
 

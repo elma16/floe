@@ -82,8 +82,8 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
         h1.assign(h0)
 
     # boundary condition
-    h_in = Constant(0)
-    a_in = Constant(0)
+    h_in = Constant(0.5)
+    a_in = Constant(0.5)
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
@@ -190,6 +190,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     # test functions
 
     p, q, r = TestFunctions(W)
+    #w = TestFunction(U)
 
     x, y = SpatialCoordinate(mesh)
 
@@ -214,6 +215,10 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
         hh = 0.5 * (h0 + h1)
     else:
         hh = 1
+
+    # boundary condition
+    h_in = Constant(0.5)
+    a_in = Constant(0.5)
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
@@ -252,7 +257,36 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     lm += timestepc * inner(sigma, grad(p)) * dx
     lm += stab_term
 
+    """
     # adding the transport equations
+    if advection:
+        dh_trial = TrialFunction(U)
+        da_trial = TrialFunction(U)
+
+        #LHS
+        lhsh = w * dh_trial * dx
+        lhsa = w * da_trial * dx
+
+        n = FacetNormal(mesh)
+
+        un = 0.5 * (dot(u1, n) + abs(dot(u1, n)))
+
+        lh = timestepc * (h1 * div(w * u1) * dx
+            - conditional(dot(u1, n) < 0, w * dot(u1, n) * h_in, 0.0) * ds
+            - conditional(dot(u1, n) > 0, w * dot(u1, n) * h1, 0.0) * ds
+            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * h1('-')) * dS)
+
+        la = timestepc * (a1 * div(w * u1) * dx
+            - conditional(dot(u1, n) < 0, w * dot(u1, n) * a_in, 0.0) * ds
+            - conditional(dot(u1, n) > 0, w * dot(u1, n) * a1, 0.0) * ds
+            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * a1('-')) * dS)
+
+        hprob = LinearVariationalProblem(lhsh, lh, h1)
+        hsolver = LinearVariationalSolver(hprob, solver_parameters=params2)
+        aprob = LinearVariationalProblem(lhsa, la, a1)
+        asolver = LinearVariationalSolver(aprob, solver_parameters=params2)
+    """
+
     if advection:
         lm += inner(h1 - h0, q) * dx
         lm -= timestep * inner(uh * hh, grad(q)) * dx
@@ -260,11 +294,8 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
         lm -= timestep * inner(uh * ah, grad(r)) * dx
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
-
-    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
-
     uprob = NonlinearVariationalProblem(lm, w1, bcs)
-    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params2)
 
     u1, h1, a1 = w1.split()
 
@@ -280,12 +311,12 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
         ufile = File('./output/box_test/box_test_alt_u.pvd')
         hfile = File('./output/box_test/box_test_alt_h.pvd')
         afile = File('./output/box_test/box_test_alt_a.pvd')
-        deltafile = File('./output/box_test/box_test_alt_delta.pvd')
+        #deltafile = File('./output/box_test/box_test_alt_delta.pvd')
 
         ufile.write(u1, time=t)
         hfile.write(h1, time=t)
         afile.write(a1, time=t)
-        deltafile.write(Delta, time=t)
+        #deltafile.write(Delta, time=t)
 
         while t < timescale - 0.5 * timestep:
             usolver.solve()
@@ -316,7 +347,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
 
         while t < timescale - 0.5 * timestep:
             usolver.solve()
-            w0.assign(w1)
+            w1.assign(w0)
             ufile.write(u1, time=t)
             hfile.write(h1, time=t)
             afile.write(a1, time=t)
@@ -330,7 +361,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     else:
         while t < timescale - 0.5 * timestep:
             usolver.solve()
-            w0.assign(w1)
+            w1.assign(w0)
             all_u.append(Function(u1))
             all_h.append(Function(h1))
             all_a.append(Function(a1))
@@ -343,3 +374,5 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
 
     return all_u, all_h, all_a, all_delta
 
+#box_test(timescale=100,timestep=1,number_of_triangles=35,subcycle=10,advection=True,output=True)
+box_test_im(timescale=100,timestep=1,number_of_triangles=35,output=True)
