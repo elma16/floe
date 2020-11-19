@@ -11,6 +11,9 @@ from solvers.mevp_solver import *
 all_u = []
 
 def ievp_solver(output,last_frame,pathname,timescale,timestep,t,w0,w1,u1,usolver):
+    """
+    Solver for the implicit midpoint solve for the EVP rheology.
+    """
     if output and last_frame:
         ufile = File(pathname)
         ufile.write(u1, time=t)
@@ -49,6 +52,9 @@ def ievp_solver(output,last_frame,pathname,timescale,timestep,t,w0,w1,u1,usolver
     return all_u
 
 def imevp(output,last_frame,timescale,timestep,u0,t,usolver,ssolver,u1,pathname):
+    """
+    Solver for the implicit matrix solve of the EVP rheology.
+    """
     if output and last_frame:
         outfile = File(pathname)
         outfile.write(u0, time=t)

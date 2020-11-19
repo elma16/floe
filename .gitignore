@@ -16,4 +16,3 @@ output
 plots
 tests/compile.py
 tests/test-outputs.py
-tests/upwinding.py

@@ -343,4 +343,3 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
 
     return all_u, all_h, all_a, all_delta
 
-box_test_im(timescale=10,timestep=1,number_of_triangles=30,advection=False)

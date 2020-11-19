@@ -26,9 +26,11 @@ A = x/L_x
 
 
 def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, rheology="VP", advection=False,
-                         solver="FE", stabilised=0, subcycle=100, output=False, last_frame=False):
+                         solver="FE", stabilised=0, subcycle=100, output=False, last_frame=False,init="0"):
     """
-    Solving explicitly using the method in the paper
+    Solving explicitly using the method in the paper:
+        init = "0" for 0 initial conditions
+         = "1" for manufactured solution IC.
     """
     print(
         '\n******************************** {rheo} MODEL TEST ********************************\n'.format(rheo=rheology))
@@ -58,9 +60,16 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     timestepc = Constant(timestep)
 
     # initial conditions
+    if init == "0":
+        u0.assign(0)
+        u1.assign(u0)
+    elif init == "1":
+        # initial conditions from the manufactured solution
+        pi_x = pi / L
+        v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+        u0.interpolate(v_exp)
+        u1.assign(u0)
 
-    u0.assign(0)
-    u1.assign(u0)
     a0.interpolate(x / L)
     a1.assign(a0)
     if not advection:
@@ -94,7 +103,10 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     eta = zeta * e ** (-2)
 
     # internal stress tensor
-    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
+    if init == "0":
+        sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
+    elif init == "1":
+        div(sigma) = rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (u1 - ocean_curr)
 
     if stabilised == 0:
         stab_term = 0
@@ -147,8 +159,12 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         aprob = LinearVariationalProblem(lhsa, la, a1)
         asolver = LinearVariationalSolver(aprob, solver_parameters=params)
     else:
-        hsolver, asolver = None
-        h1, h0, a1, a0 = None
+        hsolver = None
+        asolver = None
+        h1 = None
+        h0 = None
+        a1 = None
+        a0 = None
 
     t = 0
 
@@ -175,9 +191,11 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     return all_u, all_h, all_a, mesh, zeta
 
 
-def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False, last_frame=False):
+def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False, last_frame=False, init = "0"):
     """
     Solving using an implicit midpoint method and mixed function spaces.
+            init = "0" for 0 initial conditions
+                 = "1" for manufactured solution IC.
     """
     print('\n******************************** IMPLICIT EVP MODEL TEST ********************************\n')
 
@@ -263,7 +281,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     return all_u
 
 
-def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False, last_frame=False):
+def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False, last_frame=False, init = "0"):
     """
     Solving test 2 using the implicit midpoint rule, but solving a matrix system rather than using a mixed function space.
 
@@ -272,6 +290,9 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     Apply the implicit midpoint rule to the coupled system of PDEs.
     Solve sigma^{n+1} in terms of sigma^{n},v^{n},v^{n+1}.
     Plug in sigma^{n+1} into the momentum equation and solve exactly for v^{n+1}.
+
+    init = "0" for 0 initial conditions
+         = "1" for manufactured solution IC.
     """
     print('\n******************************** IMPLICIT EVP MODEL TEST ********************************\n')
 
@@ -303,7 +324,14 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     # initial conditions
 
-    u0.assign(0)
+    if init == "0":
+        u0.assign(0)
+    elif init == "1":
+        # initial conditions from the manufactured solution
+        pi_x = pi / L
+        v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+        u0.interpolate(v_exp)
+
     h = Constant(1)
     a.interpolate(x / L)
 
@@ -361,9 +389,13 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     sprob = NonlinearVariationalProblem(ls, sigma1)
     ssolver = NonlinearVariationalSolver(sprob, solver_parameters=params)
 
-    pathname = './output/implicit_evp/u.pvd'
+    pathname = './output/implicit_evp_matrix/T={}_u_k={}.pvd'.format(timescale,timestep)
 
     imevp(output, last_frame, timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
 
     print('...done!')
+
+#vp_evp_test_explicit(rheology="EVP",solver="mEVP",output=True,subcycle=10)
+#evp_test_implicit(output=True)
+#evp_test_implicit_matrix(output=True)
 

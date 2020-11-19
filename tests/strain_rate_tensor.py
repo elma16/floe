@@ -28,7 +28,11 @@ stabilised = {0,1,2}
 
 
 def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
-                       transform_mesh=False, output=False, shape=None, last_frame=False):
+                       transform_mesh=False, output=False, shape=None, last_frame=False,init = "0"):
+    """
+    init = "0" for 0 initial conditions
+         = "1" for manufactured solution IC.
+    """
     print('\n******************************** STRAIN RATE TENSOR ********************************\n')
     # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral triangles
     if transform_mesh:
@@ -83,16 +87,16 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
         sigma = 0.5 * zeta * grad(u1)
 
     pi_x = pi / L
-
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
-    # initialising at expected v value
-
-    # u0.interpolate(v_exp)
-    # u1.assign(u0)
-
-    u0.assign(0)
-    u1.assign(u0)
+    if init == "0":
+        # initialising at 0
+        u0.assign(0)
+        u1.assign(u0)
+    elif init == "1":
+        # initialising at expected v value (manufactured solution)
+        u0.interpolate(v_exp)
+        u1.assign(u0)
 
     sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
 
