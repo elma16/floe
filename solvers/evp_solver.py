@@ -28,22 +28,17 @@ def evp_stress_solver(sigma, ep_dot, P, zeta, T, subcycle_timestep):
     return sigma
 
 
-def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale, output=False,
+def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale,
                advection=False, hsolver=None, asolver=None, h1=None, h0=None, a1=None, a0=None):
     subcycle_timestep = timestep / subcycle
-    all_u = []
-    all_h = []
-    all_a = []
     pathname = './output/vp_evp_test/{}test_{}.pvd'.format(timescale, timestep)
-
     ndump = 10
     dumpn = 0
+    outfile = File(pathname)
+    outfile.write(u0, time=t)
 
+    print('******************************** EVP Solver ********************************\n')
     if not advection:
-        outfile = File(pathname)
-        outfile.write(u0, time=t)
-
-        print('******************************** EVP Solver ********************************\n')
         while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
@@ -56,17 +51,9 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
             if dumpn == ndump:
                 dumpn -= ndump
                 outfile.write(u0, time=t)
-            all_u.append(Function(u1))
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
-
-        print('... EVP problem solved...\n')
-
     if advection:
-        outfile = File(pathname)
-        outfile.write(u0, time=t)
-
-        print('******************************** EVP Solver ********************************\n')
         while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
@@ -83,11 +70,6 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
             if dumpn == ndump:
                 dumpn -= ndump
                 outfile.write(u0, time=t)
-            all_u.append(Function(u1))
-            all_h.append(Function(h1))
-            all_a.append(Function(a1))
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
-
-        print('... EVP problem solved...\n')
-    return all_u, all_h, all_a
+    print('... EVP problem solved...\n')

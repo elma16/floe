@@ -157,17 +157,16 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     t = 0
     if advection:
-        all_u = bt_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
+        bt_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
                           advection, hsolver, h0, h1, asolver, a0, a1)
     elif not advection:
-        all_u = bt_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
+        bt_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
 
     print('...done!')
 
-    return all_u
 
 
-def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabilised=0,advection = True):
+def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabilised=0):
     """solving the box test using the implicit midpoint rule"""
     print('\n******************************** BOX TEST ********************************\n')
 
@@ -180,27 +179,22 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
     W = MixedFunctionSpace([V, U, U])
 
     w0 = Function(W)
+    w1 = Function(W)
 
     u0, h0, a0 = w0.split()
 
-    #Delta = Function(U)
-
     # test functions
-
     p, q, r = TestFunctions(W)
-    #w = TestFunction(U)
 
     x, y = SpatialCoordinate(mesh)
 
     timestepc = Constant(timestep)
 
     # initial conditions
-
     u0.assign(0)
     h0.assign(1)
     a0.interpolate(x / L)
 
-    w1 = Function(W)
     w1.assign(w0)
 
     u0, h0, a0 = split(w0)
@@ -209,10 +203,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
 
     uh = 0.5 * (u0 + u1)
     ah = 0.5 * (a0 + a1)
-    if advection:
-        hh = 0.5 * (h0 + h1)
-    else:
-        hh = 1
+    hh = 0.5 * (h0 + h1)
 
     # boundary condition
     h_in = Constant(0.5)
@@ -256,27 +247,26 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
     lm += stab_term
 
     # adding the transport equations
-    if advection:
-        dh_trial = h1 - h0
-        da_trial = a1 - a0
+    dh_trial = h1 - h0
+    da_trial = a1 - a0
 
-        # LHS
-        lm += q * dh_trial * dx
-        lm += r * da_trial * dx
+    # LHS
+    lm += q * dh_trial * dx
+    lm += r * da_trial * dx
 
-        n = FacetNormal(mesh)
+    n = FacetNormal(mesh)
 
-        un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
+    un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
 
-        lm -= timestepc * (hh * div(q * uh) * dx
-                           - conditional(dot(uh, n) < 0, q * dot(uh, n) * h_in, 0.0) * ds
-                           - conditional(dot(uh, n) > 0, q * dot(uh, n) * hh, 0.0) * ds
-                           - (q('+') - q('-')) * (un('+') * ah('+') - un('-') * hh('-')) * dS)
+    lm -= timestepc * (hh * div(q * uh) * dx
+                       - conditional(dot(uh, n) < 0, q * dot(uh, n) * h_in, 0.0) * ds
+                       - conditional(dot(uh, n) > 0, q * dot(uh, n) * hh, 0.0) * ds
+                       - (q('+') - q('-')) * (un('+') * ah('+') - un('-') * hh('-')) * dS)
 
-        lm -= timestepc * (ah * div(r * uh) * dx
-                           - conditional(dot(uh, n) < 0, r * dot(uh, n) * a_in, 0.0) * ds
-                           - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah, 0.0) * ds
-                           - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
+    lm -= timestepc * (ah * div(r * uh) * dx
+                       - conditional(dot(uh, n) < 0, r * dot(uh, n) * a_in, 0.0) * ds
+                       - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah, 0.0) * ds
+                       - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
     uprob = NonlinearVariationalProblem(lm, w1, bcs)
@@ -307,5 +297,5 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
 
 
 
-#box_test(timescale=100,timestep=1,number_of_triangles=35,subcycle=10,advection=True,output=True)
-#box_test_im(timescale=10,timestep=1,number_of_triangles=35,output=True)
+#box_test(timescale=20,timestep=1,number_of_triangles=35,subcycle=10,advection=True)
+#box_test_im(timescale=20,timestep=1,number_of_triangles=35)

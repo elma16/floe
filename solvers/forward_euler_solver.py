@@ -10,10 +10,10 @@ def forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection=Fals
     ndump = 10
     dumpn = 0
     pathname = './output/vp_evp_test/{}test_{}.pvd'.format(timescale, timestep)
+    outfile = File(pathname)
+    outfile.write(u0, time=t)
+    print('******************************** Forward solver ********************************\n')
     if not advection:
-        outfile = File(pathname)
-        outfile.write(u0, time=t)
-        print('******************************** Forward solver ********************************\n')
         while t < timescale - 0.5 * timestep:
             usolver.solve()
             u0.assign(u1)
@@ -25,11 +25,7 @@ def forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection=Fals
                 outfile.write(u0, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
-        print('... forward problem solved...\n')
     if advection:
-        outfile = File(pathname)
-        outfile.write(u0, time=t)
-        print('******************************** Forward solver ********************************\n')
         while t < timescale - 0.5 * timestep:
             usolver.solve()
             u0.assign(u1)
@@ -47,5 +43,7 @@ def forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection=Fals
                 outfile.write(u0, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
-        print('... forward problem solved...\n')
+
+    print('... forward problem solved...\n')
     return all_u, all_h, all_a
+

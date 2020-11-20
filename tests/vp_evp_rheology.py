@@ -103,8 +103,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     eta = zeta * e ** (-2)
 
     # internal stress tensor
-    if init == "0":
-        sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
+    sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
     # elif init == "1":
     #    div(sigma) = rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (u1 - ocean_curr)
 
@@ -174,24 +173,22 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
     if rheology == "VP" and solver == "FE":
-        all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection, hsolver, asolver,
-                                                   h1, h0, a1, a0)
+        forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection, hsolver, asolver,
+                             h1, h0, a1, a0)
     elif rheology == "VP" and solver == "mEVP":
-        all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                                          advection, hsolver, asolver, h1, h0, a1, a0)
+        mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
+                    advection, hsolver, asolver, h1, h0, a1, a0)
     elif rheology == "EVP" and solver == "EVP":
-        all_u, all_h, all_a = evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale,
-                                         advection, hsolver, asolver, h1, h0, a1, a0)
+        evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale,
+                   advection, hsolver, asolver, h1, h0, a1, a0)
     elif rheology == "EVP" and solver == "mEVP":
-        all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                                          advection, hsolver, asolver, h1, h0, a1, a0)
+        mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale, advection, hsolver,
+                    asolver, h1, h0, a1, a0)
 
     print('...done!')
 
-    return all_u, all_h, all_a, mesh, zeta
 
-
-def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,init="0"):
+def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, init="0"):
     """
     Solving using an implicit midpoint method and mixed function spaces.
             init = "0" for 0 initial conditions
@@ -395,6 +392,3 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     print('...done!')
 
-# vp_evp_test_explicit(rheology="EVP",solver="mEVP",output=True,subcycle=10)
-# evp_test_implicit(output=True)
-# evp_test_implicit_matrix(output=True)

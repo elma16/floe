@@ -30,17 +30,13 @@ def mevp_stress_solver(sigma, ep_dot, zeta, P):
 def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
                 advection=False, hsolver=None, asolver=None, h1=None, h0=None, a1=None, a0=None):
     subcycle_timestep = timestep / subcycle
-    all_u = []
-    all_h = []
-    all_a = []
     ndump = 10
     dumpn = 0
     pathname = './output/vp_evp_test/{}test_{}.pvd'.format(timescale, timestep)
+    outfile = File(pathname)
+    outfile.write(u0, time=t)
+    print('******************************** mEVP Solver ********************************\n')
     if not advection:
-        outfile = File(pathname)
-        outfile.write(u0, time=t)
-
-        print('******************************** mEVP Solver ********************************\n')
         while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
@@ -53,17 +49,9 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
             if dumpn == ndump:
                 dumpn -= ndump
                 outfile.write(u0, time=t)
-            all_u.append(Function(u1))
-
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
-
-        print('... mEVP problem solved...\n')
     if advection:
-        outfile = File(pathname)
-        outfile.write(u0, time=t)
-
-        print('******************************** mEVP Solver ********************************\n')
         while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
@@ -80,11 +68,7 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
             if dumpn == ndump:
                 dumpn -= ndump
                 outfile.write(u0, time=t)
-            all_u.append(Function(u1))
-            all_h.append(Function(h1))
-            all_a.append(Function(a1))
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
 
-        print('... mEVP problem solved...\n')
-    return all_u, all_h, all_a
+    print('... mEVP problem solved...\n')
