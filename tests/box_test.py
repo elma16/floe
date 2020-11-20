@@ -38,8 +38,7 @@ number_of_triangles : for the paper's 15190 edges, between 70 and 71 are require
 """
 
 
-def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False,
-             output=False, stabilised=0):
+def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False, stabilised=0):
     """solving the full system of coupled PDEs explicitly, in the method of the paper"""
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
     L = 1000000
@@ -158,18 +157,17 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     t = 0
     if advection:
-        all_u = bt_solver(output, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
+        all_u = bt_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
                           advection, hsolver, h0, h1, asolver, a0, a1)
     elif not advection:
-        all_u = bt_solver(output, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
+        all_u = bt_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
 
     print('...done!')
 
     return all_u
 
 
-def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=False, stabilised=0, last_frame=False,
-                advection = True):
+def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabilised=0,advection = True):
     """solving the box test using the implicit midpoint rule"""
     print('\n******************************** BOX TEST ********************************\n')
 
@@ -257,41 +255,28 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
     lm += timestepc * inner(sigma, grad(p)) * dx
     lm += stab_term
 
-    """
     # adding the transport equations
     if advection:
-        dh_trial = TrialFunction(U)
-        da_trial = TrialFunction(U)
+        dh_trial = h1 - h0
+        da_trial = a1 - a0
 
-        #LHS
-        lhsh = w * dh_trial * dx
-        lhsa = w * da_trial * dx
+        # LHS
+        lm += q * dh_trial * dx
+        lm += r * da_trial * dx
 
         n = FacetNormal(mesh)
 
-        un = 0.5 * (dot(u1, n) + abs(dot(u1, n)))
+        un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
 
-        lh = timestepc * (h1 * div(w * u1) * dx
-            - conditional(dot(u1, n) < 0, w * dot(u1, n) * h_in, 0.0) * ds
-            - conditional(dot(u1, n) > 0, w * dot(u1, n) * h1, 0.0) * ds
-            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * h1('-')) * dS)
+        lm -= timestepc * (hh * div(q * uh) * dx
+                           - conditional(dot(uh, n) < 0, q * dot(uh, n) * h_in, 0.0) * ds
+                           - conditional(dot(uh, n) > 0, q * dot(uh, n) * hh, 0.0) * ds
+                           - (q('+') - q('-')) * (un('+') * ah('+') - un('-') * hh('-')) * dS)
 
-        la = timestepc * (a1 * div(w * u1) * dx
-            - conditional(dot(u1, n) < 0, w * dot(u1, n) * a_in, 0.0) * ds
-            - conditional(dot(u1, n) > 0, w * dot(u1, n) * a1, 0.0) * ds
-            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * a1('-')) * dS)
-
-        hprob = LinearVariationalProblem(lhsh, lh, h1)
-        hsolver = LinearVariationalSolver(hprob, solver_parameters=params2)
-        aprob = LinearVariationalProblem(lhsa, la, a1)
-        asolver = LinearVariationalSolver(aprob, solver_parameters=params2)
-    """
-
-    if advection:
-        lm += inner(h1 - h0, q) * dx
-        lm -= timestep * inner(uh * hh, grad(q)) * dx
-        lm += inner(a1 - a0, r) * dx
-        lm -= timestep * inner(uh * ah, grad(r)) * dx
+        lm -= timestepc * (ah * div(r * uh) * dx
+                           - conditional(dot(uh, n) < 0, r * dot(uh, n) * a_in, 0.0) * ds
+                           - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah, 0.0) * ds
+                           - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
 
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
     uprob = NonlinearVariationalProblem(lm, w1, bcs)
@@ -299,80 +284,28 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, output=
 
     u1, h1, a1 = w1.split()
 
-    all_u = []
-    all_h = []
-    all_a = []
-    all_delta = []
-
     t = 0
+    ndump = 10
+    dumpn = 0
+    # output the whole simulation
+    ufile = File('./output/box_test/box_test_implicit.pvd')
 
-    if output and last_frame:
-        # just output the beginning and end frames
-        ufile = File('./output/box_test/box_test_alt_u.pvd')
-        hfile = File('./output/box_test/box_test_alt_h.pvd')
-        afile = File('./output/box_test/box_test_alt_a.pvd')
-        #deltafile = File('./output/box_test/box_test_alt_delta.pvd')
+    ufile.write(u1,h1,a1, time=t)
 
-        ufile.write(u1, time=t)
-        hfile.write(h1, time=t)
-        afile.write(a1, time=t)
-        #deltafile.write(Delta, time=t)
-
-        while t < timescale - 0.5 * timestep:
-            usolver.solve()
-            w0.assign(w1)
-            all_u.append(Function(u1))
-            all_h.append(Function(h1))
-            all_a.append(Function(a1))
-            t += timestep
-            t0.assign(t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-        ufile.write(u1, time=t)
-        hfile.write(h1, time=t)
-        afile.write(a1, time=t)
-        deltafile.write(Delta, time=t)
-
-    elif output and not last_frame:
-        # output the whole simulation
-        ufile = File('./output/box_test/box_test_alt_u.pvd')
-        hfile = File('./output/box_test/box_test_alt_h.pvd')
-        afile = File('./output/box_test/box_test_alt_a.pvd')
-        #deltafile = File('./output/box_test/box_test_alt_delta.pvd')
-
-        ufile.write(u1, time=t)
-        hfile.write(h1, time=t)
-        afile.write(a1, time=t)
-        #deltafile.write(Delta, time=t)
-
-        while t < timescale - 0.5 * timestep:
-            usolver.solve()
-            w1.assign(w0)
-            ufile.write(u1, time=t)
-            hfile.write(h1, time=t)
-            afile.write(a1, time=t)
-            t += timestep
-            t0.assign(t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-            all_u.append(Function(u1))
-            all_h.append(Function(h1))
-            all_a.append(Function(a1))
-    else:
-        while t < timescale - 0.5 * timestep:
-            usolver.solve()
-            w1.assign(w0)
-            all_u.append(Function(u1))
-            all_h.append(Function(h1))
-            all_a.append(Function(a1))
-            t += timestep
-            t0.assign(t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
-
+    while t < timescale - 0.5 * timestep:
+        usolver.solve()
+        w1.assign(w0)
+        dumpn += 1
+        if dumpn == ndump:
+            dumpn -= ndump
+            ufile.write(u1,h1,a1, time=t)
+        t += timestep
+        t0.assign(t)
+        print("Time:", t, "[s]")
+        print(int(min(t / timescale * 100, 100)), "% complete")
     print('...done!')
 
-    return all_u, all_h, all_a, all_delta
+
 
 #box_test(timescale=100,timestep=1,number_of_triangles=35,subcycle=10,advection=True,output=True)
-box_test_im(timescale=100,timestep=1,number_of_triangles=35,output=True)
+#box_test_im(timescale=10,timestep=1,number_of_triangles=35,output=True)

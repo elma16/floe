@@ -28,7 +28,7 @@ stabilised = {0,1,2}
 
 
 def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
-                       transform_mesh=False, output=False, shape=None, last_frame=False,init = "0"):
+                       transform_mesh=False, output=False, shape=None,init = "0"):
     """
     init = "0" for 0 initial conditions
          = "1" for manufactured solution IC.

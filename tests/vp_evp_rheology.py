@@ -26,7 +26,7 @@ A = x/L_x
 
 
 def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, rheology="VP", advection=False,
-                         solver="FE", stabilised=0, subcycle=100, output=False, last_frame=False,init="0"):
+                         solver="FE", stabilised=0, subcycle=100, init="0"):
     """
     Solving explicitly using the method in the paper:
         init = "0" for 0 initial conditions
@@ -105,7 +105,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     # internal stress tensor
     if init == "0":
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
-    #elif init == "1":
+    # elif init == "1":
     #    div(sigma) = rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (u1 - ocean_curr)
 
     if stabilised == 0:
@@ -174,24 +174,24 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
     if rheology == "VP" and solver == "FE":
-        all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output, advection,
-                                                   hsolver, asolver, h1, h0, a1, a0)
+        all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection, hsolver, asolver,
+                                                   h1, h0, a1, a0)
     elif rheology == "VP" and solver == "mEVP":
         all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                                          output, advection, hsolver, asolver, h1, h0, a1, a0)
+                                          advection, hsolver, asolver, h1, h0, a1, a0)
     elif rheology == "EVP" and solver == "EVP":
-        all_u, all_h, all_a = evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T,
-                                         timescale, output, advection, hsolver, asolver, h1, h0, a1, a0)
+        all_u, all_h, all_a = evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale,
+                                         advection, hsolver, asolver, h1, h0, a1, a0)
     elif rheology == "EVP" and solver == "mEVP":
         all_u, all_h, all_a = mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                                          output, advection, hsolver, asolver, h1, h0, a1, a0)
+                                          advection, hsolver, asolver, h1, h0, a1, a0)
 
     print('...done!')
 
     return all_u, all_h, all_a, mesh, zeta
 
 
-def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False, last_frame=False, init = "0"):
+def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,init="0"):
     """
     Solving using an implicit midpoint method and mixed function spaces.
             init = "0" for 0 initial conditions
@@ -276,12 +276,12 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
 
     t = 0.0
 
-    all_u = ievp_solver(output, last_frame, pathname, timescale, timestep, t, w0, w1, u1, usolver)
+    all_u = ievp_solver(pathname, timescale, timestep, t, w0, w1, u1, usolver)
 
     return all_u
 
 
-def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, output=False, last_frame=False, init = "0"):
+def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, init="0"):
     """
     Solving test 2 using the implicit midpoint rule, but solving a matrix system rather than using a mixed function space.
 
@@ -389,13 +389,12 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     sprob = NonlinearVariationalProblem(ls, sigma1)
     ssolver = NonlinearVariationalSolver(sprob, solver_parameters=params)
 
-    pathname = './output/implicit_evp_matrix/T={}_u_k={}.pvd'.format(timescale,timestep)
+    pathname = './output/implicit_evp_matrix/T={}_u_k={}.pvd'.format(timescale, timestep)
 
-    imevp(output, last_frame, timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
+    imevp(timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
 
     print('...done!')
 
-#vp_evp_test_explicit(rheology="EVP",solver="mEVP",output=True,subcycle=10)
-#evp_test_implicit(output=True)
-#evp_test_implicit_matrix(output=True)
-
+# vp_evp_test_explicit(rheology="EVP",solver="mEVP",output=True,subcycle=10)
+# evp_test_implicit(output=True)
+# evp_test_implicit_matrix(output=True)
