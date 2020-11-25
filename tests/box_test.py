@@ -8,6 +8,7 @@ from tests.parameters import *
 from solvers.mevp_solver import *
 from solvers.solver_general import *
 
+
 def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False, stabilised=0):
     """solving the full system of coupled PDEs explicitly, in the method of the paper"""
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
@@ -98,7 +99,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
         dh_trial = TrialFunction(U)
         da_trial = TrialFunction(U)
 
-        #LHS
+        # LHS
         lhsh = w * dh_trial * dx
         lhsa = w * da_trial * dx
 
@@ -107,14 +108,14 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
         un = 0.5 * (dot(u1, n) + abs(dot(u1, n)))
 
         lh = timestepc * (h1 * div(w * u1) * dx
-            - conditional(dot(u1, n) < 0, w * dot(u1, n) * h_in, 0.0) * ds
-            - conditional(dot(u1, n) > 0, w * dot(u1, n) * h1, 0.0) * ds
-            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * h1('-')) * dS)
+                          - conditional(dot(u1, n) < 0, w * dot(u1, n) * h_in, 0.0) * ds
+                          - conditional(dot(u1, n) > 0, w * dot(u1, n) * h1, 0.0) * ds
+                          - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * h1('-')) * dS)
 
         la = timestepc * (a1 * div(w * u1) * dx
-            - conditional(dot(u1, n) < 0, w * dot(u1, n) * a_in, 0.0) * ds
-            - conditional(dot(u1, n) > 0, w * dot(u1, n) * a1, 0.0) * ds
-            - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * a1('-')) * dS)
+                          - conditional(dot(u1, n) < 0, w * dot(u1, n) * a_in, 0.0) * ds
+                          - conditional(dot(u1, n) > 0, w * dot(u1, n) * a1, 0.0) * ds
+                          - (w('+') - w('-')) * (un('+') * a1('+') - un('-') * a1('-')) * dS)
 
         hprob = LinearVariationalProblem(lhsh, lh, h1)
         hsolver = LinearVariationalSolver(hprob, solver_parameters=params)
@@ -129,13 +130,13 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     if advection:
         explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
                                  advection, hsolver, h0, h1, asolver, a0, a1)
-    elif not advection:
+    else:
         explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
 
     print('...done!')
 
-def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triangles=71, stabilised=0):
 
+def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triangles=71, stabilised=0):
     print('\n******************************** BOX TEST ********************************\n')
 
     mesh = SquareMesh(number_of_triangles, number_of_triangles, L1)
@@ -245,7 +246,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
     dumpn = 0
     ufile = File('./output/box_test/box_test_implicit.pvd')
 
-    ufile.write(u1,h1,a1, time=t)
+    ufile.write(u1, h1, a1, time=t)
 
     while t < timescale - 0.5 * timestep:
         usolver.solve()
@@ -253,7 +254,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
         dumpn += 1
         if dumpn == ndump:
             dumpn -= ndump
-            ufile.write(u1,h1,a1, time=t)
+            ufile.write(u1, h1, a1, time=t)
         t += timestep
         t0.assign(t)
         print("Time:", t, "[s]")

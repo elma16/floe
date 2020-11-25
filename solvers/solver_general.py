@@ -10,7 +10,6 @@ from solvers.mevp_solver import *
 
 
 def implicit_midpoint_evp_solver(pathname, timescale, timestep, t, w0, w1, u1, usolver):
-
     ndump = 10
     dumpn = 0
     ufile = File(pathname)
@@ -28,7 +27,6 @@ def implicit_midpoint_evp_solver(pathname, timescale, timestep, t, w0, w1, u1, u
 
 
 def implicit_midpoint_matrix_evp_solver(timescale, timestep, u0, t, usolver, ssolver, u1, pathname):
-
     ndump = 10
     dumpn = 0
     ufile = File(pathname)
@@ -47,32 +45,15 @@ def implicit_midpoint_matrix_evp_solver(timescale, timestep, u0, t, usolver, sso
         print(int(min(t / timescale * 100, 100)), "% complete")
 
 
-def explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle, advection=False,
-                    hsolver=None, h0=None, h1=None, asolver=None, a0=None, a1=None):
-
+def explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
+                             advection=False,
+                             hsolver=None, h0=None, h1=None, asolver=None, a0=None, a1=None):
     pathname = "./output/box_test/box_test_exp.pvd"
     subcycle_timestep = timestep / subcycle
     ndump = 10
     dumpn = 0
     outfile = File(pathname)
     print('******************************** mEVP Solver ********************************\n')
-    if not advection:
-        outfile.write(u1, time=t)
-        while t < timescale - 0.5 * timestep:
-            s = t
-            while s <= t + timestep:
-                usolver.solve()
-                sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
-                u0.assign(u1)
-                s += subcycle_timestep
-            t += timestep
-            ndump += 1
-            if dumpn == ndump:
-                dumpn -= ndump
-                outfile.write(u1, time=t)
-            t0.assign(t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
     if advection:
         outfile.write(u1, h1, a1, time=t)
         while t < timescale - 0.5 * timestep:
@@ -90,9 +71,25 @@ def explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma,
             ndump += 1
             if dumpn == ndump:
                 dumpn -= ndump
+                outfile.write(u1, h1, a1, time=t)
+            t0.assign(t)
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
+    else:
+        outfile.write(u1, time=t)
+        while t < timescale - 0.5 * timestep:
+            s = t
+            while s <= t + timestep:
+                usolver.solve()
+                sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
+                u0.assign(u1)
+                s += subcycle_timestep
+            t += timestep
+            ndump += 1
+            if dumpn == ndump:
+                dumpn -= ndump
                 outfile.write(u1, time=t)
             t0.assign(t)
-            outfile.write(u1, h1, a1, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
 

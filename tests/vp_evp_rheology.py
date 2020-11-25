@@ -11,6 +11,7 @@ from solvers.forward_euler_solver import *
 from solvers.solver_general import *
 from solvers.solver_parameters import *
 
+
 def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, rheology="VP", advection=False,
                          solver="FE", stabilised=0, subcycle=100, init="0"):
     """
@@ -260,7 +261,6 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     implicit_midpoint_evp_solver(pathname, timescale, timestep, t, w0, w1, u1, usolver)
 
 
-
 def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, init="0"):
     """
     Solving test 2 using the implicit midpoint rule, but solving a matrix system rather than using a mixed function space.
@@ -374,4 +374,3 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     implicit_midpoint_matrix_evp_solver(timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
 
     print('...done!')
-

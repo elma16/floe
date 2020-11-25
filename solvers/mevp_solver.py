@@ -2,6 +2,7 @@ from firedrake import *
 
 from solvers.solver_parameters import *
 
+
 def mevp_stress_solver(sigma, ep_dot, zeta, P):
     """
     Implementation of the mEVP solver used by Mehlmann and Korn:
@@ -34,24 +35,10 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
     dumpn = 0
     pathname = './output/vp_evp_test/{}test_{}.pvd'.format(timescale, timestep)
     outfile = File(pathname)
-    outfile.write(u1, time=t)
+
     print('******************************** mEVP Solver ********************************\n')
-    if not advection:
-        while t < timescale - 0.5 * timestep:
-            s = t
-            while s <= t + timestep:
-                usolver.solve()
-                sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
-                u0.assign(u1)
-                s += subcycle_timestep
-            t += timestep
-            dumpn += 1
-            if dumpn == ndump:
-                dumpn -= ndump
-                outfile.write(u1, time=t)
-            print("Time:", t, "[s]")
-            print(int(min(t / timescale * 100, 100)), "% complete")
     if advection:
+        outfile.write(u1, h1, a1, time = t)
         while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
@@ -62,6 +49,22 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
                 h0.assign(h1)
                 asolver.solve()
                 a0.assign(a1)
+                s += subcycle_timestep
+            t += timestep
+            dumpn += 1
+            if dumpn == ndump:
+                dumpn -= ndump
+                outfile.write(u1, h1, a1, time=t)
+            print("Time:", t, "[s]")
+            print(int(min(t / timescale * 100, 100)), "% complete")
+    else:
+        outfile.write(u1, time=t)
+        while t < timescale - 0.5 * timestep:
+            s = t
+            while s <= t + timestep:
+                usolver.solve()
+                sigma = mevp_stress_solver(sigma, ep_dot, P, zeta)
+                u0.assign(u1)
                 s += subcycle_timestep
             t += timestep
             dumpn += 1

@@ -100,10 +100,11 @@ def plot_u_energy(timescale, timestep):
     plt.show()
     plt.savefig('./plots/strain_rate_energy.png')
 
+
 def korn_ineq(timescale, timestep, number_of_triangles=35, stabilised=0):
     """Illustrating the failure of CR1 in Korn's Inequality"""
     all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles, stabilised)
-    print([norm(grad(all_u[i]))>sqrt(norm(grad(all_u[i])+transpose(grad(all_u[i])))) for i in range(len(all_u))])
+    print([norm(grad(all_u[i])) > sqrt(norm(grad(all_u[i]) + transpose(grad(all_u[i])))) for i in range(len(all_u))])
 
 
 def vel_comp_max(timescale, timestep, number_of_triangles=35, stabilised=0):
@@ -112,10 +113,11 @@ def vel_comp_max(timescale, timestep, number_of_triangles=35, stabilised=0):
     """
     all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles, stabilised)
     # projecting the solutions of the problem onto 'DG1'
-    W = VectorFunctionSpace(mesh,"DG",1)
-    p = [project(all_u[i],W).dat.data for i in range(len(all_u))]
+    W = VectorFunctionSpace(mesh, "DG", 1)
+    p = [project(all_u[i], W).dat.data for i in range(len(all_u))]
     print(shape(p[0]))
-    #print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
+    # print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
     return all_u
 
-vel_comp_max(10,1)
+
+vel_comp_max(10, 1)

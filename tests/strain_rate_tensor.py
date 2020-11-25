@@ -7,8 +7,9 @@ sys.path.insert(0, parentdir)
 from tests.parameters import *
 from solvers.forward_euler_solver import *
 
+
 def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
-                       transform_mesh=False, output=False, shape=None,init = "0"):
+                       transform_mesh=False, output=False, shape=None, init="0"):
     """
     init = "0" for 0 initial conditions
          = "1" for manufactured solution IC.
@@ -24,7 +25,6 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
         mesh.coordinates.assign(f)
     else:
         mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
-
 
     V = VectorFunctionSpace(mesh, "CR", 1)
 
@@ -98,7 +98,7 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
-    all_u, all_h, all_a = forward_euler_solver(u1, u0,usolver,t,timestep,timescale,output)
+    all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output)
 
     print('...done!')
 
