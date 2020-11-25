@@ -6,6 +6,7 @@ sys.path.insert(0, parentdir)
 
 from tests.parameters import *
 from solvers.forward_euler_solver import *
+from solvers.solver_parameters import *
 
 
 def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
@@ -29,8 +30,8 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     V = VectorFunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V)
-    u1 = Function(V)
+    u0 = Function(V, name = "Velocity")
+    u1 = Function(V, name = "VelocityNext")
 
     # test functions
     v = TestFunction(V)
@@ -103,3 +104,5 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     print('...done!')
 
     return all_u, mesh, v_exp, zeta
+
+strain_rate_tensor(10,10**(-1))

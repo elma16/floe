@@ -4,9 +4,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from firedrake import *
-
-from solvers.mevp_solver import *
+from solvers.evp_solvers import *
 
 
 def implicit_midpoint_evp_solver(pathname, timescale, timestep, t, w0, w1, u1, usolver):

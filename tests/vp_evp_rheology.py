@@ -5,8 +5,6 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
 from tests.parameters import *
-from solvers.mevp_solver import *
-from solvers.evp_solver import *
 from solvers.forward_euler_solver import *
 from solvers.solver_general import *
 from solvers.solver_parameters import *
@@ -27,16 +25,16 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V)
-    u1 = Function(V)
+    u0 = Function(V, name = "Velocity")
+    u1 = Function(V, name = "VelocityNext")
 
     # mean height of sea ice
-    h0 = Function(U)
-    h1 = Function(U)
+    h0 = Function(U, name = "Height")
+    h1 = Function(U, name = "HeightNext")
 
     # sea ice concentration
-    a0 = Function(U)
-    a1 = Function(U)
+    a0 = Function(U, name = "Concentration")
+    a1 = Function(U, name = "ConcentrationNext")
 
     # test functions
     v = TestFunction(V)
@@ -163,14 +161,14 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection, hsolver, asolver,
                              h1, h0, a1, a0)
     elif rheology == "VP" and solver == "mEVP":
-        mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale,
-                    advection, hsolver, asolver, h1, h0, a1, a0)
+        evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale, advection, hsolver,
+                   asolver, h1, h0, a1, a0, modified=True)
     elif rheology == "EVP" and solver == "EVP":
-        evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale,
-                   advection, hsolver, asolver, h1, h0, a1, a0)
+        evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale, advection, hsolver,
+                   asolver, h1, h0, a1, a0, modified=False)
     elif rheology == "EVP" and solver == "mEVP":
-        mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, timescale, advection, hsolver,
-                    asolver, h1, h0, a1, a0)
+        evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T, timescale, advection, hsolver,
+                   asolver, h1, h0, a1, a0, modified=True)
 
     print('...done!')
 
@@ -253,7 +251,6 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
 
     u1, s1 = w1.split()
 
-    # writing a pathname which depends on the variables chosen
     pathname = "./output/implicit_evp/u_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
 
     t = 0.0
@@ -283,12 +280,12 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V)
-    u1 = Function(V)
+    u0 = Function(V, name = "Velocity")
+    u1 = Function(V, name = "VelocityNext")
 
     # stress tensors
-    sigma0 = Function(S)
-    sigma1 = Function(S)
+    sigma0 = Function(S, name = "StressTensor")
+    sigma1 = Function(S, name = "StressTensorNext")
 
     uh = 0.5 * (u1 + u0)
 
@@ -318,7 +315,7 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
-    # strain rate tensor, where grad(u) is the jacobian matrix of u
+    # strain rate tensor
     ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
     # ice strength

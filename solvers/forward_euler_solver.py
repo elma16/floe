@@ -1,7 +1,5 @@
 from firedrake import *
 
-from solvers.solver_parameters import *
-
 
 def forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection=False, hsolver=None, asolver=None,
                          h1=None, h0=None, a1=None, a0=None):

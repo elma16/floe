@@ -5,7 +5,7 @@ parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
 from tests.parameters import *
-from solvers.mevp_solver import *
+from solvers.solver_parameters import *
 from solvers.solver_general import *
 
 
@@ -20,16 +20,16 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V)
-    u1 = Function(V)
+    u0 = Function(V, name = "Velocity")
+    u1 = Function(V, name = "VelocityNext")
 
     # mean height of sea ice
-    h0 = Function(U)
-    h1 = Function(U)
+    h0 = Function(U, name = "Height")
+    h1 = Function(U, name = "HeightNext")
 
     # sea ice concentration
-    a0 = Function(U)
-    a1 = Function(U)
+    a0 = Function(U, name = "Concentration")
+    a1 = Function(U, name = "ConcentrationNext")
 
     # test functions
     v = TestFunction(V)
