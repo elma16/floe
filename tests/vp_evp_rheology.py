@@ -57,11 +57,11 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     a0.interpolate(x / L)
     a1.assign(a0)
-    if not advection:
-        h1 = Constant(1)
     if advection:
         h0.assign(1)
         h1.assign(h0)
+    else:
+        h0 = Constant(1)
 
     # boundary conditions
     h_in = Constant(0)
@@ -109,8 +109,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     # momentum equation
 
-    # diverges if i pick h1 -> h0
-    lm = inner(beta * rho * h1 * (u1 - u0) + timestepc * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
+    lm = inner(beta * rho * h0 * (u1 - u0) + timestepc * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
             u1 - ocean_curr), v) * dx
     lm += timestepc * inner(sigma, grad(v)) * dx
     lm += stab_term
@@ -206,15 +205,11 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     a.interpolate(x / L)
     h = Constant(1)
 
-    # ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
-    # ep_dot_prime = ep_dot - 0.5 * tr(ep_dot) * Identity(2)
-    # P = P_star * h * exp(-C * (1 - a))
-    # Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(ep_dot_prime, ep_dot_prime) + tr(ep_dot) ** 2)
-    # zeta = 0.5 * P / Delta
-    # eta = zeta * e ** (-2)
+    # ice strength
+    P = P_star * h * exp(-C * (1 - a))
 
-    # s0.interpolate(2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2))
-
+    #s0.interpolate(- 0.5 * P * Identity(2))
+    #s0.assign(as_matrix([[-0.5*P,0],[0,-0.5*P]]))
     s0.assign(as_matrix([[1, 2], [3, 4]]))
 
     w1 = Function(W)
@@ -223,6 +218,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     u0, s0 = split(w0)
 
     uh = 0.5 * (u0 + u1)
+    sh = 0.5 * (s0 + s1)
 
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
@@ -230,15 +226,10 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     # strain rate tensor
     ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
-    # ice strength
-    P = P_star * h * exp(-C * (1 - a))
-
     Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
 
     # viscosities
     zeta = 0.5 * P / Delta
-
-    sh = 0.5 * (s1 + s0)
 
     lm = (inner(p, rho * h * (u1 - u0)) + timestepc * inner(grad(p), sh) + inner(q, (s1 - s0) + timestepc * (
             0.5 * e ** 2 / T * sh + (0.25 * (1 - e ** 2) / T * tr(sh) + 0.25 * P / T) * Identity(2)))) * dx
@@ -371,3 +362,4 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     implicit_midpoint_matrix_evp_solver(timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
 
     print('...done!')
+

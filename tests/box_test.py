@@ -12,9 +12,8 @@ from solvers.solver_general import *
 def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False, stabilised=0):
     """solving the full system of coupled PDEs explicitly, in the method of the paper"""
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
-    L = 1000000
 
-    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L1)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     U = FunctionSpace(mesh, "CR", 1)
@@ -43,7 +42,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     u0.assign(0)
     u1.assign(u0)
-    a0.interpolate(x / L)
+    a0.interpolate(x / L1)
     a1.assign(a0)
     if not advection:
         h1 = Constant(1)
@@ -56,7 +55,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     a_in = Constant(0.5)
 
     # ocean current
-    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
+    ocean_curr = as_vector([0.1 * (2 * y - L1) / L1, -0.1 * (L1 - 2 * x) / L1])
 
     # strain rate tensor
     ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
@@ -83,8 +82,8 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     # initalise geo_wind
     t0 = Constant(0)
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L1) * sin(2 * pi * y / L1),
+                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L1) * sin(2 * pi * x / L1)])
 
     lm = inner(rho * h1 * (u1 - u0), v) * dx
     lm -= timestepc * inner(rho * h1 * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]), v) * dx
@@ -164,9 +163,8 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
 
     w1.assign(w0)
 
-    u0, h0, a0 = split(w0)
-
     u1, h1, a1 = split(w1)
+    u0, h0, a0 = split(w0)
 
     uh = 0.5 * (u0 + u1)
     ah = 0.5 * (a0 + a1)
