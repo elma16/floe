@@ -53,16 +53,16 @@ def imevp(timescale,timestep,u0,t,usolver,ssolver,u1,pathname):
         print(int(min(t / timescale * 100, 100)), "% complete")
 
 
-def bt_solver(u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,subcycle,advection=False,hsolver=None,h0=None,h1=None,asolver=None,a0=None,a1=None):
+def box_test_solver(u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,subcycle,advection=False,hsolver=None,h0=None,h1=None,asolver=None,a0=None,a1=None):
 
     pathname = "./output/box_test/box_test_exp.pvd"
     subcycle_timestep = timestep / subcycle
     ndump = 10
     dumpn = 0
     outfile = File(pathname)
-    outfile.write(u1, time=t)
     print('******************************** mEVP Solver ********************************\n')
     if not advection:
+        outfile.write(u1, time=t)
         while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
@@ -76,10 +76,10 @@ def bt_solver(u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,subcycle
                 dumpn -= ndump
                 outfile.write(u0, time=t)
             t0.assign(t)
-            all_u.append(Function(u1))
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
     if advection:
+        outfile.write(u1,h1,a1, time=t)
         while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
@@ -97,7 +97,6 @@ def bt_solver(u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,subcycle
                 dumpn -= ndump
                 outfile.write(u0, time=t)
             t0.assign(t)
-            all_u.append(Function(u1))
             outfile.write(u1,h1,a1, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")

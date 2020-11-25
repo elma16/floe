@@ -157,10 +157,10 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     t = 0
     if advection:
-        bt_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
-                          advection, hsolver, h0, h1, asolver, a0, a1)
+        box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle, advection,
+                        hsolver, h0, h1, asolver, a0, a1)
     elif not advection:
-        bt_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
+        box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
 
     print('...done!')
 
