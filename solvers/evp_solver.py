@@ -35,7 +35,7 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
     ndump = 10
     dumpn = 0
     outfile = File(pathname)
-    outfile.write(u0, time=t)
+    outfile.write(u1, time=t)
 
     print('******************************** EVP Solver ********************************\n')
     if not advection:
@@ -50,7 +50,7 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
             dumpn += 1
             if dumpn == ndump:
                 dumpn -= ndump
-                outfile.write(u0, time=t)
+                outfile.write(u1, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
     if advection:
@@ -69,7 +69,7 @@ def evp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, T
             dumpn += 1
             if dumpn == ndump:
                 dumpn -= ndump
-                outfile.write(u0, time=t)
+                outfile.write(u1, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
     print('... EVP problem solved...\n')

@@ -8,36 +8,6 @@ from tests.parameters import *
 from solvers.mevp_solver import *
 from solvers.solver_general import *
 
-"""
-from Mehlmann and Korn, 2020
-Section 4.3
-Box-Test conditions
-Domain:
-    L_x = L_y = 1000000 (meters)
-ocean current:
-    o_1 = 0.1*(2*y - L_y)/L_y
-    o_2 = -0.1*(L_x - 2*x)/L_x
-wind velocity:
-    v_1 = 5 + sin(2*pi*t/T)-3)*(sin(2*pi*x/L_x)*sin(2*pi*y/L_y)
-    v_2 = 5 + sin(2*pi*t/T)-3)*(sin(2*pi*y/L_x)*sin(2*pi*x/L_y)
-timestep:
-    k = 600 (seconds)
-subcycles:
-    N_evp = 500
-total time:
-    one month T = 2678400 (seconds)
-Initial Conditions:
-    v(0) = 0
-    h(0) = 1
-    A(0) = x/L_x
-
-Solved using the mEVP solver
-
-number_of_triangles : for the paper's 15190 edges, between 70 and 71 are required
-
-"""
-
-
 def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False, stabilised=0):
     """solving the full system of coupled PDEs explicitly, in the method of the paper"""
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
@@ -87,7 +57,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
-    # strain rate tensor, where grad(u) is the jacobian matrix of u
+    # strain rate tensor
     ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
 
     # ice strength
@@ -157,22 +127,18 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     t = 0
     if advection:
-        box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle, advection,
-                        hsolver, h0, h1, asolver, a0, a1)
+        explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
+                                 advection, hsolver, h0, h1, asolver, a0, a1)
     elif not advection:
-        box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
+        explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
 
     print('...done!')
 
+def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triangles=71, stabilised=0):
 
-
-def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabilised=0):
-    """solving the box test using the implicit midpoint rule"""
     print('\n******************************** BOX TEST ********************************\n')
 
-    L = 1000000
-
-    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L1)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     U = FunctionSpace(mesh, "CR", 1)
@@ -193,7 +159,7 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
     # initial conditions
     u0.assign(0)
     h0.assign(1)
-    a0.interpolate(x / L)
+    a0.interpolate(x / L1)
 
     w1.assign(w0)
 
@@ -210,9 +176,9 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
     a_in = Constant(0.5)
 
     # ocean current
-    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
+    ocean_curr = as_vector([0.1 * (2 * y - L1) / L1, -0.1 * (L1 - 2 * x) / L1])
 
-    # strain rate tensor, where grad(u) is the jacobian matrix of u
+    # strain rate tensor
     ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
     # ice strength
@@ -235,8 +201,8 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
     # initalise geo_wind
     t0 = Constant(0)
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
-                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L1) * sin(2 * pi * y / L1),
+                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L1) * sin(2 * pi * x / L1)])
 
     lm = inner(rho * hh * (u1 - u0), p) * dx
     lm -= timestepc * inner(rho * hh * cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0] - uh[0]]), p) * dx
@@ -277,7 +243,6 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
     t = 0
     ndump = 10
     dumpn = 0
-    # output the whole simulation
     ufile = File('./output/box_test/box_test_implicit.pvd')
 
     ufile.write(u1,h1,a1, time=t)
@@ -294,8 +259,3 @@ def box_test_im(timescale=2678400, timestep=600, number_of_triangles=71, stabili
         print("Time:", t, "[s]")
         print(int(min(t / timescale * 100, 100)), "% complete")
     print('...done!')
-
-
-
-#box_test(timescale=20,timestep=1,number_of_triangles=35,subcycle=10,advection=True)
-#box_test_im(timescale=20,timestep=1,number_of_triangles=35)

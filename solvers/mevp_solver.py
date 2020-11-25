@@ -34,7 +34,7 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
     dumpn = 0
     pathname = './output/vp_evp_test/{}test_{}.pvd'.format(timescale, timestep)
     outfile = File(pathname)
-    outfile.write(u0, time=t)
+    outfile.write(u1, time=t)
     print('******************************** mEVP Solver ********************************\n')
     if not advection:
         while t < timescale - 0.5 * timestep:
@@ -48,7 +48,7 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
             dumpn += 1
             if dumpn == ndump:
                 dumpn -= ndump
-                outfile.write(u0, time=t)
+                outfile.write(u1, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
     if advection:
@@ -67,7 +67,7 @@ def mevp_solver(u1, u0, usolver, t, timestep, subcycle, sigma, ep_dot, P, zeta, 
             dumpn += 1
             if dumpn == ndump:
                 dumpn -= ndump
-                outfile.write(u0, time=t)
+                outfile.write(u1, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
 

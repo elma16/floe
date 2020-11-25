@@ -11,20 +11,6 @@ from solvers.forward_euler_solver import *
 from solvers.solver_general import *
 from solvers.solver_parameters import *
 
-"""
-from Mehlmann and Korn, 2020
-Section 4.2
-VP+EVP Test 1
-Solve a modified momentum equation
-L_x = L_y = L = 500000
-vw_1 = 0.1*(2y-L_y)/L_y
-vw_2 = -0.1*(L_x-2x)/L_x
-v(0) = 0
-h = 1
-A = x/L_x
-"""
-
-
 def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, rheology="VP", advection=False,
                          solver="FE", stabilised=0, subcycle=100, init="0"):
     """
@@ -78,7 +64,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         h0.assign(1)
         h1.assign(h0)
 
-    # boundary conditions (what do these have to be?)
+    # boundary conditions
     h_in = Constant(0)
     a_in = Constant(0)
 
@@ -90,7 +76,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
-    # strain rate tensor, where grad(u) is the jacobian matrix of u
+    # strain rate tensor
     ep_dot = 0.5 * (grad(u1) + transpose(grad(u1)))
 
     # ice strength
@@ -122,7 +108,7 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     elif stabilised == 2:
         sigma = 0.5 * zeta * grad(u1)
 
-    # momentum equation (used irrespective of advection occurring or not)
+    # momentum equation
 
     # diverges if i pick h1 -> h0
     lm = inner(beta * rho * h1 * (u1 - u0) + timestepc * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
@@ -242,7 +228,7 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     # ocean current
     ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
-    # strain rate tensor, where grad(u) is the jacobian matrix of u
+    # strain rate tensor
     ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
     # ice strength
@@ -254,8 +240,6 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     zeta = 0.5 * P / Delta
 
     sh = 0.5 * (s1 + s0)
-
-    # constructing the equations used
 
     lm = (inner(p, rho * h * (u1 - u0)) + timestepc * inner(grad(p), sh) + inner(q, (s1 - s0) + timestepc * (
             0.5 * e ** 2 / T * sh + (0.25 * (1 - e ** 2) / T * tr(sh) + 0.25 * P / T) * Identity(2)))) * dx
@@ -273,9 +257,8 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
 
     t = 0.0
 
-    all_u = ievp_solver(pathname, timescale, timestep, t, w0, w1, u1, usolver)
+    implicit_midpoint_evp_solver(pathname, timescale, timestep, t, w0, w1, u1, usolver)
 
-    return all_u
 
 
 def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triangles=35, init="0"):
@@ -366,7 +349,7 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
         return sigma
 
-    # momentum equation (used irrespective of advection occurring or not)
+    # momentum equation
 
     s = sigma_next(timestep, e, zeta, T, ep_dot, sigma0, P)
 
@@ -388,7 +371,7 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     pathname = './output/implicit_evp_matrix/T={}_u_k={}.pvd'.format(timescale, timestep)
 
-    imevp(timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
+    implicit_midpoint_matrix_evp_solver(timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
 
     print('...done!')
 

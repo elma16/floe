@@ -8,12 +8,9 @@ from firedrake import *
 
 from solvers.mevp_solver import *
 
-all_u = []
 
-def ievp_solver(pathname,timescale,timestep,t,w0,w1,u1,usolver):
-    """
-    Solver for the implicit midpoint solve for the EVP rheology.
-    """
+def implicit_midpoint_evp_solver(pathname, timescale, timestep, t, w0, w1, u1, usolver):
+
     ndump = 10
     dumpn = 0
     ufile = File(pathname)
@@ -28,13 +25,10 @@ def ievp_solver(pathname,timescale,timestep,t,w0,w1,u1,usolver):
             ufile.write(u1, time=t)
         print("Time:", t, "[s]")
         print(int(min(t / timescale * 100, 100)), "% complete")
-        all_u.append(Function(u1))
-    return all_u
 
-def imevp(timescale,timestep,u0,t,usolver,ssolver,u1,pathname):
-    """
-    Solver for the implicit matrix solve of the EVP rheology.
-    """
+
+def implicit_midpoint_matrix_evp_solver(timescale, timestep, u0, t, usolver, ssolver, u1, pathname):
+
     ndump = 10
     dumpn = 0
     ufile = File(pathname)
@@ -53,7 +47,8 @@ def imevp(timescale,timestep,u0,t,usolver,ssolver,u1,pathname):
         print(int(min(t / timescale * 100, 100)), "% complete")
 
 
-def box_test_solver(u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,subcycle,advection=False,hsolver=None,h0=None,h1=None,asolver=None,a0=None,a1=None):
+def explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle, advection=False,
+                    hsolver=None, h0=None, h1=None, asolver=None, a0=None, a1=None):
 
     pathname = "./output/box_test/box_test_exp.pvd"
     subcycle_timestep = timestep / subcycle
@@ -74,12 +69,12 @@ def box_test_solver(u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,su
             ndump += 1
             if dumpn == ndump:
                 dumpn -= ndump
-                outfile.write(u0, time=t)
+                outfile.write(u1, time=t)
             t0.assign(t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
     if advection:
-        outfile.write(u1,h1,a1, time=t)
+        outfile.write(u1, h1, a1, time=t)
         while t < timescale - 0.5 * timestep:
             s = t
             while s <= t + timestep:
@@ -95,13 +90,14 @@ def box_test_solver(u0,u1,t,t0,timestep,timescale,usolver,sigma,ep_dot,P,zeta,su
             ndump += 1
             if dumpn == ndump:
                 dumpn -= ndump
-                outfile.write(u0, time=t)
+                outfile.write(u1, time=t)
             t0.assign(t)
-            outfile.write(u1,h1,a1, time=t)
+            outfile.write(u1, h1, a1, time=t)
             print("Time:", t, "[s]")
             print(int(min(t / timescale * 100, 100)), "% complete")
 
-def taylor_galerkin(timescale,timestep,t):
+
+def taylor_galerkin(timescale, timestep, t):
     """
     The Taylor-Galerkin method for the FE discretisation of ice transport equations:
     Given u^n,a^n, compute a^{n+1}.
@@ -130,12 +126,11 @@ def taylor_galerkin(timescale,timestep,t):
 
     x, y = SpatialCoordinate(mesh)
 
-    gn = u0*a0-0.5*timestep*u0*grad(u0*a0)
+    gn = u0 * a0 - 0.5 * timestep * u0 * grad(u0 * a0)
 
-    la = inner(a1 - a0 + timestep*grad(gn),w)*dx
+    la = inner(a1 - a0 + timestep * grad(gn), w) * dx
 
-    aprob = NonlinearVariationalProblem(la,a1)
-    asolver = NonlinearVariationalSolver(aprob,solver_parameters = params)
+    aprob = NonlinearVariationalProblem(la, a1)
+    asolver = NonlinearVariationalSolver(aprob, solver_parameters=params)
     while t < timescale - 0.5 * timestep:
         return None
-

@@ -7,26 +7,6 @@ sys.path.insert(0, parentdir)
 from tests.parameters import *
 from solvers.forward_euler_solver import *
 
-
-"""
-from Mehlmann and Korn, 2020
-Section 4.2
-L = 500000
-pi_x = pi_y = pi/L
-By construction, the analytical solution is
-    v_1 = -sin(pi_x*x)*sin(pi_y*y)
-    v_2 = -sin(pi_x*x)*sin(pi_y*y)
-zeta = P/2*Delta_min
-
-number_of_triangles: paper's value for 3833 edges is between 35,36.
-
-stabilised = {0,1,2}
-0 - unstabilised (default option)
-1 - stabilised (change the form of the stress tensor)
-2 - stabilised (via the a velocity jump algorithm)
-"""
-
-
 def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
                        transform_mesh=False, output=False, shape=None,init = "0"):
     """
@@ -90,11 +70,9 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
     if init == "0":
-        # initialising at 0
         u0.assign(0)
         u1.assign(u0)
     elif init == "1":
-        # initialising at expected v value (manufactured solution)
         u0.interpolate(v_exp)
         u1.assign(u0)
 
@@ -113,7 +91,6 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     t = 0
 
     if transform_mesh:
-        # no compile errors, i just don't understand why mesh says 0,1 doesn't work but 1,2 does
         bcs = [DirichletBC(V, Constant(0), [1, 2])]
     else:
         bcs = [DirichletBC(V, Constant(0), "on_boundary")]
