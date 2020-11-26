@@ -7,9 +7,6 @@ All the parameters required to solve the sea ice momentum equation
 # dimension of the mesh
 L = 5 * 10 ** 5
 
-# dimension of the mesh for box test
-L1 = 10 ** 6
-
 # the sea ice density
 rho = Constant(900)
 

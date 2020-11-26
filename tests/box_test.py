@@ -9,26 +9,28 @@ from solvers.solver_parameters import *
 from solvers.solver_general import *
 
 
-def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False, stabilised=0):
+def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False, stabilised=0,
+             init="0"):
     """solving the full system of coupled PDEs explicitly, in the method of the paper"""
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
+    L = 10 ** 6
 
-    mesh = SquareMesh(number_of_triangles, number_of_triangles, L1)
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V, name = "Velocity")
-    u1 = Function(V, name = "VelocityNext")
+    u0 = Function(V, name="Velocity")
+    u1 = Function(V, name="VelocityNext")
 
     # mean height of sea ice
-    h0 = Function(U, name = "Height")
-    h1 = Function(U, name = "HeightNext")
+    h0 = Function(U, name="Height")
+    h1 = Function(U, name="HeightNext")
 
     # sea ice concentration
-    a0 = Function(U, name = "Concentration")
-    a1 = Function(U, name = "ConcentrationNext")
+    a0 = Function(U, name="Concentration")
+    a1 = Function(U, name="ConcentrationNext")
 
     # test functions
     v = TestFunction(V)
@@ -38,11 +40,17 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
 
     timestepc = Constant(timestep)
 
-    # initial conditions
+    pi_x = pi / L
+    v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
-    u0.assign(0)
-    u1.assign(u0)
-    a0.interpolate(x / L1)
+    # initial conditions
+    if init == "0":
+        u0.assign(0)
+        u1.assign(u0)
+    elif init == "1":
+        u0.assign(v_exp)
+        u1.assign(u0)
+    a0.interpolate(x / L)
     a1.assign(a0)
     if not advection:
         h1 = Constant(1)
@@ -55,7 +63,7 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     a_in = Constant(0.5)
 
     # ocean current
-    ocean_curr = as_vector([0.1 * (2 * y - L1) / L1, -0.1 * (L1 - 2 * x) / L1])
+    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor
     ep_dot = 0.5 * (grad(u0) + transpose(grad(u0)))
@@ -82,14 +90,13 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     # initalise geo_wind
     t0 = Constant(0)
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L1) * sin(2 * pi * y / L1),
-                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L1) * sin(2 * pi * x / L1)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     lm = inner(rho * h1 * (u1 - u0), v) * dx
     lm -= timestepc * inner(rho * h1 * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]), v) * dx
-    lm += timestepc * inner(
-        rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
-                ocean_curr - u1), v) * dx
+    lm += timestepc * inner(rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
+            ocean_curr - u1), v) * dx
     lm += timestepc * inner(sigma, grad(v)) * dx
     lm += stab_term
 
@@ -125,20 +132,23 @@ def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=5
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
+    pathname = "./output/box_test/explicit_solve_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
+
     t = 0
     if advection:
-        explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
+        explicit_box_test_solver(pathname, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
                                  advection, hsolver, h0, h1, asolver, a0, a1)
     else:
-        explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
+        explicit_box_test_solver(pathname, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle)
 
     print('...done!')
 
 
 def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triangles=71, stabilised=0):
     print('\n******************************** BOX TEST ********************************\n')
+    L = 10 ** 6
 
-    mesh = SquareMesh(number_of_triangles, number_of_triangles, L1)
+    mesh = SquareMesh(number_of_triangles, number_of_triangles, L)
 
     V = VectorFunctionSpace(mesh, "CR", 1)
     U = FunctionSpace(mesh, "CR", 1)
@@ -159,7 +169,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
     # initial conditions
     u0.assign(0)
     h0.assign(1)
-    a0.interpolate(x / L1)
+    a0.interpolate(x / L)
 
     w1.assign(w0)
 
@@ -175,7 +185,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
     a_in = Constant(0.5)
 
     # ocean current
-    ocean_curr = as_vector([0.1 * (2 * y - L1) / L1, -0.1 * (L1 - 2 * x) / L1])
+    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
 
     # strain rate tensor
     ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
@@ -200,8 +210,8 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
     # initalise geo_wind
     t0 = Constant(0)
 
-    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L1) * sin(2 * pi * y / L1),
-                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L1) * sin(2 * pi * x / L1)])
+    geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / L) * sin(2 * pi * y / L),
+                          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / L) * sin(2 * pi * x / L)])
 
     lm = inner(rho * hh * (u1 - u0), p) * dx
     lm -= timestepc * inner(rho * hh * cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0] - uh[0]]), p) * dx
@@ -233,6 +243,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
                        - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah, 0.0) * ds
                        - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
 
+
     bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
     uprob = NonlinearVariationalProblem(lm, w1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params2)
@@ -242,9 +253,10 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
     t = 0
     ndump = 10
     dumpn = 0
-    ufile = File('./output/box_test/box_test_implicit.pvd')
+    pathname = "./output/box_test/implicit_solve_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
+    outfile = File(pathname)
 
-    ufile.write(u1, h1, a1, time=t)
+    outfile.write(u1, h1, a1, time=t)
 
     while t < timescale - 0.5 * timestep:
         usolver.solve()
@@ -252,9 +264,11 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
         dumpn += 1
         if dumpn == ndump:
             dumpn -= ndump
-            ufile.write(u1, h1, a1, time=t)
+            outfile.write(u1, h1, a1, time=t)
         t += timestep
         t0.assign(t)
         print("Time:", t, "[s]")
         print(int(min(t / timescale * 100, 100)), "% complete")
     print('...done!')
+
+box_test_implicit_midpoint(20,1,30)

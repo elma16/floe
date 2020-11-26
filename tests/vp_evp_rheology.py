@@ -25,16 +25,16 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V, name = "Velocity")
-    u1 = Function(V, name = "VelocityNext")
+    u0 = Function(V, name="Velocity")
+    u1 = Function(V, name="VelocityNext")
 
     # mean height of sea ice
-    h0 = Function(U, name = "Height")
-    h1 = Function(U, name = "HeightNext")
+    h0 = Function(U, name="Height")
+    h1 = Function(U, name="HeightNext")
 
     # sea ice concentration
-    a0 = Function(U, name = "Concentration")
-    a1 = Function(U, name = "ConcentrationNext")
+    a0 = Function(U, name="Concentration")
+    a1 = Function(U, name="ConcentrationNext")
 
     # test functions
     v = TestFunction(V)
@@ -89,8 +89,8 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
 
     # internal stress tensor
     sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2)
-    # elif init == "1":
-    #    div(sigma) = rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (u1 - ocean_curr)
+    if init == "1":
+        R = div(sigma)
 
     if stabilised == 0:
         stab_term = 0
@@ -108,12 +108,14 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
         sigma = 0.5 * zeta * grad(u1)
 
     # momentum equation
-
-    lm = inner(beta * rho * h0 * (u1 - u0) + timestepc * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
-            u1 - ocean_curr), v) * dx
+    if init == "0":
+        lm = inner(
+            beta * rho * h0 * (u1 - u0) + timestepc * rho_w * C_w * sqrt(dot(u1 - ocean_curr, u1 - ocean_curr)) * (
+                    u1 - ocean_curr), v) * dx
+    elif init == "1":
+        lm = inner(beta * rho * h0 * (u1 - u0) + timestepc * R, v) * dx
     lm += timestepc * inner(sigma, grad(v)) * dx
     lm += stab_term
-
     # need to solve the transport equations using an upwind scheme
     if advection:
         dh_trial = TrialFunction(U)
@@ -208,8 +210,8 @@ def evp_test_implicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35,
     # ice strength
     P = P_star * h * exp(-C * (1 - a))
 
-    #s0.interpolate(- 0.5 * P * Identity(2))
-    #s0.assign(as_matrix([[-0.5*P,0],[0,-0.5*P]]))
+    # s0.interpolate(- 0.5 * P * Identity(2))
+    # s0.assign(as_matrix([[-0.5*P,0],[0,-0.5*P]]))
     s0.assign(as_matrix([[1, 2], [3, 4]]))
 
     w1 = Function(W)
@@ -271,12 +273,12 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     U = FunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V, name = "Velocity")
-    u1 = Function(V, name = "VelocityNext")
+    u0 = Function(V, name="Velocity")
+    u1 = Function(V, name="VelocityNext")
 
     # stress tensors
-    sigma0 = Function(S, name = "StressTensor")
-    sigma1 = Function(S, name = "StressTensorNext")
+    sigma0 = Function(S, name="StressTensor")
+    sigma1 = Function(S, name="StressTensorNext")
 
     uh = 0.5 * (u1 + u0)
 

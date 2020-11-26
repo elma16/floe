@@ -43,10 +43,9 @@ def implicit_midpoint_matrix_evp_solver(timescale, timestep, u0, t, usolver, sso
         print(int(min(t / timescale * 100, 100)), "% complete")
 
 
-def explicit_box_test_solver(u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
+def explicit_box_test_solver(pathname, u0, u1, t, t0, timestep, timescale, usolver, sigma, ep_dot, P, zeta, subcycle,
                              advection=False,
                              hsolver=None, h0=None, h1=None, asolver=None, a0=None, a1=None):
-    pathname = "./output/box_test/box_test_exp.pvd"
     subcycle_timestep = timestep / subcycle
     ndump = 10
     dumpn = 0

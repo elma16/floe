@@ -30,8 +30,8 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     V = VectorFunctionSpace(mesh, "CR", 1)
 
     # sea ice velocity
-    u0 = Function(V, name = "Velocity")
-    u1 = Function(V, name = "VelocityNext")
+    u0 = Function(V, name="Velocity")
+    u1 = Function(V, name="VelocityNext")
 
     # test functions
     v = TestFunction(V)
@@ -104,5 +104,3 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     print('...done!')
 
     return all_u, mesh, v_exp, zeta
-
-strain_rate_tensor(10,10**(-1))
