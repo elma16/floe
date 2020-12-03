@@ -260,7 +260,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
 
     while t < timescale - 0.5 * timestep:
         usolver.solve()
-        w1.assign(w0)
+        w0.assign(w1)
         dumpn += 1
         if dumpn == ndump:
             dumpn -= ndump
@@ -271,4 +271,4 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
         print(int(min(t / timescale * 100, 100)), "% complete")
     print('...done!')
 
-box_test_implicit_midpoint(20,1,30)
+#box_test_implicit_midpoint(timescale=500,timestep=1,number_of_triangles=30)
