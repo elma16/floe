@@ -198,7 +198,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
     if stabilised == 0:
         stab_term = 0
     if stabilised == 1:
-        stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(v))) * dS
+        stab_term = 2 * a_vp * avg(CellVolume(mesh)) / FacetArea(mesh) * (dot(jump(u1), jump(p))) * dS
 
     # viscosities
     zeta = 0.5 * P / Delta
@@ -253,7 +253,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
     t = 0
     ndump = 10
     dumpn = 0
-    pathname = "./output/box_test/implicit_solve_T={}_k={}_N={}.pvd".format(timescale, timestep, number_of_triangles)
+    pathname = "./output/box_test/implicit_solve_T={}_k={}_N={}_stab={}.pvd".format(timescale, timestep, number_of_triangles,stabilised)
     outfile = File(pathname)
 
     outfile.write(u1, h1, a1, time=t)
@@ -271,4 +271,5 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
         print(int(min(t / timescale * 100, 100)), "% complete")
     print('...done!')
 
+box_test_implicit_midpoint(timescale=50,timestep=1,number_of_triangles=30,stabilised=1)
 #box_test_implicit_midpoint(timescale=500,timestep=1,number_of_triangles=30)

@@ -4,7 +4,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from tests.parameters import *
 from solvers.forward_euler_solver import *
 from solvers.solver_parameters import *
 
@@ -16,7 +15,8 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
          = "1" for manufactured solution IC.
     """
     print('\n******************************** STRAIN RATE TENSOR ********************************\n')
-    # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral triangles
+    # transforming the mesh using the mapping (x,y) -> (x+y/2,y) to change the right angled triangles to equilateral
+    # triangles
     if transform_mesh:
         # want periodic bc on the sides, and dirichlet bc on the top and bottom
         mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, L, "y")
@@ -99,8 +99,11 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
+
     all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output)
 
     print('...done!')
 
     return all_u, mesh, v_exp, zeta
+
+strain_rate_tensor(10,10**(-1),stabilised = 0)

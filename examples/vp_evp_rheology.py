@@ -158,6 +158,8 @@ def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
+
+
     if rheology == "VP" and solver == "FE":
         forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection, hsolver, asolver,
                              h1, h0, a1, a0)
