@@ -176,11 +176,6 @@ class State(object):
     Build a model state to keep the variables in, and specify parameters.
 
     :arg mesh: The :class:`Mesh` to use.
-    :arg family: string, specifies the velocity space family to use.
-    Options:
-    "RT": The Raviart-Thomas family (default, recommended for quads)
-    "BDM": The BDM family
-    "BDFM": The BDFM family
     :arg timestepping: class containing timestepping parameters
     :arg output: class containing output parameters
     :arg parameters: class containing physical parameters
