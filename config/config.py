@@ -1,6 +1,5 @@
 from firedrake import Constant
 
-
 class Configuration(object):
 
     def __init__(self, **kwargs):
@@ -43,6 +42,7 @@ class SeaIceParameters(Configuration):
     """
     Physical parameters for the Sea Ice Momentum equations
     """
+    # TODO : ADD UNITS IN COMMENTS
     L = 5 * 10 ** 5  # dimension of the mesh
     rho = Constant(900)  # sea ice density ()
     cor = Constant(1.46 * 10 ** (-4))  # Coriolis parameter

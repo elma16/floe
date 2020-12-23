@@ -367,3 +367,21 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
 
     print('...done!')
 
+class Evp(object):
+    def __init__(self,timescale,timestep,number_of_triangles,subcycle,advection=False):
+        self.timescale = timescale
+        self.timestep = timestep
+        self.number_of_triangles = number_of_triangles
+        self.subcycle = subcycle
+        self.advection = advection
+        # equations go here
+
+
+    def solve(self):
+        return 0
+
+    def update(self):
+        return 0
+
+    def dump(self):
+        return 0

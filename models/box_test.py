@@ -9,7 +9,7 @@ from solvers.solver_parameters import *
 from solvers.solver_general import *
 
 
-def box_test(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False, stabilised=0,
+def bt(timescale=2678400, timestep=600, number_of_triangles=71, subcycle=500, advection=False, stabilised=0,
              init="0"):
     """solving the full system of coupled PDEs explicitly, in the method of the paper"""
     print('\n******************************** BOX TEST (mEVP solve) ********************************\n')
@@ -271,5 +271,22 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
         print(int(min(t / timescale * 100, 100)), "% complete")
     print('...done!')
 
-box_test_implicit_midpoint(timescale=50,timestep=1,number_of_triangles=30,stabilised=1)
-#box_test_implicit_midpoint(timescale=500,timestep=1,number_of_triangles=30)
+
+class BoxTest(object):
+    def __init__(self,timescale,timestep,number_of_triangles,subcycle,advection):
+        self.timescale = timescale
+        self.timestep = timestep
+        self.number_of_triangles = number_of_triangles
+        self.subcycle = subcycle
+        self.advection = advection
+        # equations go here
+
+
+    def solve(self):
+        return 0
+
+    def update(self):
+        return 0
+
+    def dump(self):
+        return 0

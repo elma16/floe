@@ -8,7 +8,7 @@ from solvers.forward_euler_solver import *
 from solvers.solver_parameters import *
 
 
-def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
+def srt(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
                        transform_mesh=False, output=False, shape=None, init="0"):
     """
     init = "0" for 0 initial conditions
@@ -99,11 +99,79 @@ def strain_rate_tensor(timescale=10, timestep=10 ** (-6), number_of_triangles=35
     uprob = NonlinearVariationalProblem(lm, u1, bcs)
     usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
 
-
     all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output)
 
     print('...done!')
 
     return all_u, mesh, v_exp, zeta
 
-strain_rate_tensor(10,10**(-1),stabilised = 0)
+
+class StrainRateTensor(object):
+    def __init__(self, timescale, timestep, number_of_triangles, stabilised, transform_mesh, output, shape, parameters):
+
+        self.timescale = timescale
+        self.timestep = timestep
+        self.number_of_triangles = number_of_triangles
+        self.stabilised = stabilised
+        self.parameters = parameters
+        self.transform_mesh = transform_mesh
+
+        if output is None:
+            raise RuntimeError("You must provide a directory name for dumping results")
+        else:
+            self.output = output
+        self.shape = shape
+
+        # equations go here
+
+        V = VectorFunctionSpace(mesh, "CR", 1)
+
+        # sea ice velocity
+        u0 = Function(V, name="Velocity")
+        u1 = Function(V, name="VelocityNext")
+
+        # test functions
+        v = TestFunction(V)
+
+        x, y = SpatialCoordinate(mesh)
+
+        timestepc = Constant(timestep)
+
+        h = Constant(1)
+        a = Constant(1)
+
+        # ice strength
+        P = P_star * h * exp(-C * (1 - a))
+
+        # viscosities
+        zeta = 0.5 * P / Delta_min
+
+        sigma = 0.5 * zeta * (grad(u1) + transpose(grad(u1)))
+
+        pi_x = pi / L
+        v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+
+        sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
+
+        R = -div(sigma_exp)
+
+        def strain(omega):
+            return 0.5 * (omega + transpose(omega))
+
+        # momentum equation
+        lm = (inner(u1 - u0, v) + timestepc * inner(sigma, strain(grad(v)))) * dx
+        lm -= timestepc * inner(R, v) * dx
+        lm += stab_term
+
+    def solve(self):
+        t = 0
+        uprob = NonlinearVariationalProblem(lm, u1, bcs)
+        usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
+        all_u, all_h, all_a = forward_euler_solver(u1, u0, usolver, t, timestep, timescale, output)
+        return 0
+
+    def update(self):
+        return 0
+
+    def dump(self):
+        return 0
