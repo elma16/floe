@@ -128,7 +128,6 @@ class StrainRateTensor(object):
         self.dump_count = 0
         self.outfile = File(output.dirname)
         self.dump_freq = output.dumpfreq
-        self.t = 0
 
         if output is None:
             raise RuntimeError("You must provide a directory name for dumping results")
@@ -180,31 +179,33 @@ class StrainRateTensor(object):
         self.uprob = NonlinearVariationalProblem(self.lm, self.u1, self.bcs)
         self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params)
 
-    def solve(self):
+    def solve(self, t):
 
         """
         Solve the equations at a given timestep
         """
         self.usolver.solve()
 
-        if self.t == 0:
-            self.outfile.write(self.u1, time=self.t)
+        if t == 0:
+            self.outfile.write(self.u1, time=t)
 
-    def update(self):
+    def update(self, t):
         """
         Update the equations with the new values of the functions
         """
 
-        while self.t < self.timescale - 0.5 * self.timestep:
+        while t < self.timescale - 0.5 * self.timestep:
             self.usolver.solve()
             self.u0.assign(self.u1)
-            self.t += self.timestep
+            t += self.timestep
 
-    def dump(self):
+    def dump(self, t):
         """
         Output the diagnostics
         """
         self.dump_count += 1
         if self.dump_count == self.dump_freq:
             self.dump_count -= self.dump_freq
-            self.outfile.write(self.u1, time=self.t)
+            self.outfile.write(self.u1, time=t)
+
+

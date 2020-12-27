@@ -4,11 +4,6 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from tests.parameters import *
-from solvers.forward_euler_solver import *
-from solvers.solver_general import *
-from solvers.solver_parameters import *
-
 
 def vp_evp_test_explicit(timescale=10, timestep=10 ** (-1), number_of_triangles=35, rheology="VP", advection=False,
                          solver="FE", stabilised=0, subcycle=100, init="0"):
@@ -368,20 +363,102 @@ def evp_test_implicit_matrix(timescale=10, timestep=10 ** (-1), number_of_triang
     print('...done!')
 
 class Evp(object):
-    def __init__(self,number_of_triangles,subcycle,advection=False):
+    def __init__(self, timescale, timestep, number_of_triangles, output, params, rheology, advection, solver, stabilised, subcycle):
+
+        """
+        Given the initial conditions, create the equations with the variables given
+
+        TODO add options for the different functions given above
+        """
+
         self.timescale = timescale
         self.timestep = timestep
         self.number_of_triangles = number_of_triangles
-        self.subcycle = subcycle
+        self.params = params
+        self.rheology = rheology
         self.advection = advection
-        # equations go here
+        self.solver = solver
+        self.stabilised = stabilised
+        self.subcycle = subcycle
+        self.dump_count = 0
+        self.outfile = File(output.dirname)
+        self.dump_freq = output.dumpfreq
 
+        if output is None:
+            raise RuntimeError("You must provide a directory name for dumping results")
+        else:
+            self.output = output
 
-    def solve(self):
-        return 0
+        self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
 
-    def update(self):
-        return 0
+        self.V = VectorFunctionSpace(self.mesh, "CR", 1)
 
-    def dump(self):
-        return 0
+        # sea ice velocity
+        self.u0 = Function(self.V, name="Velocity")
+        self.u1 = Function(self.V, name="VelocityNext")
+
+        # test functions
+        self.v = TestFunction(self.V)
+
+        x, y = SpatialCoordinate(self.mesh)
+
+        self.h = Constant(1)
+        self.a = Constant(1)
+
+        # ice strength
+        P = params.P_star * self.h * exp(-params.C * (1 - self.a))
+
+        # viscosities
+        zeta = 0.5 * P / params.Delta_min
+
+        sigma = 0.5 * zeta * (grad(self.u1) + transpose(grad(self.u1)))
+
+        pi_x = pi / params.length
+        v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+
+        sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
+
+        R = -div(sigma_exp)
+
+        def strain(omega):
+            return 0.5 * (omega + transpose(omega))
+
+        self.bcs = [DirichletBC(self.V, Constant(0), "on_boundary")]
+
+        # momentum equation
+        self.lm = (inner(self.u1 - self.u0, self.v) + timestep * inner(sigma, strain(grad(self.v)))) * dx
+        self.lm -= timestep * inner(R, self.v) * dx
+
+        solver_params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
+
+        self.uprob = NonlinearVariationalProblem(self.lm, self.u1, self.bcs)
+        self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params)
+
+    def solve(self, t):
+
+        """
+        Solve the equations at a given timestep
+        """
+        self.usolver.solve()
+
+        if t == 0:
+            self.outfile.write(self.u1, time=t)
+
+    def update(self, t):
+        """
+        Update the equations with the new values of the functions
+        """
+
+        while t < self.timescale - 0.5 * self.timestep:
+            self.usolver.solve()
+            self.u0.assign(self.u1)
+            t += self.timestep
+
+    def dump(self, t):
+        """
+        Output the diagnostics
+        """
+        self.dump_count += 1
+        if self.dump_count == self.dump_freq:
+            self.dump_count -= self.dump_freq
+            self.outfile.write(self.u1, time=t)
