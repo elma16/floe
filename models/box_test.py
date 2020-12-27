@@ -273,7 +273,7 @@ def box_test_implicit_midpoint(timescale=2678400, timestep=600, number_of_triang
 
 
 class BoxTest(object):
-    def __init__(self,timescale,timestep,number_of_triangles,subcycle,advection):
+    def __init__(self,number_of_triangles,subcycle,advection):
         self.timescale = timescale
         self.timestep = timestep
         self.number_of_triangles = number_of_triangles
