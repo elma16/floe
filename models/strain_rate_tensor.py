@@ -109,18 +109,26 @@ def srt(timescale=10, timestep=10 ** (-6), number_of_triangles=35, stabilised=0,
 # TODO define class SeaIceModel(object):
 
 class StrainRateTensor(object):
-    def __init__(self, timestepping, number_of_triangles, stabilised, transform_mesh, output, shape,
+    def __init__(self, timescale, timestep, number_of_triangles, stabilised, transform_mesh, output, shape,
                  params):
 
         """
         Given the initial conditions, create the equations with the variables given
 
-        TODO add stabilised, transform mesh
+        TODO add stabilised, transform mesh, shape
         """
-        self.timestepping = timestepping
+
+        self.timescale = timescale
+        self.timestep = timestep
         self.number_of_triangles = number_of_triangles
         self.stabilised = stabilised
+        self.shape = shape
         self.params = params
+        self.transform_mesh = transform_mesh
+        self.dump_count = 0
+        self.outfile = File(output.dirname)
+        self.dump_freq = output.dumpfreq
+        self.t = 0
 
         if output is None:
             raise RuntimeError("You must provide a directory name for dumping results")
@@ -139,18 +147,6 @@ class StrainRateTensor(object):
         self.v = TestFunction(self.V)
 
         x, y = SpatialCoordinate(self.mesh)
-
-        if shape == "Half-Plane":
-            self.u0.interpolate(conditional(le(x, params.length / 2), as_vector([10, 10]), as_vector([0, 0])))
-        elif shape == "Square":
-            self.u0.interpolate(
-                conditional(le(abs(x - params.length / 2) + abs(y - params.length / 2), params.length / 5),
-                            as_vector([10, 10]), as_vector([0, 0])))
-        elif shape == "Circle":
-            self.u0.interpolate(
-                conditional(le(((x - params.length / 2) ** 2 + (y - params.length / 2) ** 2), 10000 * params.length),
-                            as_vector([10, 10]),
-                            as_vector([0, 0])))
 
         self.h = Constant(1)
         self.a = Constant(1)
@@ -176,74 +172,39 @@ class StrainRateTensor(object):
         self.bcs = [DirichletBC(self.V, Constant(0), "on_boundary")]
 
         # momentum equation
-        lm = (inner(self.u1 - self.u0, self.v) + timestepping.timestep * inner(sigma, strain(grad(self.v)))) * dx
-        lm -= timestepping.timestep * inner(R, self.v) * dx
+        self.lm = (inner(self.u1 - self.u0, self.v) + timestep * inner(sigma, strain(grad(self.v)))) * dx
+        self.lm -= timestep * inner(R, self.v) * dx
+
+        solver_params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
+
+        self.uprob = NonlinearVariationalProblem(self.lm, self.u1, self.bcs)
+        self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params)
 
     def solve(self):
 
         """
         Solve the equations at a given timestep
         """
-        t = 0
-        uprob = NonlinearVariationalProblem(lm, self.u1, self.bcs)
-        usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
-        all_u, all_h, all_a = forward_euler_solver(self.u1, self.u0, usolver, t, timestep, timescale, output)
-        return 0
+        self.usolver.solve()
+
+        if self.t == 0:
+            self.outfile.write(self.u1, time=self.t)
 
     def update(self):
         """
         Update the equations with the new values of the functions
         """
-        return 0
 
-    def dump(self, t):
+        while self.t < self.timescale - 0.5 * self.timestep:
+            self.usolver.solve()
+            self.u0.assign(self.u1)
+            self.t += self.timestep
+
+    def dump(self):
         """
         Output the diagnostics
         """
-        all_u = []
-        all_h = []
-        all_a = []
-        ndump = 10
-        dumpn = 0
-
-        pathname = "./output/strain_rate_tensor/test_T={}_k={}_N={}_stab={}.pvd"
-
-        outfile = File(pathname)
-
-        print('******************************** Forward solver ********************************\n')
-        if advection:
-            outfile.write(u1, h1, a1, time=t)
-            while t < timescale - 0.5 * timestep:
-                usolver.solve()
-                u0.assign(u1)
-                hsolver.solve()
-                h0.assign(h1)
-                asolver.solve()
-                a0.assign(a1)
-                all_u.append(Function(u1))
-                all_h.append(Function(h1))
-                all_a.append(Function(a1))
-                t += timestep
-                dumpn += 1
-                if dumpn == ndump:
-                    dumpn -= ndump
-                    outfile.write(u1, h1, a1, time=t)
-                print("Time:", t, "[s]")
-                print(int(min(t / timescale * 100, 100)), "% complete")
-        else:
-            outfile.write(u1, time=t)
-            while t < timescale - 0.5 * timestep:
-                usolver.solve()
-                u0.assign(u1)
-                all_u.append(Function(u1))
-                t += timestep
-                dumpn += 1
-                if dumpn == ndump:
-                    dumpn -= ndump
-                    outfile.write(u1, time=t)
-                print("Time:", t, "[s]")
-                print(int(min(t / timescale * 100, 100)), "% complete")
-
-        print('... forward problem solved...\n')
-        return all_u, all_h, all_a
-        return 0
+        self.dump_count += 1
+        if self.dump_count == self.dump_freq:
+            self.dump_count -= self.dump_freq
+            self.outfile.write(self.u1, time=self.t)
