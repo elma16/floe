@@ -1,5 +1,6 @@
 from firedrake import Constant
 
+
 class Configuration(object):
 
     def __init__(self, **kwargs):
@@ -22,9 +23,6 @@ class OutputParameters(Configuration):
     dump_vtus = True
     dumpfreq = 10
     dumplist = None
-    dump_diagnostics = True
-    #checkpoint = True
-    #chkptfreq = 10
     dirname = None
 
 
@@ -32,8 +30,9 @@ class TimesteppingParameters(Configuration):
     """
     Timestepping parameters
     """
-    dt = None
-    #alpha = 0.5
+    timescale = None
+    timestep = None
+    # alpha = 0.5
     maxk = 4
     maxi = 1
 
@@ -43,7 +42,8 @@ class SeaIceParameters(Configuration):
     Physical parameters for the Sea Ice Momentum equations
     """
     # TODO : ADD UNITS IN COMMENTS
-    L = 5 * 10 ** 5  # dimension of the mesh
+    length = 5 * 10 ** 5  # dimension of the mesh
+    box_length = 10 ** 6 # dimension of the mesh
     rho = Constant(900)  # sea ice density ()
     cor = Constant(1.46 * 10 ** (-4))  # Coriolis parameter
     rho_a = Constant(1.3)  # air density
@@ -61,3 +61,9 @@ class SeaIceParameters(Configuration):
     a_evp = 0.1  # stabilisation constants
     a_mevp = 0.01  # stabilisation constants
     d = 1  # stabilisation constants
+
+
+class SolverParameters(Configuration):
+    """Solver Parameters"""
+    params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
+    params2 = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}

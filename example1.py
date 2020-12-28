@@ -6,7 +6,7 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from models.strain_rate_tensor import *
+from models import *
 
 dirname = "./output/strain_rate_tensor/u.pvd"
 

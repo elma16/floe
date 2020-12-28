@@ -10,7 +10,6 @@ def forward_euler_solver(u1, u0, usolver, t, timestep, timescale, advection=Fals
     dumpn = 0
 
     pathname = "./output/strain_rate_tensor/test_T={}_k={}_N={}_stab={}.pvd"
-    #pathname = './output/vp_evp_test/{}test_{}.pvd'.format(timescale, timestep)
 
     outfile = File(pathname)
 
