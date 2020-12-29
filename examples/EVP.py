@@ -16,7 +16,7 @@ timestepping = TimesteppingParameters(timescale=100, timestep=10)
 output = OutputParameters(dirname=dirname, dumpfreq=10)
 params = SeaIceParameters()
 
-evp = Evp(number_of_triangles=30, output=output, params=params, timescale=100, timestep=10)
+evp = Evp(number_of_triangles=30, params=params, timescale=100, timestep=10)
 
 t = 0
 evp.solve(t)

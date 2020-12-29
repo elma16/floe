@@ -28,11 +28,9 @@ params = SeaIceParameters()
 
 srt = StrainRateTensor(timestepping=timestepping, number_of_triangles=35, output=output, params=params,
                        stabilised=0,
-                       shape=None, transform_mesh=False)
+                       transform_mesh=False)
 
 t = 0
 srt.solve(t)
 srt.update(t)
 srt.dump(t)
-
-print(isinstance(srt,SeaIceModel))

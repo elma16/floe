@@ -11,9 +11,6 @@ sys.path.insert(0, parentdir)
 from seaice.config import *
 
 
-# TODO : get component of UFL velocity
-
-
 class SeaIceModel(object):
     def __init__(self, timestepping, number_of_triangles, params, output):
         self.timestepping = timestepping
@@ -35,24 +32,39 @@ class SeaIceModel(object):
 
 
 class StrainRateTensor(SeaIceModel):
-    def __init__(self, timestepping, output, params, stabilised='0', transform_mesh=False, shape=None,
+    """
+    The Strain Rate Tensor test.
+
+    :arg timestepping:
+    :arg output:
+    :arg params:
+    :arg stabilised:
+    :arg transform_mesh:
+    :arg number_of_triangles:
+    """
+
+    def __init__(self, timestepping, output, params, stabilised='0', transform_mesh=False,
                  number_of_triangles=35):
 
-        """
-        Given the initial conditions, create the equations with the variables given
-
-        TODO add stabilised, transform mesh, shape
-        """
         super().__init__(timestepping, number_of_triangles, params, output)
         self.timestepping = timestepping
         self.stabilised = stabilised
-        self.shape = shape
         self.transform_mesh = transform_mesh
 
         if output is None:
             raise RuntimeError("You must provide a directory name for dumping results")
         else:
             self.output = output
+
+        if transform_mesh:
+            # want periodic bc on the sides, and dirichlet bc on the top and bottom
+            self.mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, params.length, "y")
+            Vc = mesh.coordinates.function_space()
+            x, y = SpatialCoordinate(mesh)
+            f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
+            mesh.coordinates.assign(f)
+        else:
+            self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
 
         self.V = VectorFunctionSpace(self.mesh, "CR", 1)
 
@@ -86,7 +98,10 @@ class StrainRateTensor(SeaIceModel):
         def strain(omega):
             return 0.5 * (omega + transpose(omega))
 
-        self.bcs = [DirichletBC(self.V, Constant(0), "on_boundary")]
+        if transform_mesh:
+            self.bcs = [DirichletBC(self.V, Constant(0), [1, 2])]
+        else:
+            self.bcs = [DirichletBC(self.V, Constant(0), "on_boundary")]
 
         # momentum equation
         self.lm = (inner(self.u1 - self.u0, self.v) + self.timestep * inner(sigma, strain(grad(self.v)))) * dx
@@ -129,13 +144,19 @@ class StrainRateTensor(SeaIceModel):
 
 
 class Evp(SeaIceModel):
-    def __init__(self, timescale, timestep, number_of_triangles, params, output):
+    """
+    The VP/EVP test.
 
-        """
-        Given the initial conditions, create the equations with the variables given
+    :arg timestepping:
+    :arg output:
+    :arg params:
+    :arg stabilised:
+    :arg number_of_triangles:
+    """
 
-        """
-        super().__init__(timescale, timestep, number_of_triangles, params, output)
+    def __init__(self, timestepping, number_of_triangles, params, stabilised):
+
+        super().__init__(timestepping, number_of_triangles, params)
 
     def solve(self, t):
 
@@ -168,11 +189,20 @@ class Evp(SeaIceModel):
 
 
 class BoxTest(SeaIceModel):
-    def __init__(self, timescale, timestep, number_of_triangles, stabilised, output, params):
-        """
-        Given the initial conditions, output the equations
-        """
-        super().__init__(timescale, timestep, number_of_triangles, params, output)
+    """
+    The Box test.
+
+    :arg timestepping:
+    :arg output:
+    :arg params:
+    :arg stabilised:
+    :arg transform_mesh:
+    :arg number_of_triangles:
+    """
+
+    def __init__(self, timescale, timestep, number_of_triangles, stabilised, params):
+
+        super().__init__(timescale, timestep, number_of_triangles, params)
 
         self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.box_length)
 

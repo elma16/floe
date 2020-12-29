@@ -17,6 +17,7 @@ except:
 from seaice.models import *
 
 # TODO Get the Error diagnostic to the point in which you can plot stuff with it
+# TODO : get component of UFL velocity
 
 timestepping = TimesteppingParameters(timescale=10, timestep=10 ** (-1))
 params = SeaIceParameters()
