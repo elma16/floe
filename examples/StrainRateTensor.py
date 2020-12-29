@@ -34,3 +34,5 @@ t = 0
 srt.solve(t)
 srt.update(t)
 srt.dump(t)
+
+print(isinstance(srt,SeaIceModel))
