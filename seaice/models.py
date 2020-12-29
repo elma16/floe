@@ -1,14 +1,15 @@
-import os, sys, inspect
+import inspect
+import os
+import sys
+
 from firedrake import *
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
-from config import *
 
-#TODO : get component of UFL velocity
-
+# TODO : get component of UFL velocity
 
 
 class SeaIceModel(object):
@@ -122,13 +123,13 @@ class StrainRateTensor(SeaIceModel):
 
 
 class Evp(SeaIceModel):
-    def __init__(self):
+    def __init__(self, timescale, timestep, number_of_triangles, params, output):
 
         """
         Given the initial conditions, create the equations with the variables given
 
         """
-
+        super().__init__(timescale, timestep, number_of_triangles, params, output)
 
     def solve(self, t):
 
