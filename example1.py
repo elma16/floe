@@ -18,7 +18,7 @@ srt = StrainRateTensor(timescale=10, timestep=1, number_of_triangles=30, output=
                        shape=None, transform_mesh=False)
 
 t = 0
-for i in range(10):
-    srt.solve(t)
-    srt.update(t)
-    srt.dump(t)
+srt.solve(t)
+srt.update(t)
+srt.dump(t)
+
