@@ -152,17 +152,92 @@ class Evp(SeaIceModel):
     :arg params:
     :arg stabilised:
     :arg number_of_triangles:
+
+    Solving test 2 using the implicit midpoint rule, but solving a matrix system rather than using a mixed function space.
+    Solution Strategy:
+    Apply the implicit midpoint rule to the coupled system of PDEs.
+    Solve sigma^{n+1} in terms of sigma^{n},v^{n},v^{n+1}.
+    Plug in sigma^{n+1} into the momentum equation and solve exactly for v^{n+1}.
+    init = "0" for 0 initial conditions
+         = "1" for manufactured solution IC.
+
     """
 
-    def __init__(self, timestepping, number_of_triangles, params, stabilised):
+    def __init__(self, timestepping, number_of_triangles, params):
 
         super().__init__(timestepping, number_of_triangles, params)
+
+        self.timestep = timestepping.timestep
+
+        mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
+
+        V = VectorFunctionSpace(mesh, "CR", 1)
+        S = TensorFunctionSpace(mesh, "DG", 0)
+        U = FunctionSpace(mesh, "CR", 1)
+        W = MixedFunctionSpace([V, S])
+
+        a = Function(U)
+
+        w0 = Function(W)
+
+        u0, s0 = w0.split()
+
+        x, y = SpatialCoordinate(mesh)
+
+        p, q = TestFunctions(W)
+
+        # initial conditions
+
+        u0.assign(0)
+        a.interpolate(x / params.length)
+        h = Constant(1)
+
+        # ice strength
+        P = params.P_star * h * exp(-params.C * (1 - a))
+
+        # s0.interpolate(- 0.5 * P * Identity(2))
+        # s0.assign(as_matrix([[-0.5*P,0],[0,-0.5*P]]))
+        # TODO fix this!
+        s0.assign(as_matrix([[1, 2], [3, 4]]))
+
+        w1 = Function(W)
+        w1.assign(w0)
+        u1, s1 = split(w1)
+        u0, s0 = split(w0)
+
+        uh = 0.5 * (u0 + u1)
+        sh = 0.5 * (s0 + s1)
+
+        # ocean current
+        ocean_curr = as_vector([0.1 * (2 * y - params.length) / params.length, -0.1 * (params.length - 2 * x) / params.length])
+
+        # strain rate tensor
+        ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
+
+        Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
+
+        # viscosities
+        zeta = 0.5 * P / Delta
+
+        lm = (inner(p, params.rho * h * (u1 - u0)) + timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestep * (
+                0.5 * params.e ** 2 / params.T * sh + (0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * P / params.T) * Identity(2)))) * dx
+        lm -= timestepc * inner(p, params.C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(
+            degree=3)
+        lm -= inner(q * zeta * timestep / params.T, ep_dot) * dx
+
+        params2 = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
+        bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
+        uprob = NonlinearVariationalProblem(lm, w1, bcs)
+        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=params2)
+
+        u1, s1 = w1.split()
 
     def solve(self, t):
 
         """
         Solve the equations at a given timestep
         """
+
         self.usolver.solve()
 
         if t == 0:
@@ -175,7 +250,7 @@ class Evp(SeaIceModel):
 
         while t < self.timescale - 0.5 * self.timestep:
             Evp.solve(self, t)
-            self.u0.assign(self.u1)
+            self.w0.assign(self.w1)
             t += self.timestep
 
     def dump(self, t):
