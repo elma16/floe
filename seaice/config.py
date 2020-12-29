@@ -32,7 +32,7 @@ class TimesteppingParameters(Configuration):
     """
     timescale = None
     timestep = None
-    # alpha = 0.5
+    alpha = 0.5
     maxk = 4
     maxi = 1
 

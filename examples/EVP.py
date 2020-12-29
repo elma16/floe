@@ -8,6 +8,8 @@ sys.path.insert(0, parentdir)
 
 from seaice.models import *
 
+
+
 dirname = "./output/EVP/u.pvd"
 
 timestepping = TimesteppingParameters(timescale=100, timestep=10)

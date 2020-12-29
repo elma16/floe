@@ -8,14 +8,17 @@ currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentfram
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
 
+from seaice.config import *
+
 
 # TODO : get component of UFL velocity
 
 
 class SeaIceModel(object):
-    def __init__(self, timescale, timestep, number_of_triangles, params, output):
-        self.timescale = timescale
-        self.timestep = timestep
+    def __init__(self, timestepping, number_of_triangles, params, output):
+        self.timestepping = timestepping
+        self.timescale = timestepping.timescale
+        self.timestep = timestepping.timestep
         self.number_of_triangles = number_of_triangles
         self.params = params
         if output is None:
@@ -32,14 +35,16 @@ class SeaIceModel(object):
 
 
 class StrainRateTensor(SeaIceModel):
-    def __init__(self, stabilised, transform_mesh, output, shape, params, timescale, timestep, number_of_triangles):
+    def __init__(self, timestepping, output, params, stabilised='0', transform_mesh=False, shape=None,
+                 number_of_triangles=35):
 
         """
         Given the initial conditions, create the equations with the variables given
 
         TODO add stabilised, transform mesh, shape
         """
-        super().__init__(timescale, timestep, number_of_triangles, params, output)
+        super().__init__(timestepping, number_of_triangles, params, output)
+        self.timestepping = timestepping
         self.stabilised = stabilised
         self.shape = shape
         self.transform_mesh = transform_mesh
@@ -84,8 +89,8 @@ class StrainRateTensor(SeaIceModel):
         self.bcs = [DirichletBC(self.V, Constant(0), "on_boundary")]
 
         # momentum equation
-        self.lm = (inner(self.u1 - self.u0, self.v) + timestep * inner(sigma, strain(grad(self.v)))) * dx
-        self.lm -= timestep * inner(R, self.v) * dx
+        self.lm = (inner(self.u1 - self.u0, self.v) + self.timestep * inner(sigma, strain(grad(self.v)))) * dx
+        self.lm -= self.timestep * inner(R, self.v) * dx
 
         solver_params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
 
@@ -110,6 +115,7 @@ class StrainRateTensor(SeaIceModel):
         while t < self.timescale - 0.5 * self.timestep:
             StrainRateTensor.solve(self, t)
             self.u0.assign(self.u1)
+            StrainRateTensor.dump(self, t)
             t += self.timestep
 
     def dump(self, t):
