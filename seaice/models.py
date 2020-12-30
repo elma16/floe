@@ -1,5 +1,7 @@
 from firedrake import *
 
+__all__ = ["StrainRateTensor", "Evp", "BoxTest"]
+
 
 class SeaIceModel(object):
     """

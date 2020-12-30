@@ -1,5 +1,6 @@
-import sys
 from seaice import *
+import sys
+
 
 # TEST 1 : STRAIN RATE TENSOR
 

@@ -2,12 +2,15 @@ from firedrake import *
 import numpy as np
 import matplotlib.pyplot as plt
 from seaice.models import *
+from seaice.config import *
 
 # TODO Get the Error diagnostic to the point in which you can plot stuff with it
 # TODO : get component of UFL velocity
 
 timestepping = TimesteppingParameters(timescale=10, timestep=10 ** (-1))
 params = SeaIceParameters()
+
+__all__ = ["Error", "Energy", "Velocity"]
 
 
 class Diagnostic(object):

@@ -1,5 +1,7 @@
 from firedrake import Constant
 
+__all__ = ["OutputParameters", "TimesteppingParameters", "SeaIceParameters", "SolverParameters"]
+
 
 class Configuration(object):
 
