@@ -2,17 +2,12 @@ import inspect
 import os
 import sys
 from firedrake import *
+import numpy as np
+import matplotlib.pyplot as plt
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir)
-
-import numpy as np
-
-try:
-    import matplotlib.pyplot as plt
-except:
-    warning("Matplotlib not imported")
 
 from seaice.models import *
 
@@ -24,11 +19,12 @@ params = SeaIceParameters()
 
 
 class Diagnostic(object):
-    def __init__(self, model):
+    def __init__(self, model, dirname):
         if not isinstance(model, SeaIceModel):
             raise RuntimeError("You must use a sea ice model")
         else:
             self.model = model
+        self.dirname = dirname
 
 
 class Error(Diagnostic):
@@ -39,11 +35,10 @@ Convergence plots for the strain rate tensor test:
     u vs. t (stabilised vs. unstabilised)
     """
 
-    def __init__(self, dirname, yaxis, model):
-        super().__init__(model)
+    def __init__(self, yaxis, model, dirname):
+        super().__init__(model, dirname)
         self.timescale = timestepping.timescale
         self.timestep = timestepping.timestep
-        self.dirname = dirname
         self.yaxis = yaxis
 
     def compute(self):
@@ -84,8 +79,8 @@ Convergence plots for the strain rate tensor test:
 
 
 class Energy(Diagnostic):
-    def __init__(self, model):
-        super().__init__(model)
+    def __init__(self, model, dirname):
+        super().__init__(model, dirname)
 
     def compute(self, timescale, timestep, number_of_triangles):
         all_u, mesh, v_exp, zeta = self.model(timescale, timestep, number_of_triangles)
@@ -95,7 +90,7 @@ class Energy(Diagnostic):
         # interesting plots:
         # plot_u_conv(2 * 10 ** (-2), 10 ** (-3))
         t = np.arange(0, timescale, timestep)
-        plt.semilogy(t, energy(timescale, timestep), label="timescale = %s" % k)
+        plt.semilogy(t, Energy.compute(timescale, timestep), label="timescale = %s" % k)
         plt.ylabel(r'Energy of solution ')
         plt.xlabel(r'Time [s]')
         plt.title(r'Energy of computed solution for Section 4.1 Test, k = {}, T = {}'.format(timestep, timescale))

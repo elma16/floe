@@ -47,14 +47,9 @@ class StrainRateTensor(SeaIceModel):
                  number_of_triangles=35):
 
         super().__init__(timestepping, number_of_triangles, params, output)
-        self.timestepping = timestepping
+
         self.stabilised = stabilised
         self.transform_mesh = transform_mesh
-
-        if output is None:
-            raise RuntimeError("You must provide a directory name for dumping results")
-        else:
-            self.output = output
 
         if transform_mesh:
             # want periodic bc on the sides, and dirichlet bc on the top and bottom
@@ -209,7 +204,8 @@ class Evp(SeaIceModel):
         sh = 0.5 * (s0 + s1)
 
         # ocean current
-        ocean_curr = as_vector([0.1 * (2 * y - params.length) / params.length, -0.1 * (params.length - 2 * x) / params.length])
+        ocean_curr = as_vector(
+            [0.1 * (2 * y - params.length) / params.length, -0.1 * (params.length - 2 * x) / params.length])
 
         # strain rate tensor
         ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
@@ -220,7 +216,8 @@ class Evp(SeaIceModel):
         zeta = 0.5 * P / Delta
 
         lm = (inner(p, params.rho * h * (u1 - u0)) + timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestep * (
-                0.5 * params.e ** 2 / params.T * sh + (0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * P / params.T) * Identity(2)))) * dx
+                0.5 * params.e ** 2 / params.T * sh + (
+                    0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * P / params.T) * Identity(2)))) * dx
         lm -= timestepc * inner(p, params.C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(
             degree=3)
         lm -= inner(q * zeta * timestep / params.T, ep_dot) * dx
