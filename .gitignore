@@ -11,6 +11,7 @@
 *.idea
 output
 notes
+SeaIceSim.egg-info
 
 # for the time being
 
