@@ -1,0 +1,10 @@
+README.md
+setup.py
+SeaIceSim.egg-info/PKG-INFO
+SeaIceSim.egg-info/SOURCES.txt
+SeaIceSim.egg-info/dependency_links.txt
+SeaIceSim.egg-info/top_level.txt
+seaice/__init__.py
+seaice/config.py
+seaice/diagnostics.py
+seaice/models.py
