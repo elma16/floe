@@ -27,7 +27,9 @@ class SeaIceModel(object):
         self.dump_freq = output.dumpfreq
         self.solver_params = solver_params
 
-        self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
+    def progress(self, t):
+        print("Time:", t, "[s]")
+        print(int(min(t / self.timescale * 100, 100)), "% complete")
 
     # TODO get some shared methods into here
 
@@ -48,6 +50,8 @@ class StrainRateTensor(SeaIceModel):
                  number_of_triangles=35):
 
         super().__init__(timestepping, number_of_triangles, params, output, solver_params)
+
+        self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
 
         self.all_u = []
         self.stabilised = stabilised
@@ -128,6 +132,7 @@ class StrainRateTensor(SeaIceModel):
             self.u0.assign(self.u1)
             StrainRateTensor.dump(self, t)
             t += self.timestep
+            StrainRateTensor.progress(self, t)
 
     def dump(self, t):
         """
@@ -174,6 +179,8 @@ class Evp(SeaIceModel):
     def __init__(self, timestepping, number_of_triangles, params, output, solver_params):
 
         super().__init__(timestepping, number_of_triangles, params, output, solver_params)
+
+        self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
 
         self.V = VectorFunctionSpace(self.mesh, "CR", 1)
         self.S = TensorFunctionSpace(self.mesh, "DG", 0)
@@ -224,9 +231,11 @@ class Evp(SeaIceModel):
         # viscosities
         zeta = 0.5 * P / Delta
 
-        self.lm = (inner(p, params.rho * self.h * (self.u1 - self.u0)) + self.timestep * inner(grad(p),self.sh) +
+        self.lm = (inner(p, params.rho * self.h * (self.u1 - self.u0)) + self.timestep * inner(grad(p), self.sh) +
                    inner(q, (self.s1 - self.s0) + self.timestep * (0.5 * params.e ** 2 / params.T * self.sh +
-                    (0.25 * (1 - params.e ** 2) / params.T * tr(self.sh) + 0.25 * P / params.T) * Identity(2)))) * dx
+                                                                   (0.25 * (1 - params.e ** 2) / params.T * tr(
+                                                                       self.sh) + 0.25 * P / params.T) * Identity(
+                               2)))) * dx
         self.lm -= self.timestep * inner(p, params.C_w * sqrt(dot(self.uh - ocean_curr, self.uh - ocean_curr)) * (
                 self.uh - ocean_curr)) * dx(
             degree=3)
@@ -258,6 +267,7 @@ class Evp(SeaIceModel):
             Evp.solve(self, t)
             self.w0.assign(self.w1)
             t += self.timestep
+            Evp.progress(self, t)
 
     def dump(self, t):
         """
@@ -299,7 +309,7 @@ class BoxTest(SeaIceModel):
         # test functions
         p, q, r = TestFunctions(self.W)
 
-        x, y = SpatialCoordinate(mesh)
+        x, y = SpatialCoordinate(self.mesh)
 
         # initial conditions
         self.u0.assign(0)
@@ -341,46 +351,49 @@ class BoxTest(SeaIceModel):
         # initalise geo_wind
         self.t0 = Constant(0)
 
-        geo_wind = as_vector([5 + (sin(2 * pi * t0 / self.timescale) - 3) * sin(2 * pi * x / params.box_length) * sin(
-            2 * pi * y / params.box_length),
-                              5 + (sin(2 * pi * t0 / self.timescale) - 3) * sin(2 * pi * y / params.box_length) * sin(
-                                  2 * pi * x / params.box_length)])
+        geo_wind = as_vector(
+            [5 + (sin(2 * pi * self.t0 / self.timescale) - 3) * sin(2 * pi * x / params.box_length) * sin(
+                2 * pi * y / params.box_length),
+             5 + (sin(2 * pi * self.t0 / self.timescale) - 3) * sin(2 * pi * y / params.box_length) * sin(
+                 2 * pi * x / params.box_length)])
 
-        lm = inner(params.rho * self.hh * (self.u1 - self.u0), p) * dx
-        lm -= self.timestep * inner(
+        self.lm = inner(params.rho * self.hh * (self.u1 - self.u0), p) * dx
+        self.lm -= self.timestep * inner(
             params.rho * self.hh * params.cor * as_vector([self.uh[1] - ocean_curr[1], ocean_curr[0]
                                                            - self.uh[0]]), p) * dx
-        lm += self.timestep * inner(
+        self.lm += self.timestep * inner(
             params.rho_a * params.C_a * dot(geo_wind, geo_wind) * geo_wind + params.rho_w * params.C_w * sqrt(
                 dot(self.uh - ocean_curr, self.uh - ocean_curr)) * (
                     ocean_curr - self.uh), p) * dx
-        lm += self.timestep * inner(sigma, grad(p)) * dx
+        self.lm += self.timestep * inner(sigma, grad(p)) * dx
 
         # adding the transport equations
         dh_trial = self.h1 - self.h0
         da_trial = self.a1 - self.a0
 
         # LHS
-        lm += q * dh_trial * dx
-        lm += r * da_trial * dx
+        self.lm += q * dh_trial * dx
+        self.lm += r * da_trial * dx
 
         self.n = FacetNormal(self.mesh)
 
         un = 0.5 * (dot(self.uh, self.n) + abs(dot(self.uh, self.n)))
 
-        lm -= self.timestep * (self.hh * div(q * self.uh) * dx
-                               - conditional(dot(self.uh, self.n) < 0, q * dot(self.uh, self.n) * h_in, 0.0) * ds
-                               - conditional(dot(self.uh, self.n) > 0, q * dot(self.uh, self.n) * self.hh, 0.0) * ds
-                               - (q('+') - q('-')) * (un('+') * self.ah('+') - un('-') * self.hh('-')) * dS)
+        self.lm -= self.timestep * (self.hh * div(q * self.uh) * dx
+                                    - conditional(dot(self.uh, self.n) < 0, q * dot(self.uh, self.n) * h_in, 0.0) * ds
+                                    - conditional(dot(self.uh, self.n) > 0, q * dot(self.uh, self.n) * self.hh,
+                                                  0.0) * ds
+                                    - (q('+') - q('-')) * (un('+') * self.ah('+') - un('-') * self.hh('-')) * dS)
 
-        lm -= self.timestep * (self.ah * div(r * self.uh) * dx
-                               - conditional(dot(self.uh, self.n) < 0, r * dot(self.uh, self.n) * a_in, 0.0) * ds
-                               - conditional(dot(self.uh, self.n) > 0, r * dot(self.uh, self.n) * self.ah, 0.0) * ds
-                               - (r('+') - r('-')) * (un('+') * self.ah('+') - un('-') * self.ah('-')) * dS)
+        self.lm -= self.timestep * (self.ah * div(r * self.uh) * dx
+                                    - conditional(dot(self.uh, self.n) < 0, r * dot(self.uh, self.n) * a_in, 0.0) * ds
+                                    - conditional(dot(self.uh, self.n) > 0, r * dot(self.uh, self.n) * self.ah,
+                                                  0.0) * ds
+                                    - (r('+') - r('-')) * (un('+') * self.ah('+') - un('-') * self.ah('-')) * dS)
 
-        bcs = [DirichletBC(self.W.sub(0), 0, "on_boundary")]
+        self.bcs = [DirichletBC(self.W.sub(0), 0, "on_boundary")]
 
-        self.uprob = NonlinearVariationalProblem(lm, self.w1, bcs)
+        self.uprob = NonlinearVariationalProblem(self.lm, self.w1, self.bcs)
         self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params.bt_params)
 
         self.u1, self.h1, self.a1 = self.w1.split()
@@ -399,6 +412,7 @@ class BoxTest(SeaIceModel):
             self.w0.assign(self.w1)
             t += self.timestep
             self.t0.assign(t)
+            BoxTest.progress(self, t)
 
     def dump(self, t):
         """
