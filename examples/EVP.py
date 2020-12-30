@@ -1,25 +1,20 @@
 import sys
 from seaice import *
 
-# TEST 1 : STRAIN RATE TENSOR
+# TEST 2 : EVP
 
-if '--test' in sys.argv:
-    timestep = 10 ** (-6)
-else:
-    timestep = 1
+timestep = 10**(-1)
 
-if '--long' in sys.argv:
-    timescale = 100
-else:
-    timescale = 10
+timescale = 10
 
 dirname = "./output/EVP/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=10)
+solver = SolverParameters()
 params = SeaIceParameters()
 
-evp = Evp(number_of_triangles=35,params=params,timestepping=timestepping)
+evp = Evp(number_of_triangles=35, params=params, timestepping=timestepping, output=output, solver_params=solver)
 
 t = 0
 evp.solve(t)

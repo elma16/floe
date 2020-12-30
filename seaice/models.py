@@ -1,7 +1,5 @@
 from firedrake import *
 
-__all__ = ["StrainRateTensor", "Evp", "BoxTest"]
-
 
 class SeaIceModel(object):
     """
@@ -46,11 +44,12 @@ class StrainRateTensor(SeaIceModel):
     :arg number_of_triangles:
     """
 
-    def __init__(self, timestepping, output, params, solver_params, stabilised='0', transform_mesh=False,
+    def __init__(self, timestepping, params, solver_params, output, stabilised='0', transform_mesh=False,
                  number_of_triangles=35):
 
         super().__init__(timestepping, number_of_triangles, params, output, solver_params)
 
+        self.all_u = []
         self.stabilised = stabilised
         self.transform_mesh = transform_mesh
 
@@ -59,7 +58,7 @@ class StrainRateTensor(SeaIceModel):
             Vc = self.mesh.coordinates.function_space()
             x, y = SpatialCoordinate(mesh)
             f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
-            mesh.coordinates.assign(f)
+            self.mesh.coordinates.assign(f)
         else:
             self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
 
@@ -82,11 +81,13 @@ class StrainRateTensor(SeaIceModel):
 
         # viscosities
         zeta = 0.5 * P / params.Delta_min
+        self.zeta = zeta
 
         sigma = 0.5 * zeta * (grad(self.u1) + transpose(grad(self.u1)))
 
         pi_x = pi / params.length
         v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+        self.v_exp = v_exp
 
         sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
 
@@ -137,6 +138,18 @@ class StrainRateTensor(SeaIceModel):
             self.dump_count -= self.dump_freq
             self.outfile.write(self.u1, time=t)
 
+    def sp_output(self):
+
+        t = 0
+
+        while t < self.timescale - 0.5 * self.timestep:
+            StrainRateTensor.solve(self, t)
+            self.u0.assign(self.u1)
+            self.all_u.append(Function(self.u1))
+            t += self.timestep
+
+        return self.all_u, self.mesh, self.v_exp, self.zeta
+
 
 class Evp(SeaIceModel):
     """
@@ -158,76 +171,72 @@ class Evp(SeaIceModel):
 
     """
 
-    def __init__(self, timestepping, number_of_triangles, params):
+    def __init__(self, timestepping, number_of_triangles, params, output, solver_params):
 
-        super().__init__(timestepping, number_of_triangles, params)
+        super().__init__(timestepping, number_of_triangles, params, output, solver_params)
 
-        self.timestep = timestepping.timestep
+        self.V = VectorFunctionSpace(self.mesh, "CR", 1)
+        self.S = TensorFunctionSpace(self.mesh, "DG", 0)
+        self.U = FunctionSpace(self.mesh, "CR", 1)
+        self.W = MixedFunctionSpace([self.V, self.S])
 
-        mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
+        self.a = Function(self.U)
 
-        V = VectorFunctionSpace(mesh, "CR", 1)
-        S = TensorFunctionSpace(mesh, "DG", 0)
-        U = FunctionSpace(mesh, "CR", 1)
-        W = MixedFunctionSpace([V, S])
+        self.w0 = Function(self.W)
 
-        a = Function(U)
+        self.u0, self.s0 = self.w0.split()
 
-        w0 = Function(W)
+        x, y = SpatialCoordinate(self.mesh)
 
-        u0, s0 = w0.split()
-
-        x, y = SpatialCoordinate(mesh)
-
-        p, q = TestFunctions(W)
+        p, q = TestFunctions(self.W)
 
         # initial conditions
 
-        u0.assign(0)
-        a.interpolate(x / params.length)
-        h = Constant(1)
+        self.u0.assign(0)
+        self.a.interpolate(x / params.length)
+        self.h = Constant(1)
 
         # ice strength
-        P = params.P_star * h * exp(-params.C * (1 - a))
+        P = params.P_star * self.h * exp(-params.C * (1 - self.a))
 
         # s0.interpolate(- 0.5 * P * Identity(2))
         # s0.assign(as_matrix([[-0.5*P,0],[0,-0.5*P]]))
         # TODO fix this!
-        s0.assign(as_matrix([[1, 2], [3, 4]]))
+        self.s0.assign(as_matrix([[1, 2], [3, 4]]))
 
-        w1 = Function(W)
-        w1.assign(w0)
-        u1, s1 = split(w1)
-        u0, s0 = split(w0)
+        self.w1 = Function(self.W)
+        self.w1.assign(self.w0)
+        self.u1, self.s1 = split(self.w1)
+        self.u0, self.s0 = split(self.w0)
 
-        uh = 0.5 * (u0 + u1)
-        sh = 0.5 * (s0 + s1)
+        self.uh = 0.5 * (self.u0 + self.u1)
+        self.sh = 0.5 * (self.s0 + self.s1)
 
         # ocean current
         ocean_curr = as_vector(
             [0.1 * (2 * y - params.length) / params.length, -0.1 * (params.length - 2 * x) / params.length])
 
         # strain rate tensor
-        ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
+        ep_dot = 0.5 * (grad(self.uh) + transpose(grad(self.uh)))
 
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
 
         # viscosities
         zeta = 0.5 * P / Delta
 
-        lm = (inner(p, params.rho * h * (u1 - u0)) + timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestep * (
-                0.5 * params.e ** 2 / params.T * sh + (
-                0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * P / params.T) * Identity(2)))) * dx
-        lm -= timestepc * inner(p, params.C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(
+        self.lm = (inner(p, params.rho * self.h * (self.u1 - self.u0)) + self.timestep * inner(grad(p),self.sh) +
+                   inner(q, (self.s1 - self.s0) + self.timestep * (0.5 * params.e ** 2 / params.T * self.sh +
+                    (0.25 * (1 - params.e ** 2) / params.T * tr(self.sh) + 0.25 * P / params.T) * Identity(2)))) * dx
+        self.lm -= self.timestep * inner(p, params.C_w * sqrt(dot(self.uh - ocean_curr, self.uh - ocean_curr)) * (
+                self.uh - ocean_curr)) * dx(
             degree=3)
-        lm -= inner(q * zeta * timestep / params.T, ep_dot) * dx
+        self.lm -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
-        params2 = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
-        bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
-        uprob = NonlinearVariationalProblem(lm, w1, bcs)
-        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=params2)
+        self.bcs = [DirichletBC(self.W.sub(0), 0, "on_boundary")]
+        self.uprob = NonlinearVariationalProblem(self.lm, self.w1, self.bcs)
+        self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params.bt_params)
 
-        u1, s1 = w1.split()
+        self.u1, self.s1 = self.w1.split()
 
     def solve(self, t):
 
@@ -272,9 +281,9 @@ class BoxTest(SeaIceModel):
     :arg number_of_triangles:
     """
 
-    def __init__(self, timescale, timestep, number_of_triangles, stabilised, params):
+    def __init__(self, timestepping, number_of_triangles, params, output, solver_params):
 
-        super().__init__(timescale, timestep, number_of_triangles, params)
+        super().__init__(timestepping, number_of_triangles, params, output, solver_params)
 
         self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.box_length)
 
@@ -322,12 +331,6 @@ class BoxTest(SeaIceModel):
 
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
 
-        if stabilised == 0:
-            stab_term = 0
-        if stabilised == 1:
-            stab_term = 2 * params.a_vp * avg(CellVolume(self.mesh)) / FacetArea(self.mesh) * (
-                dot(jump(self.u1), jump(p))) * dS
-
         # viscosities
         zeta = 0.5 * P / Delta
         eta = zeta * params.e ** (-2)
@@ -336,22 +339,22 @@ class BoxTest(SeaIceModel):
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P * 0.5 * Identity(2)
 
         # initalise geo_wind
-        t0 = Constant(0)
+        self.t0 = Constant(0)
 
-        geo_wind = as_vector([5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / params.box_length) * sin(
+        geo_wind = as_vector([5 + (sin(2 * pi * t0 / self.timescale) - 3) * sin(2 * pi * x / params.box_length) * sin(
             2 * pi * y / params.box_length),
-                              5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / params.box_length) * sin(
+                              5 + (sin(2 * pi * t0 / self.timescale) - 3) * sin(2 * pi * y / params.box_length) * sin(
                                   2 * pi * x / params.box_length)])
 
         lm = inner(params.rho * self.hh * (self.u1 - self.u0), p) * dx
-        lm -= timestep * inner(params.rho * self.hh * params.cor * as_vector([self.uh[1] - ocean_curr[1], ocean_curr[0]
-                                                                              - self.uh[0]]), p) * dx
-        lm += timestep * inner(
+        lm -= self.timestep * inner(
+            params.rho * self.hh * params.cor * as_vector([self.uh[1] - ocean_curr[1], ocean_curr[0]
+                                                           - self.uh[0]]), p) * dx
+        lm += self.timestep * inner(
             params.rho_a * params.C_a * dot(geo_wind, geo_wind) * geo_wind + params.rho_w * params.C_w * sqrt(
                 dot(self.uh - ocean_curr, self.uh - ocean_curr)) * (
                     ocean_curr - self.uh), p) * dx
-        lm += timestep * inner(sigma, grad(p)) * dx
-        lm += stab_term
+        lm += self.timestep * inner(sigma, grad(p)) * dx
 
         # adding the transport equations
         dh_trial = self.h1 - self.h0
@@ -365,21 +368,20 @@ class BoxTest(SeaIceModel):
 
         un = 0.5 * (dot(self.uh, self.n) + abs(dot(self.uh, self.n)))
 
-        lm -= timestep * (self.hh * div(q * self.uh) * dx
-                          - conditional(dot(self.uh, self.n) < 0, q * dot(self.uh, self.n) * h_in, 0.0) * ds
-                          - conditional(dot(self.uh, self.n) > 0, q * dot(self.uh, self.n) * self.hh, 0.0) * ds
-                          - (q('+') - q('-')) * (un('+') * self.ah('+') - un('-') * self.hh('-')) * dS)
+        lm -= self.timestep * (self.hh * div(q * self.uh) * dx
+                               - conditional(dot(self.uh, self.n) < 0, q * dot(self.uh, self.n) * h_in, 0.0) * ds
+                               - conditional(dot(self.uh, self.n) > 0, q * dot(self.uh, self.n) * self.hh, 0.0) * ds
+                               - (q('+') - q('-')) * (un('+') * self.ah('+') - un('-') * self.hh('-')) * dS)
 
-        lm -= timestep * (self.ah * div(r * self.uh) * dx
-                          - conditional(dot(self.uh, self.n) < 0, r * dot(self.uh, self.n) * a_in, 0.0) * ds
-                          - conditional(dot(self.uh, self.n) > 0, r * dot(self.uh, self.n) * self.ah, 0.0) * ds
-                          - (r('+') - r('-')) * (un('+') * self.ah('+') - un('-') * self.ah('-')) * dS)
+        lm -= self.timestep * (self.ah * div(r * self.uh) * dx
+                               - conditional(dot(self.uh, self.n) < 0, r * dot(self.uh, self.n) * a_in, 0.0) * ds
+                               - conditional(dot(self.uh, self.n) > 0, r * dot(self.uh, self.n) * self.ah, 0.0) * ds
+                               - (r('+') - r('-')) * (un('+') * self.ah('+') - un('-') * self.ah('-')) * dS)
 
         bcs = [DirichletBC(self.W.sub(0), 0, "on_boundary")]
 
-        params2 = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
         self.uprob = NonlinearVariationalProblem(lm, self.w1, bcs)
-        self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=params2)
+        self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params.bt_params)
 
         self.u1, self.h1, self.a1 = self.w1.split()
 
@@ -396,6 +398,7 @@ class BoxTest(SeaIceModel):
             BoxTest.solve(self, t)
             self.w0.assign(self.w1)
             t += self.timestep
+            self.t0.assign(t)
 
     def dump(self, t):
         """

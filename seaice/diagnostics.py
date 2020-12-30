@@ -2,6 +2,7 @@ from firedrake import *
 import numpy as np
 import matplotlib.pyplot as plt
 from seaice.config import *
+from seaice.models import *
 
 # TODO Get the Error diagnostic to the point in which you can plot stuff with it
 # TODO : get component of UFL velocity
@@ -29,40 +30,19 @@ Convergence plots for the strain rate tensor test:
     u vs. t (stabilised vs. unstabilised)
     """
 
-    def __init__(self, yaxis, model, dirname):
+    def __init__(self, model, dirname, yaxis):
         super().__init__(model, dirname)
         self.timescale = timestepping.timescale
         self.timestep = timestepping.timestep
         self.yaxis = yaxis
 
-    def compute(self):
-        all_u, mesh, v_exp, zeta = self.model
+    def compute(self, model):
+        all_u, mesh, v_exp, zeta = model.sp_output()
         return [errornorm(v_exp, all_u[i]) for i in range(len(all_u) - 1)]
 
-    def compute2(self):
-        """
-        Compute the energy of the solution in the instance of the EVP/VP model
-        u1 - energy defined pg 8, after energy proof
-        u2 - energy defined pg 19
-        u3 - energy used on the y axis of the energy plot fig 7, pg 20
-        """
-        # all_u, all_h, all_a, mesh, zeta = vp_evp_test_explicit(timescale, timestep, number_of_triangles, rheology,
-        #                                                       advection=True, solver=solver, subcycle=5,
-        #                                                       stabilised=stabilised)
-
-        eta = zeta * e ** (-2)
-        energy_u1 = [norm(0.5 * zeta * grad(all_u[i])) for i in range(len(all_u))]
-        energy_u2 = [norm(sqrt(zeta) * all_u[i]) for i in range(len(all_u))]
-        energy_u3 = [norm(sqrt(eta) * grad(all_u[i])) for i in range(len(all_u))]
-
-        # energy_h = [norm(0.5 * zeta * grad(all_h[i])) for i in range(len(all_h))]
-        # energy_a = [norm(0.5 * zeta * grad(all_a[i])) for i in range(len(all_a))]
-
-        return energy_u1, energy_u2, energy_u3
-
-    def plot(self, yaxis):
+    def plot(self, model, yaxis):
         t = np.arange(0, self.timescale, self.timestep)
-        plt.semilogy(t, compute(), label="timescale = %s" % k)
+        plt.semilogy(t, Error.compute(model), label="timescale = %s" % yaxis)
         plt.ylabel(r'Error of solution ')
         plt.xlabel(r'{}'.format(self.yaxis))
         plt.title(r'Error of computed solution for Section {} Test, ')
@@ -76,21 +56,35 @@ class Energy(Diagnostic):
     def __init__(self, model, dirname):
         super().__init__(model, dirname)
 
-    def compute(self, timescale, timestep, number_of_triangles):
-        all_u, mesh, v_exp, zeta = self.model(timescale, timestep, number_of_triangles)
-        return [norm(0.5 * zeta * grad(all_u[i])) for i in range(len(all_u) - 1)]
+    def compute(self, StrainRateTensor):
+        """
+        Compute the energy of the solution in the instance of the EVP/VP model
+        u1 - energy defined pg 8, after energy proof
+        u2 - energy defined pg 19
+        u3 - energy used on the y axis of the energy plot fig 7, pg 20
+        """
+        all_u, mesh, v_exp, zeta = StrainRateTensor.sp_output()
+
+        eta = zeta * params.e ** (-2)
+
+        energy_u1 = [norm(0.5 * zeta * grad(all_u[i])) for i in range(len(all_u))]
+        energy_u2 = [norm(sqrt(zeta) * all_u[i]) for i in range(len(all_u))]
+        energy_u3 = [norm(sqrt(eta) * grad(all_u[i])) for i in range(len(all_u))]
+
+        return energy_u1, energy_u2, energy_u3
 
     def plot(self):
         # interesting plots:
         # plot_u_conv(2 * 10 ** (-2), 10 ** (-3))
-        t = np.arange(0, timescale, timestep)
-        plt.semilogy(t, Energy.compute(timescale, timestep), label="timescale = %s" % k)
+        t = np.arange(0, self.timescale, self.timestep)
+        plt.semilogy(t, Energy.compute(StrainRateTensor), label="timescale = %s" % self.timescale)
         plt.ylabel(r'Energy of solution ')
         plt.xlabel(r'Time [s]')
-        plt.title(r'Energy of computed solution for Section 4.1 Test, k = {}, T = {}'.format(timestep, timescale))
+        plt.title(
+            r'Energy of computed solution for Section 4.1 Test, k = {}, T = {}'.format(self.timestep, self.timescale))
         plt.legend(loc='best')
         plt.show()
-        plt.savefig('./plots/strain_rate_energy.png')
+        plt.savefig(self.dirname)
 
 
 class Velocity(Diagnostic):
