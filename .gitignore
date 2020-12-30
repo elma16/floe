@@ -4,6 +4,7 @@
 *.pvd
 *.pvtu
 *.vtu
+*.egg-info/
 
 # Folders to be ignored
 
@@ -11,7 +12,6 @@
 *.idea
 output
 notes
-SeaIceSim.egg-info
 
 # for the time being
 
