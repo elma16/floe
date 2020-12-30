@@ -1,14 +1,6 @@
-import inspect
-import os
-import sys
 from firedrake import *
 import numpy as np
 import matplotlib.pyplot as plt
-
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
-
 from seaice.models import *
 
 # TODO Get the Error diagnostic to the point in which you can plot stuff with it

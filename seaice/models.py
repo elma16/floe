@@ -1,18 +1,18 @@
-import inspect
-import os
-import sys
-
 from firedrake import *
-
-currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-parentdir = os.path.dirname(currentdir)
-sys.path.insert(0, parentdir)
-
-from seaice.config import *
 
 
 class SeaIceModel(object):
-    def __init__(self, timestepping, number_of_triangles, params, output):
+    """
+    Defining the general class for a Sea Ice Model
+
+    :arg timestepping:
+    :arg number_of_triangles:
+    :arg params:
+    :output:
+    :solver_params:
+    """
+
+    def __init__(self, timestepping, number_of_triangles, params, output, solver_params):
         self.timestepping = timestepping
         self.timescale = timestepping.timescale
         self.timestep = timestepping.timestep
@@ -25,6 +25,7 @@ class SeaIceModel(object):
         self.outfile = File(output.dirname)
         self.dump_count = 0
         self.dump_freq = output.dumpfreq
+        self.solver_params = solver_params
 
         self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
 
@@ -43,18 +44,17 @@ class StrainRateTensor(SeaIceModel):
     :arg number_of_triangles:
     """
 
-    def __init__(self, timestepping, output, params, stabilised='0', transform_mesh=False,
+    def __init__(self, timestepping, output, params, solver_params, stabilised='0', transform_mesh=False,
                  number_of_triangles=35):
 
-        super().__init__(timestepping, number_of_triangles, params, output)
+        super().__init__(timestepping, number_of_triangles, params, output, solver_params)
 
         self.stabilised = stabilised
         self.transform_mesh = transform_mesh
 
         if transform_mesh:
-            # want periodic bc on the sides, and dirichlet bc on the top and bottom
             self.mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, params.length, "y")
-            Vc = mesh.coordinates.function_space()
+            Vc = self.mesh.coordinates.function_space()
             x, y = SpatialCoordinate(mesh)
             f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
             mesh.coordinates.assign(f)
@@ -102,10 +102,8 @@ class StrainRateTensor(SeaIceModel):
         self.lm = (inner(self.u1 - self.u0, self.v) + self.timestep * inner(sigma, strain(grad(self.v)))) * dx
         self.lm -= self.timestep * inner(R, self.v) * dx
 
-        solver_params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
-
         self.uprob = NonlinearVariationalProblem(self.lm, self.u1, self.bcs)
-        self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params)
+        self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params.srt_params)
 
     def solve(self, t):
 
@@ -217,7 +215,7 @@ class Evp(SeaIceModel):
 
         lm = (inner(p, params.rho * h * (u1 - u0)) + timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestep * (
                 0.5 * params.e ** 2 / params.T * sh + (
-                    0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * P / params.T) * Identity(2)))) * dx
+                0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * P / params.T) * Identity(2)))) * dx
         lm -= timestepc * inner(p, params.C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(
             degree=3)
         lm -= inner(q * zeta * timestep / params.T, ep_dot) * dx
