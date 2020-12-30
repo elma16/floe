@@ -1,7 +1,6 @@
 from firedrake import *
 import numpy as np
 import matplotlib.pyplot as plt
-from seaice.models import *
 from seaice.config import *
 
 # TODO Get the Error diagnostic to the point in which you can plot stuff with it

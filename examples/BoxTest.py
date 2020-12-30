@@ -1,4 +1,4 @@
-from seaice import *
+from seaice2 import *
 
 dirname = "./output/box_test/u.pvd"
 
