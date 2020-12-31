@@ -1,9 +1,8 @@
-import sys
 from seaice import *
 
 # TEST 2 : EVP
 
-timestep = 10**(-1)
+timestep = 10 ** (-1)
 
 timescale = 10
 
@@ -17,6 +16,9 @@ params = SeaIceParameters()
 evp = Evp(number_of_triangles=35, params=params, timestepping=timestepping, output=output, solver_params=solver)
 
 t = 0
-evp.solve(t)
-evp.update(t)
-evp.dump(t)
+while t < timescale - 0.5 * timestep:
+    evp.solve()
+    evp.update()
+    evp.dump(t)
+    t += timestep
+    evp.progress(t)

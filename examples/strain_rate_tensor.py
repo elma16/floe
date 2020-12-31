@@ -26,10 +26,13 @@ srt = StrainRateTensor(timestepping=timestepping, number_of_triangles=35, output
                        solver_params=solver)
 
 t = 0
-srt.solve(t)
-srt.update(t)
-srt.dump(t)
+while t < timescale - 0.5 * timestep:
+    srt.solve()
+    srt.update()
+    srt.dump(t)
+    t += timestep
+    srt.progress(t)
 
-err = Error(model=srt, dirname=plot_dirname)
+
 
 

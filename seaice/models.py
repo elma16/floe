@@ -112,27 +112,20 @@ class StrainRateTensor(SeaIceModel):
         self.uprob = NonlinearVariationalProblem(self.lm, self.u1, self.bcs)
         self.usolver = NonlinearVariationalSolver(self.uprob, solver_parameters=solver_params.srt_params)
 
-    def solve(self, t):
+        self.outfile.write(self.u1, time=0)
+
+    def solve(self):
 
         """
         Solve the equations at a given timestep
         """
         self.usolver.solve()
 
-        if t == 0:
-            self.outfile.write(self.u1, time=t)
-
-    def update(self, t):
+    def update(self):
         """
         Update the equations with the new values of the functions
         """
-
-        while t < self.timescale - 0.5 * self.timestep:
-            StrainRateTensor.solve(self, t)
-            self.u0.assign(self.u1)
-            StrainRateTensor.dump(self, t)
-            t += self.timestep
-            StrainRateTensor.progress(self, t)
+        self.u0.assign(self.u1)
 
     def dump(self, t):
         """
@@ -177,7 +170,6 @@ class Evp(SeaIceModel):
     """
 
     def __init__(self, timestepping, number_of_triangles, params, output, solver_params):
-
         super().__init__(timestepping, number_of_triangles, params, output, solver_params)
 
         self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
@@ -247,27 +239,19 @@ class Evp(SeaIceModel):
 
         self.u1, self.s1 = self.w1.split()
 
-    def solve(self, t):
+        self.outfile.write(self.u1, self.s1, time=0)
 
+    def solve(self):
         """
         Solve the equations at a given timestep
         """
-
         self.usolver.solve()
 
-        if t == 0:
-            self.outfile.write(self.u1, time=t)
-
-    def update(self, t):
+    def update(self):
         """
         Update the equations with the new values of the functions
         """
-
-        while t < self.timescale - 0.5 * self.timestep:
-            Evp.solve(self, t)
-            self.w0.assign(self.w1)
-            t += self.timestep
-            Evp.progress(self, t)
+        self.w0.assign(self.w1)
 
     def dump(self, t):
         """
@@ -276,7 +260,7 @@ class Evp(SeaIceModel):
         self.dump_count += 1
         if self.dump_count == self.dump_freq:
             self.dump_count -= self.dump_freq
-            self.outfile.write(self.u1, time=t)
+            self.outfile.write(self.u1, self.s1, time=t)
 
 
 class BoxTest(SeaIceModel):
@@ -292,7 +276,6 @@ class BoxTest(SeaIceModel):
     """
 
     def __init__(self, timestepping, number_of_triangles, params, output, solver_params):
-
         super().__init__(timestepping, number_of_triangles, params, output, solver_params)
 
         self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.box_length)
@@ -398,21 +381,13 @@ class BoxTest(SeaIceModel):
 
         self.u1, self.h1, self.a1 = self.w1.split()
 
-    def solve(self, t):
+        self.outfile.write(self.u1, self.h1, self.a1, time=0)
 
+    def solve(self):
         self.usolver.solve()
 
-        if t == 0:
-            self.outfile.write(self.u1, time=t)
-
-    def update(self, t):
-
-        while t < self.timescale - 0.5 * self.timestep:
-            BoxTest.solve(self, t)
-            self.w0.assign(self.w1)
-            t += self.timestep
-            self.t0.assign(t)
-            BoxTest.progress(self, t)
+    def update(self):
+        self.w0.assign(self.w1)
 
     def dump(self, t):
         """
@@ -421,4 +396,4 @@ class BoxTest(SeaIceModel):
         self.dump_count += 1
         if self.dump_count == self.dump_freq:
             self.dump_count -= self.dump_freq
-            self.outfile.write(self.u1, time=t)
+            self.outfile.write(self.u1, self.h1, self.a1, time=t)
