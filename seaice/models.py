@@ -26,6 +26,9 @@ class SeaIceModel(object):
         self.dump_count = 0
         self.dump_freq = output.dumpfreq
         self.solver_params = solver_params
+        self.all_u = []
+        self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
+        self.x, self.y = SpatialCoordinate(self.mesh)
 
     def progress(self, t):
         print("Time:", t, "[s]")
@@ -51,20 +54,14 @@ class StrainRateTensor(SeaIceModel):
 
         super().__init__(timestepping, number_of_triangles, params, output, solver_params)
 
-        self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
-
-        self.all_u = []
         self.stabilised = stabilised
         self.transform_mesh = transform_mesh
 
         if transform_mesh:
             self.mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, params.length, "y")
             Vc = self.mesh.coordinates.function_space()
-            x, y = SpatialCoordinate(mesh)
-            f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
+            f = Function(Vc).interpolate(as_vector([self.x + 0.5 * self.y, self.y]))
             self.mesh.coordinates.assign(f)
-        else:
-            self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
 
         self.V = VectorFunctionSpace(self.mesh, "CR", 1)
 
@@ -74,8 +71,6 @@ class StrainRateTensor(SeaIceModel):
 
         # test functions
         self.v = TestFunction(self.V)
-
-        x, y = SpatialCoordinate(self.mesh)
 
         self.h = Constant(1)
         self.a = Constant(1)
@@ -90,7 +85,7 @@ class StrainRateTensor(SeaIceModel):
         sigma = 0.5 * zeta * (grad(self.u1) + transpose(grad(self.u1)))
 
         pi_x = pi / params.length
-        v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+        v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
         self.v_exp = v_exp
 
         sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
@@ -172,8 +167,6 @@ class Evp(SeaIceModel):
     def __init__(self, timestepping, number_of_triangles, params, output, solver_params):
         super().__init__(timestepping, number_of_triangles, params, output, solver_params)
 
-        self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
-
         self.V = VectorFunctionSpace(self.mesh, "CR", 1)
         self.S = TensorFunctionSpace(self.mesh, "DG", 0)
         self.U = FunctionSpace(self.mesh, "CR", 1)
@@ -185,21 +178,17 @@ class Evp(SeaIceModel):
 
         self.u0, self.s0 = self.w0.split()
 
-        x, y = SpatialCoordinate(self.mesh)
-
         p, q = TestFunctions(self.W)
 
         # initial conditions
 
         self.u0.assign(0)
-        self.a.interpolate(x / params.length)
+        self.a.interpolate(self.x / params.length)
         self.h = Constant(1)
 
         # ice strength
         P = params.P_star * self.h * exp(-params.C * (1 - self.a))
 
-        # s0.interpolate(- 0.5 * P * Identity(2))
-        # s0.assign(as_matrix([[-0.5*P,0],[0,-0.5*P]]))
         # TODO fix this!
         self.s0.assign(as_matrix([[1, 2], [3, 4]]))
 
@@ -213,7 +202,7 @@ class Evp(SeaIceModel):
 
         # ocean current
         ocean_curr = as_vector(
-            [0.1 * (2 * y - params.length) / params.length, -0.1 * (params.length - 2 * x) / params.length])
+            [0.1 * (2 * self.y - params.length) / params.length, -0.1 * (params.length - 2 * self.x) / params.length])
 
         # strain rate tensor
         ep_dot = 0.5 * (grad(self.uh) + transpose(grad(self.uh)))
@@ -289,15 +278,15 @@ class BoxTest(SeaIceModel):
 
         self.u0, self.h0, self.a0 = self.w0.split()
 
+        self.x, self.y = SpatialCoordinate(self.mesh)
+
         # test functions
         p, q, r = TestFunctions(self.W)
-
-        x, y = SpatialCoordinate(self.mesh)
 
         # initial conditions
         self.u0.assign(0)
         self.h0.assign(1)
-        self.a0.interpolate(x / params.box_length)
+        self.a0.interpolate(self.x / params.box_length)
 
         self.w1.assign(self.w0)
 
@@ -313,8 +302,8 @@ class BoxTest(SeaIceModel):
         a_in = Constant(0.5)
 
         # ocean current
-        ocean_curr = as_vector([0.1 * (2 * y - params.box_length) / params.box_length,
-                                -0.1 * (params.box_length - 2 * x) / params.box_length])
+        ocean_curr = as_vector([0.1 * (2 * self.y - params.box_length) / params.box_length,
+                                -0.1 * (params.box_length - 2 * self.x) / params.box_length])
 
         # strain rate tensor
         ep_dot = 0.5 * (grad(self.uh) + transpose(grad(self.uh)))
@@ -335,10 +324,10 @@ class BoxTest(SeaIceModel):
         self.t0 = Constant(0)
 
         geo_wind = as_vector(
-            [5 + (sin(2 * pi * self.t0 / self.timescale) - 3) * sin(2 * pi * x / params.box_length) * sin(
-                2 * pi * y / params.box_length),
-             5 + (sin(2 * pi * self.t0 / self.timescale) - 3) * sin(2 * pi * y / params.box_length) * sin(
-                 2 * pi * x / params.box_length)])
+            [5 + (sin(2 * pi * self.t0 / self.timescale) - 3) * sin(2 * pi * self.x / params.box_length) * sin(
+                2 * pi * self.y / params.box_length),
+             5 + (sin(2 * pi * self.t0 / self.timescale) - 3) * sin(2 * pi * self.y / params.box_length) * sin(
+                 2 * pi * self.x / params.box_length)])
 
         self.lm = inner(params.rho * self.hh * (self.u1 - self.u0), p) * dx
         self.lm -= self.timestep * inner(
