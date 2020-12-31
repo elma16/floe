@@ -1,4 +1,5 @@
 import sys
+import inspect
 from seaice import *
 
 # TEST 1 : STRAIN RATE TENSOR
@@ -30,6 +31,7 @@ srt.solve(t)
 srt.update(t)
 srt.dump(t)
 
-err = Error(model=srt, dirname=plot_dirname)
+err = Error(model=srt, dirname=plot_dirname, timestepping=timestepping, values=[30, 40, 50],
+            xaxis='number_of_triangles')
 
-
+err.plot(srt, 'number_of_triangles', [30, 40, 50])

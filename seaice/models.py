@@ -1,6 +1,9 @@
 from firedrake import *
 
 
+# TODO add descriptions
+
+
 class SeaIceModel(object):
     """
     Defining the general class for a Sea Ice Model
@@ -30,6 +33,9 @@ class SeaIceModel(object):
     def progress(self, t):
         print("Time:", t, "[s]")
         print(int(min(t / self.timescale * 100, 100)), "% complete")
+
+    def args(self):
+        return [self.number_of_triangles]
 
     # TODO get some shared methods into here
 

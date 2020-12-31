@@ -23,10 +23,10 @@ output = OutputParameters(dirname=dirname, dumpfreq=10)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-bt = BoxTest(number_of_triangles=number_of_triangles, params=params, solver_params=solver,output=output, timestepping=timestepping)
+bt = BoxTest(number_of_triangles=number_of_triangles, params=params, solver_params=solver, output=output,
+             timestepping=timestepping)
 
 t = 0
 bt.solve(t)
 bt.update(t)
 bt.dump(t)
-
