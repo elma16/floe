@@ -54,10 +54,12 @@ Convergence plots for the strain rate tensor test:
 
 
 class Energy(Diagnostic):
-    def __init__(self, model, dirname):
-        super().__init__(model, dirname)
+    def __init__(self, model, dirname, timestepping, params):
+        super().__init__(model, dirname, timestepping)
 
-    def compute(self, model):
+        self.params = params
+
+    def compute(self, model, params):
         """
         Compute the energy of the solution in the instance of the EVP/VP model
         u1 - energy defined pg 8, after energy proof
@@ -72,23 +74,23 @@ class Energy(Diagnostic):
         energy_u2 = [norm(sqrt(zeta) * all_u[i]) for i in range(len(all_u))]
         energy_u3 = [norm(sqrt(eta) * grad(all_u[i])) for i in range(len(all_u))]
 
-        return energy_u1, energy_u2, energy_u3
+        return energy_u1
 
-    def plot(self):
+    def plot(self, model, params):
         t = np.arange(0, self.timescale, self.timestep)
-        plt.semilogy(t, Energy.compute(self, StrainRateTensor), label="timescale = %s" % self.timescale)
-        plt.ylabel(r'Energy of solution ')
+        plt.semilogy(t, Energy.compute(self, model, params))
+        plt.ylabel(r'Energy of solution :{} ')
         plt.xlabel(r'Time [s]')
         plt.title(
-            r'Energy of computed solution for Section 4.1 Test, k = {}, T = {}'.format(self.timestep, self.timescale))
-        plt.legend(loc='best')
+            r'Energy of computed solution for Section 4.1 Test, t = {}, T = {}'.format(self.timestep,
+                                                                                       self.timescale))
         plt.show()
         plt.savefig(self.dirname)
 
 
 class Velocity(Diagnostic):
-    def __init__(self, model, dirname):
-        super().__init__(model, dirname)
+    def __init__(self, model, dirname, timestepping):
+        super().__init__(model, dirname, timestepping)
 
     def X_component(self):
         return 0
