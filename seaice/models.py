@@ -34,6 +34,7 @@ class SeaIceModel(object):
         print("Time:", t, "[s]")
         print(int(min(t / self.timescale * 100, 100)), "% complete")
 
+
     # TODO get some shared methods into here
 
 
@@ -143,7 +144,7 @@ class StrainRateTensor(SeaIceModel):
 
         return self.all_u, self.mesh, self.v_exp, self.zeta
 
-
+# TODO add advection
 class Evp(SeaIceModel):
     """
     The VP/EVP test.
@@ -153,15 +154,6 @@ class Evp(SeaIceModel):
     :arg params:
     :arg stabilised:
     :arg number_of_triangles:
-
-    Solving test 2 using the implicit midpoint rule, but solving a matrix system rather than using a mixed function space.
-    Solution Strategy:
-    Apply the implicit midpoint rule to the coupled system of PDEs.
-    Solve sigma^{n+1} in terms of sigma^{n},v^{n},v^{n+1}.
-    Plug in sigma^{n+1} into the momentum equation and solve exactly for v^{n+1}.
-    init = "0" for 0 initial conditions
-         = "1" for manufactured solution IC.
-
     """
 
     def __init__(self, timestepping, number_of_triangles, params, output, solver_params):

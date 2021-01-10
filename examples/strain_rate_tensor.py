@@ -5,8 +5,10 @@ from seaice import *
 
 if '--test' in sys.argv:
     timestep = 10 ** (-6)
+    dumpfreq = 10**5
 else:
     timestep = 1
+    dumpfreq = 10
 
 if '--long' in sys.argv:
     timescale = 100
@@ -18,7 +20,7 @@ dirname = "./output/strain_rate_tensor/u_timescale={}_timestep={}.pvd".format(ti
 plot_dirname = "./plots/strain_rate_energy.png"
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
-output = OutputParameters(dirname=dirname, dumpfreq=10)
+output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
