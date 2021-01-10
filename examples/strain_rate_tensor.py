@@ -1,5 +1,6 @@
 import sys
 from seaice import *
+from time import time
 
 # TEST 1 : STRAIN RATE TENSOR
 
@@ -28,12 +29,15 @@ srt = StrainRateTensor(timestepping=timestepping, number_of_triangles=35, output
                        solver_params=solver)
 
 t = 0
+start = time()
 while t < timescale - 0.5 * timestep:
     srt.solve()
     srt.update()
     srt.dump(t)
     t += timestep
     srt.progress(t)
+end = time()
+print(end - start, "[s]")
 
 
 
