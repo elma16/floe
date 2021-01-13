@@ -70,6 +70,8 @@ class Energy(Diagnostic):
 
         eta = zeta * params.e ** (-2)
 
+        # TODO change energy to (v2 of paper) -> integral from 0 to timescale zeta_min norm(grad(v))
+
         energy_u1 = [norm(0.5 * zeta * grad(all_u[i])) for i in range(len(all_u))]
         energy_u2 = [norm(sqrt(zeta) * all_u[i]) for i in range(len(all_u))]
         energy_u3 = [norm(sqrt(eta) * grad(all_u[i])) for i in range(len(all_u))]

@@ -7,13 +7,10 @@ from time import time
 if '--test' in sys.argv:
     timestep = 10 ** (-6)
     dumpfreq = 10**5
+    timescale = 100
 else:
     timestep = 1
     dumpfreq = 10
-
-if '--long' in sys.argv:
-    timescale = 100
-else:
     timescale = 10
 
 dirname = "./output/strain_rate_tensor/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
@@ -33,11 +30,15 @@ start = time()
 while t < timescale - 0.5 * timestep:
     srt.solve()
     srt.update()
+    srt.data['velocity'].append(Function(srt.u1))
     srt.dump(t)
     t += timestep
     srt.progress(t)
 end = time()
 print(end - start, "[s]")
+
+print(len(srt.data['velocity']))
+#srt.sp_output()
 
 
 
