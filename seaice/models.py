@@ -29,11 +29,11 @@ class SeaIceModel(object):
         self.all_u = []
         self.mesh = SquareMesh(number_of_triangles, number_of_triangles, params.length)
         self.x, self.y = SpatialCoordinate(self.mesh)
+        self.data = {'velocity': []}
 
     def progress(self, t):
         print("Time:", t, "[s]")
         print(int(min(t / self.timescale * 100, 100)), "% complete")
-
 
     # TODO get some shared methods into here
 
@@ -132,17 +132,6 @@ class StrainRateTensor(SeaIceModel):
             self.dump_count -= self.dump_freq
             self.outfile.write(self.u1, time=t)
 
-    def sp_output(self):
-
-        t = 0
-
-        while t < self.timescale - 0.5 * self.timestep:
-            StrainRateTensor.solve(self, t)
-            self.u0.assign(self.u1)
-            self.all_u.append(Function(self.u1))
-            t += self.timestep
-
-        return self.all_u, self.mesh, self.v_exp, self.zeta
 
 # TODO add advection
 class Evp(SeaIceModel):
