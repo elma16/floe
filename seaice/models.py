@@ -99,7 +99,7 @@ class StrainRateTensor(SeaIceModel):
         if transform_mesh:
             self.bcs = [DirichletBC(self.V, Constant(0), [1, 2])]
         else:
-            self.bcs = [DirichletBC(self.V, Constant(as_vector([0,0])), "on_boundary")]
+            self.bcs = [DirichletBC(self.V, Constant(as_vector([0, 0])), "on_boundary")]
 
         # momentum equation
         self.lm = (inner(self.u1 - self.u0, self.v) + self.timestep * inner(sigma, strain(grad(self.v)))) * dx
