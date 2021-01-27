@@ -48,7 +48,6 @@ Convergence plots for the strain rate tensor test:
             plt.xlabel(r'{}'.format(xaxis))
             plt.title(r'Error of computed solution for Section {} Test, ')
             plt.legend(loc='best')
-        plt.show()
 
         plt.savefig(self.dirname)
 
