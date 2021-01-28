@@ -17,7 +17,7 @@ class SeaIceModel(object):
     :solver_params:
     """
 
-    def __init__(self, mesh, length, rheology, timestepping, params, output, solver_params):
+    def __init__(self, mesh, bcs_values, ics_values, length, rheology, timestepping, params, output, solver_params):
         self.timestepping = timestepping
         self.timescale = timestepping.timescale
         self.params = params
@@ -29,15 +29,16 @@ class SeaIceModel(object):
         self.dump_count = 0
         self.dump_freq = output.dumpfreq
         self.solver_params = solver_params
-        self.all_u = []
         self.mesh = mesh
         self.length = length
         self.data = {'velocity': []}
         self.rheology = rheology
+        self.bcs_values = bcs_values
+        self.ics_values = ics_values
 
         timestep = timestepping.timestep
         x, y = SpatialCoordinate(mesh)
-        # defining the function spaces
+
         V = VectorFunctionSpace(mesh, "CR", 1)
         U = FunctionSpace(mesh, "CR", 1)
         W = MixedFunctionSpace([V, U, U])
@@ -47,46 +48,42 @@ class SeaIceModel(object):
 
         u0, h0, a0 = self.w0.split()
 
-        # test functions
         p, q, r = TestFunctions(W)
 
-        # TODO initial conditions
-
-        u0.assign(0)
-        h0.assign(1)
-        a0.assign(1)
-        #self.a0.interpolate(x / length)
+        u0.assign(ics_values[0])
+        h0.assign(ics_values[1])
+        a0.assign(ics_values[2])
 
         self.w1.assign(self.w0)
 
-        self.u1, self.h1, self.a1 = split(self.w1)
+        u1, h1, a1 = split(self.w1)
         u0, h0, a0 = split(self.w0)
 
-        uh = 0.5 * (u0 + self.u1)
-        ah = 0.5 * (a0 + self.a1)
-        hh = 0.5 * (h0 + self.h1)
+        uh = 0.5 * (u0 + u1)
+        ah = 0.5 * (a0 + a1)
+        hh = 0.5 * (h0 + h1)
 
-        def sigma():
-            if rheology == 'VP':
-                ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
-                P = params.P_star * hh * exp(-params.C * (1 - ah))
-                Delta = sqrt(
-                    params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
-                zeta = 0.5 * P / Delta
-                eta = zeta * params.e ** (-2)
-                sig = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - P * 0.5 * Identity(2)
-            elif rheology == 'EVP':
-                sig = 1
-            return sig
+        P = params.P_star * hh * exp(-params.C * (1 - ah))
+        zeta = 0.5 * P / params.Delta_min
 
-        lm = inner(params.rho * hh * (self.u1 - u0), p) * dx
+        sigma = 0.5 * zeta * (grad(uh) + transpose(grad(uh)))
+        pi_x = pi / length
+        v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+        sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
+        R = -div(sigma_exp)
+
+        def strain(omega):
+            return 0.5 * (omega + transpose(omega))
+
         # TODO ADD FORCING AND ADVECTION
-        lm += timestep * inner(sigma(), grad(p)) * dx
+        lm = inner(hh*(u1 - u0), p) * dx
+        lm += timestep * inner(sigma, strain(grad(p))) * dx
+        lm -= timestep * inner(R, p) * dx
 
-        bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
+        bcs = [DirichletBC(W.sub(bcs_values.index(values)), values, "on_boundary") for values in bcs_values]
 
         uprob = NonlinearVariationalProblem(lm, self.w1, bcs)
-        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
+        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.u1, self.h1, self.a1 = self.w1.split()
 

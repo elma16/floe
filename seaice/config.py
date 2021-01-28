@@ -44,8 +44,6 @@ class SeaIceParameters(Configuration):
     Physical parameters for the Sea Ice Momentum equations
     """
 
-    length = 5 * 10 ** 5  # dimension of the mesh (m)
-    box_length = 10 ** 6  # dimension of the mesh (m)
     rho = Constant(900)  # sea ice density (kg/m^3)
     cor = Constant(1.46 * 10 ** (-4))  # Coriolis parameter (-)
     rho_a = Constant(1.3)  # air density (kg/m^3)
