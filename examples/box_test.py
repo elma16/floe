@@ -1,5 +1,6 @@
 import sys
 from seaice import *
+from firedrake import *
 
 # TEST 3 : BOX TEST
 
@@ -20,13 +21,17 @@ dirname = "./output/box_test/u_timescale={}_timestep={}.pvd".format(timescale, t
 
 plot_dirname = "./plots/box_test_energy.png"
 
+length = 10 ** 6
+mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
+rheology = 'VP'
+
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-bt = BoxTest(number_of_triangles=number_of_triangles, params=params, solver_params=solver, output=output,
-             timestepping=timestepping)
+bt = SeaIceModel(mesh=mesh, length=length, rheology=rheology, timestepping=timestepping, output=output, params=params,
+                 solver_params=solver)
 
 t = 0
 while t < timescale - 0.5 * timestep:
