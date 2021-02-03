@@ -42,10 +42,10 @@ srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values
 t = 0
 start = time()
 while t < timescale - 0.5 * timestep:
-    srt.solve()
-    srt.update()
+    srt.solve(srt.usolver)
+    srt.update(srt.u0, srt.u1)
     # srt.data['velocity'].append(Function(srt.u1))
-    srt.dump(t)
+    srt.dump(srt.u1, t)
     t += timestep
     srt.progress(t)
 end = time()

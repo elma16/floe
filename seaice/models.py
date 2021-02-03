@@ -47,6 +47,21 @@ class SeaIceModel(object):
         lm -= self.timestep * inner(-div(sigma_exp), v) * dx
         return lm
 
+    def solve(self, usolver):
+        usolver.solve()
+
+    def update(self, old_var, new_var):
+        old_var.assign(new_var)
+
+    def dump(self, new_var, t):
+        """
+        Output the diagnostics
+        """
+        self.dump_count += 1
+        if self.dump_count == self.dump_freq:
+            self.dump_count -= self.dump_freq
+            self.outfile.write(new_var, time=t)
+
     def progress(self, t):
         print("Time:", t, "[s]")
         print(int(min(t / self.timescale * 100, 100)), "% complete")
@@ -79,21 +94,6 @@ class ViscousPlastic(SeaIceModel):
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.outfile.write(self.u1, time=0)
-
-    def solve(self):
-        self.usolver.solve()
-
-    def update(self):
-        self.u0.assign(self.u1)
-
-    def dump(self, t):
-        """
-        Output the diagnostics
-        """
-        self.dump_count += 1
-        if self.dump_count == self.dump_freq:
-            self.dump_count -= self.dump_freq
-            self.outfile.write(self.u1, time=t)
 
 
 class ElasticViscousPlastic(SeaIceModel):
@@ -141,21 +141,6 @@ class ElasticViscousPlastic(SeaIceModel):
         self.u1, self.s1 = w1.split()
 
         self.outfile.write(self.u1, self.s1, time=0)
-
-    def solve(self):
-        self.usolver.solve()
-
-    def update(self):
-        self.w0.assign(self.w1)
-
-    def dump(self, t):
-        """
-        Output the diagnostics
-        """
-        self.dump_count += 1
-        if self.dump_count == self.dump_freq:
-            self.dump_count -= self.dump_freq
-            self.outfile.write(self.u1, self.s1, time=t)
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
@@ -243,18 +228,3 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         u1, h1, a1 = w1.split()
 
         self.outfile.write(self.u1, self.h1, self.a1, time=0)
-
-    def solve(self):
-        self.usolver.solve()
-
-    def update(self):
-        self.w0.assign(self.w1)
-
-    def dump(self, t):
-        """
-        Output the diagnostics
-        """
-        self.dump_count += 1
-        if self.dump_count == self.dump_freq:
-            self.dump_count -= self.dump_freq
-            self.outfile.write(self.u1, self.h1, self.a1, time=t)
