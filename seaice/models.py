@@ -63,10 +63,13 @@ class ViscousPlastic(SeaIceModel):
 
         sigma_exp = zeta * SeaIceModel.strain(self, grad(v_exp))
 
-        lm = (inner(self.u1 - self.u0, v) + self.timestep * inner(sigma, SeaIceModel.strain(self, grad(v)))) * dx
-        lm -= self.timestep * inner(-div(sigma_exp), v) * dx
+        def momentum_equation(u1, u0, v):
+            lm = (inner(u1 - u0, v) + self.timestep * inner(sigma, SeaIceModel.strain(self, grad(v)))) * dx
+            lm -= self.timestep * inner(-div(sigma_exp), v) * dx
+            return lm
 
-        uprob = NonlinearVariationalProblem(lm, self.u1, SeaIceModel.bcs(self, self.V))
+        uprob = NonlinearVariationalProblem(momentum_equation(self.u1, self.u0, v), self.u1,
+                                            SeaIceModel.bcs(self, self.V))
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.outfile.write(self.u1, time=0)
