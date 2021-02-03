@@ -23,15 +23,14 @@ plot_dirname = "./plots/box_test_energy.png"
 
 length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
-rheology = 'VP'
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-bt = SeaIceModel(mesh=mesh, length=length, rheology=rheology, timestepping=timestepping, output=output, params=params,
-                 solver_params=solver)
+bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, timestepping=timestepping, output=output, params=params,
+                                    solver_params=solver)
 
 t = 0
 while t < timescale - 0.5 * timestep:
