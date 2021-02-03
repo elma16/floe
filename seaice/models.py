@@ -58,9 +58,9 @@ class ViscousPlastic(SeaIceModel):
         self.u0.interpolate(v_exp)
         self.u1.assign(self.u0)
 
-        sigma_exp = zeta * SeaIceModel.strain(self, v_exp)
+        sigma_exp = zeta * SeaIceModel.strain(self, grad(v_exp))
 
-        lm = (inner(self.u1 - self.u0, v) + self.timestep * inner(sigma, SeaIceModel.strain(grad(v)))) * dx
+        lm = (inner(self.u1 - self.u0, v) + self.timestep * inner(sigma, SeaIceModel.strain(self, grad(v)))) * dx
         lm -= self.timestep * inner(-div(sigma_exp), v) * dx
 
         bcs = [DirichletBC(self.V, values, "on_boundary") for values in bcs_values]
