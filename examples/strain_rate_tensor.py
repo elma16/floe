@@ -44,12 +44,12 @@ start = time()
 while t < timescale - 0.5 * timestep:
     srt.solve(srt.usolver)
     srt.update(srt.u0, srt.u1)
-    # srt.data['velocity'].append(Function(srt.u1))
+    srt.data['velocity'].append(Function(srt.u1))
     srt.dump(srt.u1, t)
     t += timestep
     srt.progress(t)
 end = time()
 print(end - start, "[s]")
 
-# print(len(srt.data['velocity']))
-# srt.sp_output()
+energy = Energy(model=srt, dirname=plot_dirname, timestepping=timestepping, params=params)
+energy.plot(model=srt, params=params)

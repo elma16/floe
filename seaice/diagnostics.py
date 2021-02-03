@@ -28,17 +28,20 @@ Convergence plots for the strain rate tensor test:
     u vs. t (timestep variable)
     u vs. t (meshsize variable)
     u vs. t (stabilised vs. unstabilised)
+
+    :arg xaxis: x-axis variable for the graph x vs. error
+    :arg values: list of values for xaxis to take
     """
 
-    def __init__(self, model, dirname, xaxis, timestepping, values):
+    def __init__(self, model, dirname, xaxis, timestepping, values, mesh):
         super().__init__(model, dirname, timestepping)
         self.xaxis = xaxis
         self.values = values
+        self.mesh = mesh
 
     @staticmethod
     def compute(model):
-        all_u, mesh, v_exp, zeta = model.sp_output()
-        return [errornorm(v_exp, all_u[i]) for i in range(len(all_u) - 1)]
+        return [errornorm(model.v_exp, model.data['velocity'][i]) for i in range(len(model.data['velocity']) - 1)]
 
     def plot(self, model, xaxis, values):
         for k in values:
@@ -58,28 +61,26 @@ class Energy(Diagnostic):
 
         self.params = params
 
-    def compute(self, model, params):
+    @staticmethod
+    def compute(model, params):
         """
         Compute the energy of the solution in the instance of the EVP/VP model
         u1 - energy defined pg 8, after energy proof
         u2 - energy defined pg 19
         u3 - energy used on the y axis of the energy plot fig 7, pg 20
         """
-        all_u, mesh, v_exp, zeta = model.sp_output()
 
-        eta = zeta * params.e ** (-2)
+        eta = model.zeta * params.e ** (-2)
 
-        # TODO change energy to (v2 of paper) -> integral from 0 to timescale zeta_min norm(grad(v))
-
-        energy_u1 = [norm(0.5 * zeta * grad(all_u[i])) for i in range(len(all_u))]
-        energy_u2 = [norm(sqrt(zeta) * all_u[i]) for i in range(len(all_u))]
-        energy_u3 = [norm(sqrt(eta) * grad(all_u[i])) for i in range(len(all_u))]
+        energy_u1 = [norm(0.5 * model.zeta * grad(model.data['velocity'][i])) for i in range(len(model.data['velocity']))]
+        energy_u2 = [norm(sqrt(model.zeta) * model.data['velocity'][i]) for i in range(len(model.data['velocity']))]
+        energy_u3 = [norm(sqrt(eta) * grad(model.data['velocity'][i])) for i in range(len(model.data['velocity']))]
 
         return energy_u1
 
     def plot(self, model, params):
         t = np.arange(0, self.timescale, self.timestep)
-        plt.semilogy(t, Energy.compute(self, model, params))
+        plt.semilogy(t, Energy.compute(model, params))
         plt.ylabel(r'Energy of solution :{} ')
         plt.xlabel(r'Time [s]')
         plt.title(
@@ -103,13 +104,12 @@ class Velocity(Diagnostic):
         all_u, mesh, v_exp, zeta = model.sp_output()
         # projecting the solutions of the problem onto 'DG1'
         W = VectorFunctionSpace(mesh, "DG", 1)
-        p = [project(all_u[i], W).dat.data for i in range(len(all_u))]
+        p = [project(model.data['velocity'][i], W).dat.data for i in range(len(model.data['velocity']))]
         print(shape(p[0]))
         # print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
         return all_u
 
 
-def korn_ineq(timescale, timestep, number_of_triangles=35, stabilised=0):
+def korn_ineq(model):
     """Illustrating the failure of CR1 in Korn's Inequality"""
-    all_u, mesh, v_exp, zeta = strain_rate_tensor(timescale, timestep, number_of_triangles, stabilised)
-    print([norm(grad(all_u[i])) > sqrt(norm(grad(all_u[i]) + transpose(grad(all_u[i])))) for i in range(len(all_u))])
+    print([norm(grad(model.data['velocity'][i])) > sqrt(norm(grad(model.data['velocity'][i]) + transpose(grad(model.data['velocity'][i])))) for i in range(len(model.data['velocity'][i]))])

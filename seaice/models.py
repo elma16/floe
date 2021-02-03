@@ -16,7 +16,7 @@ class SeaIceModel(object):
         self.solver_params = solver_params
         self.mesh = mesh
         self.length = length
-        self.data = {'velocity': []}
+        self.data = {'velocity': [], 'height': [], 'concentration': []}
         self.bcs_values = bcs_values
         self.ics_values = ics_values
 
@@ -79,15 +79,15 @@ class ViscousPlastic(SeaIceModel):
         h = Constant(1)
         a = Constant(1)
 
-        zeta = 0.5 * SeaIceModel.Ice_Strength(self, h, a) / params.Delta_min
-        sigma = SeaIceModel.ep_dot(self, zeta, self.u1)
+        self.zeta = 0.5 * SeaIceModel.Ice_Strength(self, h, a) / params.Delta_min
+        sigma = SeaIceModel.ep_dot(self, self.zeta, self.u1)
         pi_x = pi / length
         v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
 
         self.u0.interpolate(v_exp)
         self.u1.assign(self.u0)
 
-        sigma_exp = zeta * SeaIceModel.strain(self, grad(v_exp))
+        sigma_exp = self.zeta * SeaIceModel.strain(self, grad(v_exp))
 
         uprob = NonlinearVariationalProblem(SeaIceModel.mom_equ(self, self.u1, self.u0, v, sigma, sigma_exp), self.u1,
                                             SeaIceModel.bcs(self, self.V))
@@ -111,7 +111,7 @@ class ElasticViscousPlastic(SeaIceModel):
         h = Constant(1)
         s0.assign(as_matrix([[1, 2], [3, 4]]))
 
-        w1 = Function(W)
+        w1 = Function(self.W)
         w1.assign(w0)
         u1, s1 = split(w1)
         u0, s0 = split(w0)
@@ -119,23 +119,20 @@ class ElasticViscousPlastic(SeaIceModel):
         uh = 0.5 * (u0 + u1)
         sh = 0.5 * (s0 + s1)
 
+        def mom_eqn2():
+            lm = (inner(p, params.rho * h * (u1 - u0)) + self.timestep * inner(grad(p), sh) + inner(q, (
+                    s1 - s0) + self.timestep * (0.5 * params.e ** 2 / params.T * sh + (
+                        0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * P / params.T) * Identity(2)))) * dx
+            lm -= self.timestep * inner(p, params.C_w * sqrt(dot(uh - self.ocean_curr, uh - self.ocean_curr)) * (
+                        uh - self.ocean_curr)) * dx(degree=3)
+            lm -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
+            return lm
+
         ep_dot = SeaIceModel.ep_dot(self, 1, uh)
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * SeaIceModel.Ice_Strength(self, h, a) / Delta
 
-        lm = (inner(p, params.rho * h * (u1 - u0)) + self.timestep * inner(grad(p), sh) + inner(q, (
-                s1 - s0) + self.timestep * (
-                                                                                                        0.5 * params.e ** 2 / params.T * sh + (
-                                                                                                        0.25 * (
-                                                                                                        1 - params.e ** 2) / params.T * tr(
-                                                                                                    sh) + 0.25 * P / params.T) * Identity(
-                                                                                                    2)))) * dx
-        lm -= self.timestep * inner(p, params.C_w * sqrt(dot(uh - self.ocean_curr, uh - self.ocean_curr)) * (
-                uh - self.ocean_curr)) * dx(
-            degree=3)
-        lm -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
-
-        uprob = NonlinearVariationalProblem(lm, w1, SeaIceModel.bcs(self, self.W))
+        uprob = NonlinearVariationalProblem(mom_eqn2(), w1, SeaIceModel.bcs(self, self.W))
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.u1, self.s1 = w1.split()
