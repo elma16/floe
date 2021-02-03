@@ -31,6 +31,9 @@ class SeaIceModel(object):
     def Ice_Strength(self, h, a):
         return self.params.P_star * h * exp(-self.params.C * (1 - a))
 
+    def ep_dot(self, zeta, u):
+        return 0.5 * zeta * (grad(u) + transpose(grad(u)))
+
 
 class ViscousPlastic(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
@@ -47,7 +50,7 @@ class ViscousPlastic(SeaIceModel):
         # viscosities
         zeta = 0.5 * SeaIceModel.Ice_Strength(self, h, a) / params.Delta_min
 
-        sigma = 0.5 * zeta * (grad(self.u1) + transpose(grad(self.u1)))
+        sigma = SeaIceModel.ep_dot(self, zeta, self.u1)
 
         pi_x = pi / length
         v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
@@ -93,6 +96,7 @@ class ViscousPlastic(SeaIceModel):
         print(int(min(t / self.timescale * 100, 100)), "% complete")
 
 
+'''
 class ElasticViscousPlastic(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
@@ -290,3 +294,4 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         if self.dump_count == self.dump_freq:
             self.dump_count -= self.dump_freq
             self.outfile.write(self.u1, self.h1, self.a1, time=t)
+'''
