@@ -46,7 +46,7 @@ Convergence plots for the strain rate tensor test:
     def plot(self, model, xaxis, values):
         for k in values:
             t = np.arange(0, self.timescale, self.timestep)
-            plt.semilogy(t, Error.compute(model(k)), label="{} = {}".format(xaxis, values))
+            plt.semilogy(t, Error.compute(model(xaxis=k)), label="{} = {}".format(xaxis, values))
             plt.ylabel(r'Error of solution ')
             plt.xlabel(r'{}'.format(xaxis))
             plt.title(r'Error of computed solution for Section {} Test, ')
@@ -58,7 +58,6 @@ Convergence plots for the strain rate tensor test:
 class Energy(Diagnostic):
     def __init__(self, model, dirname, timestepping, params):
         super().__init__(model, dirname, timestepping)
-
         self.params = params
 
     @staticmethod
@@ -72,7 +71,8 @@ class Energy(Diagnostic):
 
         eta = model.zeta * params.e ** (-2)
 
-        energy_u1 = [norm(0.5 * model.zeta * grad(model.data['velocity'][i])) for i in range(len(model.data['velocity']))]
+        energy_u1 = [norm(0.5 * model.zeta * grad(model.data['velocity'][i])) for i in
+                     range(len(model.data['velocity']))]
         energy_u2 = [norm(sqrt(model.zeta) * model.data['velocity'][i]) for i in range(len(model.data['velocity']))]
         energy_u3 = [norm(sqrt(eta) * grad(model.data['velocity'][i])) for i in range(len(model.data['velocity']))]
 
@@ -112,4 +112,6 @@ class Velocity(Diagnostic):
 
 def korn_ineq(model):
     """Illustrating the failure of CR1 in Korn's Inequality"""
-    print([norm(grad(model.data['velocity'][i])) > sqrt(norm(grad(model.data['velocity'][i]) + transpose(grad(model.data['velocity'][i])))) for i in range(len(model.data['velocity'][i]))])
+    print([norm(grad(model.data['velocity'][i])) > sqrt(
+        norm(grad(model.data['velocity'][i]) + transpose(grad(model.data['velocity'][i])))) for i in
+           range(len(model.data['velocity'][i]))])

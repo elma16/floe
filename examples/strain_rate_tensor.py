@@ -22,8 +22,8 @@ else:
     timescale = 10
 
 dirname = "./output/strain_rate_tensor/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
-
-plot_dirname = "./plots/strain_rate_energy.png"
+error_dirname = "./plots/strain_rate_error.png"
+energy_dirname = "./plots/strain_rate_energy.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
@@ -51,5 +51,5 @@ while t < timescale - 0.5 * timestep:
 end = time()
 print(end - start, "[s]")
 
-energy = Energy(model=srt, dirname=plot_dirname, timestepping=timestepping, params=params)
+energy = Energy(model=srt, dirname=energy_dirname, timestepping=timestepping, params=params)
 energy.plot(model=srt, params=params)

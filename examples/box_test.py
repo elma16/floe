@@ -23,14 +23,28 @@ plot_dirname = "./plots/box_test_energy.png"
 
 length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
+bcs_values = [0, 1, 1]
+ics_values = [0, 0, 1]
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, timestepping=timestepping, output=output, params=params,
-                                    solver_params=solver)
+bt = ElasticViscousPlasticTransport(mesh=mesh, length=length,bcs_values=bcs_values, ics_values=ics_values,
+                                    timestepping=timestepping, output=output, params=params, solver_params=solver)
+
+
+t = 0
+while t < timescale - 0.5 * timestep:
+    bt.solve(bt.usolver)
+    bt.update(bt.w0, bt.w1)
+    bt.dump(bt.w1, t)
+    t += timestep
+    bt.progress(t)
+
+
+
 
 t = 0
 while t < timescale - 0.5 * timestep:

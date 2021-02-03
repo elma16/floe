@@ -144,10 +144,10 @@ class ElasticViscousPlasticTransport(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
 
-        w0 = Function(self.W)
-        w1 = Function(self.W)
+        self.w0 = Function(self.W)
+        self.w1 = Function(self.W)
 
-        u0, h0, a0 = w0.split()
+        u0, h0, a0 = self.w0.split()
 
         # test functions
         p, q, r = TestFunctions(self.W)
@@ -158,10 +158,10 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         a0.assign(ics_values[2])
         # TODO want to assign x / l for a0 - is that possible?
 
-        w1.assign(w0)
+        self.w1.assign(self.w0)
 
-        u1, h1, a1 = split(w1)
-        u0, h0, a0 = split(w0)
+        u1, h1, a1 = split(self.w1)
+        u0, h0, a0 = split(self.w0)
 
         uh = 0.5 * (u0 + u1)
         ah = 0.5 * (a0 + a1)
@@ -219,9 +219,9 @@ class ElasticViscousPlasticTransport(SeaIceModel):
                                                  0.0) * ds
                                    - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
 
-        uprob = NonlinearVariationalProblem(lm, w1, SeaIceModel.bcs(self, self.W))
+        uprob = NonlinearVariationalProblem(lm, self.w1, SeaIceModel.bcs(self, self.W))
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
 
-        u1, h1, a1 = w1.split()
+        u1, h1, a1 = self.w1.split()
 
         self.outfile.write(self.u1, self.h1, self.a1, time=0)
