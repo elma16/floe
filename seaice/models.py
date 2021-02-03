@@ -31,8 +31,11 @@ class SeaIceModel(object):
     def Ice_Strength(self, h, a):
         return self.params.P_star * h * exp(-self.params.C * (1 - a))
 
+    def strain(self, omega):
+        return 0.5 * (omega + transpose(omega))
+
     def ep_dot(self, zeta, u):
-        return 0.5 * zeta * (grad(u) + transpose(grad(u)))
+        return 0.5 * zeta * SeaIceModel.strain(self, grad(u))
 
 
 class ViscousPlastic(SeaIceModel):
@@ -47,27 +50,18 @@ class ViscousPlastic(SeaIceModel):
         h = Constant(1)
         a = Constant(1)
 
-        # viscosities
         zeta = 0.5 * SeaIceModel.Ice_Strength(self, h, a) / params.Delta_min
-
         sigma = SeaIceModel.ep_dot(self, zeta, self.u1)
-
         pi_x = pi / length
         v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
 
         self.u0.interpolate(v_exp)
         self.u1.assign(self.u0)
 
-        sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
+        sigma_exp = zeta * SeaIceModel.strain(self, v_exp)
 
-        R = -div(sigma_exp)
-
-        def strain(omega):
-            return 0.5 * (omega + transpose(omega))
-
-        # momentum equation
-        lm = (inner(self.u1 - self.u0, v) + self.timestep * inner(sigma, strain(grad(v)))) * dx
-        lm -= self.timestep * inner(R, v) * dx
+        lm = (inner(self.u1 - self.u0, v) + self.timestep * inner(sigma, SeaIceModel.strain(grad(v)))) * dx
+        lm -= self.timestep * inner(-div(sigma_exp), v) * dx
 
         bcs = [DirichletBC(self.V, values, "on_boundary") for values in bcs_values]
 
