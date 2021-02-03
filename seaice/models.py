@@ -20,40 +20,40 @@ class SeaIceModel(object):
         self.bcs_values = bcs_values
         self.ics_values = ics_values
 
+        self.timestep = timestepping.timestep
+        self.x, self.y = SpatialCoordinate(mesh)
+
+        self.V = VectorFunctionSpace(mesh, "CR", 1)
+        self.U = FunctionSpace(mesh, "CR", 1)
+
+        self.ocean_curr = as_vector([0.1 * (2 * self.y - length) / length, -0.1 * (length - 2 * self.x) / length])
+
+    def Ice_Strength(self, h, a):
+        return self.params.P_star * h * exp(-self.params.C * (1 - a))
+
 
 class ViscousPlastic(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
 
-        timestep = timestepping.timestep
-        x, y = SpatialCoordinate(mesh)
+        self.u0 = Function(self.V, name="Velocity")
+        self.u1 = Function(self.V, name="VelocityNext")
 
-        V = VectorFunctionSpace(mesh, "CR", 1)
-
-        self.u0 = Function(V, name="Velocity")
-        self.u1 = Function(V, name="VelocityNext")
-
-        v = TestFunction(V)
+        v = TestFunction(self.V)
 
         h = Constant(1)
         a = Constant(1)
 
-        # ice strength
-        P = params.P_star * h * exp(-params.C * (1 - a))
-
         # viscosities
-        zeta = 0.5 * P / params.Delta_min
+        zeta = 0.5 * SeaIceModel.Ice_Strength(self, h, a) / params.Delta_min
 
         sigma = 0.5 * zeta * (grad(self.u1) + transpose(grad(self.u1)))
 
         pi_x = pi / length
-        v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+        v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
 
-        self.u0.assign(ics_values[0])
-        self.u1.assign(ics_values[1])
-        # elif init == "1":
-        #    u0.interpolate(v_exp)
-        #    u1.assign(u0)
+        self.u0.interpolate(v_exp)
+        self.u1.assign(self.u0)
 
         sigma_exp = 0.5 * zeta * (grad(v_exp) + transpose(grad(v_exp)))
 
@@ -63,11 +63,10 @@ class ViscousPlastic(SeaIceModel):
             return 0.5 * (omega + transpose(omega))
 
         # momentum equation
-        lm = (inner(self.u1 - self.u0, v) + timestep * inner(sigma, strain(grad(v)))) * dx
-        lm -= timestep * inner(R, v) * dx
+        lm = (inner(self.u1 - self.u0, v) + self.timestep * inner(sigma, strain(grad(v)))) * dx
+        lm -= self.timestep * inner(R, v) * dx
 
-        # bcs = [DirichletBC(V, values, "on_boundary") for values in bcs_values]
-        bcs = [DirichletBC(V, as_vector([0, 0]), "on_boundary")]
+        bcs = [DirichletBC(self.V, values, "on_boundary") for values in bcs_values]
 
         uprob = NonlinearVariationalProblem(lm, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
@@ -96,28 +95,24 @@ class ViscousPlastic(SeaIceModel):
 
 class ElasticViscousPlastic(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
-
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
-        V = VectorFunctionSpace(mesh, "CR", 1)
-        S = TensorFunctionSpace(mesh, "DG", 0)
-        U = FunctionSpace(mesh, "CR", 1)
-        W = MixedFunctionSpace([V, S])
 
-        a = Function(U)
+        S = TensorFunctionSpace(mesh, "DG", 0)
+
+        W = MixedFunctionSpace([self.V, S])
+
+        a = Function(self.U)
 
         w0 = Function(W)
 
         u0, s0 = w0.split()
-
-        timestep = timestepping.timestep
-        x, y = SpatialCoordinate(mesh)
 
         p, q = TestFunctions(W)
 
         # initial conditions
 
         u0.assign(0)
-        a.interpolate(x / length)
+        a.interpolate(self.x / length)
         h = Constant(1)
 
         # ice strength
@@ -135,9 +130,6 @@ class ElasticViscousPlastic(SeaIceModel):
         uh = 0.5 * (u0 + u1)
         sh = 0.5 * (s0 + s1)
 
-        # ocean current
-        ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-
         # strain rate tensor
         ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
 
@@ -146,12 +138,17 @@ class ElasticViscousPlastic(SeaIceModel):
         # viscosities
         zeta = 0.5 * P / Delta
 
-        lm = (inner(p, params.rho * h * (u1 - u0)) + timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestep * (
-                0.5 * params.e ** 2 / params.T * sh + (
-                0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * P / params.T) * Identity(2)))) * dx
-        lm -= timestep * inner(p, params.C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(
+        lm = (inner(p, params.rho * h * (u1 - u0)) + self.timestep * inner(grad(p), sh) + inner(q, (
+                s1 - s0) + self.timestep * (
+                                                                                                        0.5 * params.e ** 2 / params.T * sh + (
+                                                                                                        0.25 * (
+                                                                                                        1 - params.e ** 2) / params.T * tr(
+                                                                                                    sh) + 0.25 * P / params.T) * Identity(
+                                                                                                    2)))) * dx
+        lm -= self.timestep * inner(p, params.C_w * sqrt(dot(uh - self.ocean_curr, uh - self.ocean_curr)) * (
+                uh - self.ocean_curr)) * dx(
             degree=3)
-        lm -= inner(q * zeta * timestep / params.T, ep_dot) * dx
+        lm -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
         bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
         uprob = NonlinearVariationalProblem(lm, w1, bcs)
@@ -183,20 +180,14 @@ class ElasticViscousPlastic(SeaIceModel):
 
 class ElasticViscousPlasticTransport(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
-
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
 
-        V = VectorFunctionSpace(mesh, "CR", 1)
-        U = FunctionSpace(mesh, "CR", 1)
-        W = MixedFunctionSpace([V, U, U])
+        W = MixedFunctionSpace([self.V, self.U, self.U])
 
         w0 = Function(W)
         w1 = Function(W)
 
         u0, h0, a0 = w0.split()
-
-        timestep = timestepping.timestep
-        x, y = SpatialCoordinate(mesh)
 
         # test functions
         p, q, r = TestFunctions(W)
@@ -219,10 +210,6 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         # boundary condition
         h_in = Constant(0.5)
         a_in = Constant(0.5)
-
-        # ocean current
-        ocean_curr = as_vector([0.1 * (2 * y - params.box_length) / params.box_length,
-                                -0.1 * (params.box_length - 2 * x) / params.box_length])
 
         # strain rate tensor
         ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
@@ -247,14 +234,14 @@ class ElasticViscousPlasticTransport(SeaIceModel):
              5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
         lm = inner(params.rho * hh * (u1 - u0), p) * dx
-        lm -= timestep * inner(
-            params.rho * hh * params.cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0]
+        lm -= self.timestep * inner(
+            params.rho * hh * params.cor * as_vector([uh[1] - self.ocean_curr[1], self.ocean_curr[0]
                                                       - uh[0]]), p) * dx
-        lm += timestep * inner(
+        lm += self.timestep * inner(
             params.rho_a * params.C_a * dot(geo_wind, geo_wind) * geo_wind + params.rho_w * params.C_w * sqrt(
-                dot(uh - ocean_curr, uh - ocean_curr)) * (
-                    ocean_curr - uh), p) * dx
-        lm += timestep * inner(sigma, grad(p)) * dx
+                dot(uh - self.ocean_curr, uh - self.ocean_curr)) * (
+                    self.ocean_curr - uh), p) * dx
+        lm += self.timestep * inner(sigma, grad(p)) * dx
 
         # adding the transport equations
         dh_trial = h1 - h0
@@ -268,20 +255,19 @@ class ElasticViscousPlasticTransport(SeaIceModel):
 
         un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
 
-        lm -= timestep * (hh * div(q * uh) * dx
-                          - conditional(dot(uh, n) < 0, q * dot(uh, n) * h_in, 0.0) * ds
-                          - conditional(dot(uh, n) > 0, q * dot(uh, n) * hh,
-                                        0.0) * ds
-                          - (q('+') - q('-')) * (un('+') * ah('+') - un('-') * hh('-')) * dS)
+        lm -= self.timestep * (hh * div(q * uh) * dx
+                               - conditional(dot(uh, n) < 0, q * dot(uh, n) * h_in, 0.0) * ds
+                               - conditional(dot(uh, n) > 0, q * dot(uh, n) * hh,
+                                             0.0) * ds
+                               - (q('+') - q('-')) * (un('+') * ah('+') - un('-') * hh('-')) * dS)
 
-        lm -= timestep * (ah * div(r * uh) * dx
-                          - conditional(dot(uh, n) < 0, r * dot(uh, n) * a_in, 0.0) * ds
-                          - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah,
-                                        0.0) * ds
-                          - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
+        lm -= self.timestep * (ah * div(r * uh) * dx
+                               - conditional(dot(uh, n) < 0, r * dot(uh, n) * a_in, 0.0) * ds
+                               - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah,
+                                             0.0) * ds
+                               - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
 
         bcs = [DirichletBC(W.sub(bcs_values.index(values)), values, "on_boundary") for values in bcs_values]
-        bcs = [DirichletBC(W.sub(0), 0, "on_boundary")]
 
         uprob = NonlinearVariationalProblem(lm, w1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)

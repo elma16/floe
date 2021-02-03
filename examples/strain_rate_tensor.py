@@ -29,7 +29,7 @@ number_of_triangles = 35
 length = 5 * 10 ** 5
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 bcs_values = [0]
-ics_values = [0, 0]
+ics_values = [0]
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
