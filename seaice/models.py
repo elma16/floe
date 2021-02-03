@@ -40,6 +40,11 @@ class SeaIceModel(object):
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
 
+    def mom_equ(self, u1, u0, v, sigma, sigma_exp):
+        lm = (inner(u1 - u0, v) + self.timestep * inner(sigma, SeaIceModel.strain(self, grad(v)))) * dx
+        lm -= self.timestep * inner(-div(sigma_exp), v) * dx
+        return lm
+
 
 class ViscousPlastic(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
@@ -63,12 +68,7 @@ class ViscousPlastic(SeaIceModel):
 
         sigma_exp = zeta * SeaIceModel.strain(self, grad(v_exp))
 
-        def momentum_equation(u1, u0, v):
-            lm = (inner(u1 - u0, v) + self.timestep * inner(sigma, SeaIceModel.strain(self, grad(v)))) * dx
-            lm -= self.timestep * inner(-div(sigma_exp), v) * dx
-            return lm
-
-        uprob = NonlinearVariationalProblem(momentum_equation(self.u1, self.u0, v), self.u1,
+        uprob = NonlinearVariationalProblem(SeaIceModel.mom_equ(self, self.u1, self.u0, v, sigma, sigma_exp),self.u1,
                                             SeaIceModel.bcs(self, self.V))
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
