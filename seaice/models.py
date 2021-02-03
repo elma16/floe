@@ -37,6 +37,9 @@ class SeaIceModel(object):
     def ep_dot(self, zeta, u):
         return 0.5 * zeta * SeaIceModel.strain(self, grad(u))
 
+    def bcs(self, space):
+        return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
+
 
 class ViscousPlastic(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
@@ -63,9 +66,7 @@ class ViscousPlastic(SeaIceModel):
         lm = (inner(self.u1 - self.u0, v) + self.timestep * inner(sigma, SeaIceModel.strain(self, grad(v)))) * dx
         lm -= self.timestep * inner(-div(sigma_exp), v) * dx
 
-        bcs = [DirichletBC(self.V, values, "on_boundary") for values in bcs_values]
-
-        uprob = NonlinearVariationalProblem(lm, self.u1, bcs)
+        uprob = NonlinearVariationalProblem(lm, self.u1, SeaIceModel.bcs(self, self.V))
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.outfile.write(self.u1, time=0)
