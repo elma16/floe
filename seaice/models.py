@@ -119,9 +119,9 @@ class ElasticViscousPlastic(SeaIceModel):
         uh = 0.5 * (u0 + u1)
         sh = 0.5 * (s0 + s1)
 
-        ep_dot = SeaIceModel.ep_dot(self,1,uh)
+        ep_dot = SeaIceModel.ep_dot(self, 1, uh)
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
-        zeta = 0.5 * SeaIceModel.Ice_Strength(self,h,a) / Delta
+        zeta = 0.5 * SeaIceModel.Ice_Strength(self, h, a) / Delta
 
         lm = (inner(p, params.rho * h * (u1 - u0)) + self.timestep * inner(grad(p), sh) + inner(q, (
                 s1 - s0) + self.timestep * (
@@ -135,7 +135,7 @@ class ElasticViscousPlastic(SeaIceModel):
             degree=3)
         lm -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
-        uprob = NonlinearVariationalProblem(lm, w1, SeaIceModel.bcs(self,self.W))
+        uprob = NonlinearVariationalProblem(lm, w1, SeaIceModel.bcs(self, self.W))
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.u1, self.s1 = w1.split()
@@ -155,24 +155,20 @@ class ElasticViscousPlastic(SeaIceModel):
         self.dump_count += 1
         if self.dump_count == self.dump_freq:
             self.dump_count -= self.dump_freq
-            self.outfile.write(self.u1, time=t)
-
-    def progress(self, t):
-        print("Time:", t, "[s]")
-        print(int(min(t / self.timescale * 100, 100)), "% complete")
+            self.outfile.write(self.u1, self.s1, time=t)
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
 
-        w0 = Function(W)
-        w1 = Function(W)
+        w0 = Function(self.W)
+        w1 = Function(self.W)
 
         u0, h0, a0 = w0.split()
 
         # test functions
-        p, q, r = TestFunctions(W)
+        p, q, r = TestFunctions(self.W)
 
         # initial conditions
         u0.assign(ics_values[0])
@@ -217,29 +213,29 @@ class ElasticViscousPlasticTransport(SeaIceModel):
                     self.ocean_curr - uh), p) * dx
         lm += self.timestep * inner(sigma, grad(p)) * dx
 
-        # adding the transport equations
-        dh_trial = h1 - h0
-        da_trial = a1 - a0
+        def transport_equation():
+            dh_trial = h1 - h0
+            da_trial = a1 - a0
+            lm = 0
 
-        # LHS
-        lm += q * dh_trial * dx
-        lm += r * da_trial * dx
+            lm += q * dh_trial * dx
+            lm += r * da_trial * dx
 
-        n = FacetNormal(mesh)
+            n = FacetNormal(mesh)
 
-        un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
+            un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
 
-        lm -= self.timestep * (hh * div(q * uh) * dx
-                               - conditional(dot(uh, n) < 0, q * dot(uh, n) * h_in, 0.0) * ds
-                               - conditional(dot(uh, n) > 0, q * dot(uh, n) * hh,
-                                             0.0) * ds
-                               - (q('+') - q('-')) * (un('+') * ah('+') - un('-') * hh('-')) * dS)
+            lm -= self.timestep * (hh * div(q * uh) * dx
+                                   - conditional(dot(uh, n) < 0, q * dot(uh, n) * h_in, 0.0) * ds
+                                   - conditional(dot(uh, n) > 0, q * dot(uh, n) * hh,
+                                                 0.0) * ds
+                                   - (q('+') - q('-')) * (un('+') * ah('+') - un('-') * hh('-')) * dS)
 
-        lm -= self.timestep * (ah * div(r * uh) * dx
-                               - conditional(dot(uh, n) < 0, r * dot(uh, n) * a_in, 0.0) * ds
-                               - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah,
-                                             0.0) * ds
-                               - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
+            lm -= self.timestep * (ah * div(r * uh) * dx
+                                   - conditional(dot(uh, n) < 0, r * dot(uh, n) * a_in, 0.0) * ds
+                                   - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah,
+                                                 0.0) * ds
+                                   - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
 
         uprob = NonlinearVariationalProblem(lm, w1, SeaIceModel.bcs(self, self.W))
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
