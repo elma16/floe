@@ -1,7 +1,5 @@
 from firedrake import *
-import numpy as np
-import matplotlib.pyplot as plt
-from seaice.models import *
+from netCDF4 import Dataset
 
 # TODO Get the Error diagnostic to the point in which you can plot stuff with it
 # TODO : get component of UFL velocity
@@ -11,43 +9,33 @@ __all__ = ["Error", "Energy", "Velocity"]
 
 
 class Diagnostic(object):
-    def __init__(self, model):
-        if not isinstance(model, SeaIceModel):
-            raise RuntimeError("You must use a sea ice model")
-        else:
-            self.model = model
-
-    @staticmethod
-    def max():
-        return 0
-
-    @staticmethod
-    def min():
-        return 0
+    def __init__(self, variable):
+        self.variable = variable
 
 
 class Error(Diagnostic):
 
-    def __init__(self, model):
-        super().__init__(model)
+    def __init__(self, variable, solution):
+        super().__init__(variable)
+        self.solution = solution
 
     @staticmethod
-    def compute(model):
-        return [errornorm(model.v_exp, model.data['velocity'][i]) for i in range(len(model.data['velocity']))]
+    def compute(variable, solution):
+        return norm(solution - variable)
 
 
 class Energy(Diagnostic):
-    def __init__(self, model):
-        super().__init__(model)
+    def __init__(self, variable):
+        super().__init__(variable)
 
     @staticmethod
-    def compute(model):
-        return [norm(model.data['velocity'][i], norm_type="H1") for i in range(len(model.data['velocity']))]
+    def compute(variable):
+        return norm(variable, norm_type="H1")
 
 
 class Velocity(Diagnostic):
-    def __init__(self, model):
-        super().__init__(model)
+    def __init__(self, variable):
+        super().__init__(variable)
 
     def X_component(self):
         return 0
@@ -59,8 +47,7 @@ class Velocity(Diagnostic):
         all_u, mesh, v_exp, zeta = model.sp_output()
         # projecting the solutions of the problem onto 'DG1'
         W = VectorFunctionSpace(mesh, "DG", 1)
-        p = [project(model.data['velocity'][i], W).dat.data for i in range(len(model.data['velocity']))]
-        print(shape(p[0]))
+        p = project(variable, W).dat.data
         # print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
         return all_u
 
