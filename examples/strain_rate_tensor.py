@@ -42,7 +42,7 @@ srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
-plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='Energy', plot_dirname=plot_dirname,
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
 t = 0
@@ -57,6 +57,4 @@ while t < timescale - 0.5 * timestep:
 end = time()
 print(end - start, "[s]")
 
-
-
-#plotter.plot()
+plotter.plot()
