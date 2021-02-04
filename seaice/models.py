@@ -4,6 +4,7 @@ from firedrake import *
 class SeaIceModel(object):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
         self.timestepping = timestepping
+        self.timestep = timestepping.timestep
         self.timescale = timestepping.timescale
         self.params = params
         if output is None:
@@ -20,9 +21,7 @@ class SeaIceModel(object):
         self.bcs_values = bcs_values
         self.ics_values = ics_values
 
-        self.timestep = timestepping.timestep
         self.x, self.y = SpatialCoordinate(mesh)
-
         self.V = VectorFunctionSpace(mesh, "CR", 1)
         self.U = FunctionSpace(mesh, "CR", 1)
         self.S = TensorFunctionSpace(mesh, "DG", 0)
@@ -82,12 +81,12 @@ class ViscousPlastic(SeaIceModel):
         self.zeta = 0.5 * SeaIceModel.Ice_Strength(self, h, a) / params.Delta_min
         sigma = SeaIceModel.ep_dot(self, self.zeta, self.u1)
         pi_x = pi / length
-        v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
+        self.v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
 
-        self.u0.interpolate(v_exp)
+        self.u0.interpolate(self.v_exp)
         self.u1.assign(self.u0)
 
-        sigma_exp = self.zeta * SeaIceModel.strain(self, grad(v_exp))
+        sigma_exp = self.zeta * SeaIceModel.strain(self, grad(self.v_exp))
 
         uprob = NonlinearVariationalProblem(SeaIceModel.mom_equ(self, self.u1, self.u0, v, sigma, sigma_exp), self.u1,
                                             SeaIceModel.bcs(self, self.V))

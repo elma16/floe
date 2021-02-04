@@ -7,7 +7,7 @@ import numpy as np
 # TODO : get component of UFL velocity
 
 
-__all__ = ["Error", "Energy", "Velocity"]
+__all__ = ["Error", "Energy", "Velocity", "OutputDiagnostics"]
 
 
 class Diagnostic(object):
@@ -58,10 +58,12 @@ class Velocity(Diagnostic):
 
 
 class OutputDiagnostics(object):
-    def __init__(self, dirname, variable, solution, description):
+    """
+    creates a netCDF file with all the diagnostic data
+    """
+
+    def __init__(self, dirname, description):
         self.dirname = dirname
-        self.variable = variable
-        self.solution = solution
         self.description = description
 
         with Dataset(dirname, "w") as dataset:
@@ -74,11 +76,11 @@ class OutputDiagnostics(object):
             dataset.createVariable("energy", np.float64, ("time",))
             dataset.createVariable("error", np.float64, ("time",))
 
-    def dump(self, t):
+    def dump(self, variable, solution, t):
         with Dataset(self.dirname, "a") as dataset:
             idx = dataset.dimensions["time"].size
             dataset.variables["time"][idx:idx + 1] = t
             energy = dataset.variables["energy"]
             error = dataset.variables["error"]
-            energy[idx:idx + 1] = Energy.compute(self.variable)
-            error[idx:idx + 1] = Error.compute(self.variable,self.solution)
+            energy[idx:idx + 1] = Energy.compute(variable)
+            error[idx:idx + 1] = Error.compute(variable, solution)

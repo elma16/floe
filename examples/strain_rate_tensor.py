@@ -22,8 +22,9 @@ else:
     timescale = 10
 
 dirname = "./output/strain_rate_tensor/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
-error_dirname = "./plots/strain_rate_error.png"
-energy_dirname = "./plots/strain_rate_energy.png"
+title = "Test Plot"
+diagnostic_dirname = "./output/data/strain_rate.nc"
+plot_dirname = "./plots/strain_rate_error.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
@@ -39,12 +40,17 @@ params = SeaIceParameters()
 srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values, timestepping=timestepping,
                      output=output, params=params, solver_params=solver)
 
+diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
+
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='Energy', plot_dirname=plot_dirname,
+                  timestepping=timestepping, title=title)
+
 t = 0
 start = time()
 while t < timescale - 0.5 * timestep:
     srt.solve(srt.usolver)
     srt.update(srt.u0, srt.u1)
-    #srt.data['velocity'].append(Function(srt.u1))
+    diag.dump(srt.u1, srt.v_exp, t)
     srt.dump(srt.u1, t)
     t += timestep
     srt.progress(t)
@@ -52,3 +58,5 @@ end = time()
 print(end - start, "[s]")
 
 
+
+#plotter.plot()
