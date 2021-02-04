@@ -1,6 +1,7 @@
 import sys
 from seaice import *
 from firedrake import *
+from netCDF4 import Dataset
 from time import time
 
 # TEST 1 : STRAIN RATE TENSOR
@@ -42,9 +43,6 @@ srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
-plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
-                  timestepping=timestepping, title=title)
-
 t = 0
 start = time()
 while t < timescale - 0.5 * timestep:
@@ -56,5 +54,8 @@ while t < timescale - 0.5 * timestep:
     srt.progress(t)
 end = time()
 print(end - start, "[s]")
+
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
+                  timestepping=timestepping, title=title)
 
 plotter.plot()

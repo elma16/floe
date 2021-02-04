@@ -49,7 +49,7 @@ class Velocity(Diagnostic):
     def Max_component(self):
         # projecting the solutions of the problem onto 'DG1'
         W = VectorFunctionSpace(self.mesh, "DG", 1)
-        p = project(variable, W).dat.data
+        p = project(self.variable, W).dat.data
         # print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
         return p
 
