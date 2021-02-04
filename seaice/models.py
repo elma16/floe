@@ -182,8 +182,8 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         t0 = Constant(0)
 
         geo_wind = as_vector(
-            [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
-             5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
+            [5 + (sin(2 * pi * t0 / self.timescale) - 3) * sin(2 * pi * self.x / length) * sin(2 * pi * self.y / length),
+             5 + (sin(2 * pi * t0 / self.timescale) - 3) * sin(2 * pi * self.y / length) * sin(2 * pi * self.x / length)])
 
         lm = inner(params.rho * hh * (u1 - u0), p) * dx
         lm -= self.timestep * inner(
