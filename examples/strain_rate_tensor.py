@@ -1,0 +1,61 @@
+import sys
+from seaice import *
+from firedrake import *
+from netCDF4 import Dataset
+from time import time
+
+# TEST 1 : STRAIN RATE TENSOR
+
+"""
+rho = 1 
+h = 1
+A = 1
+No forcing
+"""
+
+if '--test' in sys.argv:
+    timestep = 10 ** (-6)
+    dumpfreq = 10 ** 5
+    timescale = 10
+else:
+    timestep = 1
+    dumpfreq = 10
+    timescale = 10
+
+dirname = "./output/strain_rate_tensor/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+title = "Test Plot"
+diagnostic_dirname = "./output/data/strain_rate.nc"
+plot_dirname = "./plots/strain_rate_error.png"
+
+number_of_triangles = 35
+length = 5 * 10 ** 5
+mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
+bcs_values = [0]
+ics_values = [0]
+
+timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
+output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
+solver = SolverParameters()
+params = SeaIceParameters()
+
+srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values, timestepping=timestepping,
+                     output=output, params=params, solver_params=solver)
+
+diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
+
+t = 0
+start = time()
+while t < timescale - 0.5 * timestep:
+    srt.solve(srt.usolver)
+    srt.update(srt.u0, srt.u1)
+    diag.dump(srt.u1, srt.v_exp, t)
+    srt.dump(srt.u1, t)
+    t += timestep
+    srt.progress(t)
+end = time()
+print(end - start, "[s]")
+
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
+                  timestepping=timestepping, title=title)
+
+plotter.plot()

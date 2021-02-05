@@ -4,15 +4,15 @@
 *.pvd
 *.pvtu
 *.vtu
+*.egg-info/
 
 # Folders to be ignored
 
 *__pycache__/
 *.idea
 output
+notes
 
 # for the time being
 
 plots
-tests/compile.py
-tests/test-outputs.py
