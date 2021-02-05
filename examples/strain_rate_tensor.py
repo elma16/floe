@@ -25,13 +25,17 @@ else:
 dirname = "./output/strain_rate_tensor/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 title = "Test Plot"
 diagnostic_dirname = "./output/data/strain_rate.nc"
-plot_dirname = "./plots/strain_rate_error.png"
+plot_dirname = "./output/plots/strain_rate_error.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
+x, y = SpatialCoordinate(mesh)
+pi_x = pi/x
+v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
+
 bcs_values = [0]
-ics_values = [0]
+ics_values = [v_exp]
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
@@ -55,7 +59,6 @@ while t < timescale - 0.5 * timestep:
 end = time()
 print(end - start, "[s]")
 
-plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
-                  timestepping=timestepping, title=title)
+#plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,timestepping=timestepping, title=title)
 
-plotter.plot()
+#plotter.plot()
