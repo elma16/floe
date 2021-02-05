@@ -85,8 +85,10 @@ class ViscousPlastic(SeaIceModel):
 
         sigma_exp = self.zeta * self.strain(grad(self.v_exp))
 
-        uprob = NonlinearVariationalProblem(self.mom_equ(self.u1, self.u0, v, sigma, sigma_exp), self.u1,
-                                            self.bcs(self.V))
+        eqn = self.mom_equ(self.u1, self.u0, v, sigma, sigma_exp)
+        bcs = self.bcs(self.V)
+
+        uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.outfile.write(self.u1, time=0)
