@@ -23,8 +23,19 @@ plot_dirname = "./plots/box_test_energy.png"
 
 length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
+x, y = SpatialCoordinate(mesh)
+
+# initalise geo_wind
+t0 = Constant(0)
+
+geo_wind = as_vector(
+    [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
+     5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
+
 bcs_values = [0, 1, 1]
 ics_values = [0, 0, 1]
+
+
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
