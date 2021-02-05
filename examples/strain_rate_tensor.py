@@ -1,7 +1,6 @@
 import sys
 from seaice import *
 from firedrake import *
-from netCDF4 import Dataset
 from time import time
 
 # TEST 1 : STRAIN RATE TENSOR
@@ -32,7 +31,7 @@ length = 5 * 10 ** 5
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 pi_x = pi/x
-v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
+v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
 bcs_values = [0]
 ics_values = [v_exp]
@@ -52,7 +51,7 @@ start = time()
 while t < timescale - 0.5 * timestep:
     srt.solve(srt.usolver)
     srt.update(srt.u0, srt.u1)
-    diag.dump(srt.u1, srt.v_exp, t)
+    diag.dump(srt.u1, v_exp, t)
     srt.dump(srt.u1, t)
     t += timestep
     srt.progress(t)

@@ -26,9 +26,6 @@ class SeaIceModel(object):
         self.S = TensorFunctionSpace(mesh, "DG", 0)
         self.W = MixedFunctionSpace([self.V, self.U, self.U])
 
-        # TODO move
-        self.ocean_curr = as_vector([0.1 * (2 * self.y - length) / length, -0.1 * (length - 2 * self.x) / length])
-
     def Ice_Strength(self, h, a):
         return self.params.P_star * h * exp(-self.params.C * (1 - a))
 
@@ -36,7 +33,7 @@ class SeaIceModel(object):
         return 0.5 * (omega + transpose(omega))
 
     def ep_dot(self, zeta, u):
-        return 0.5 * zeta * SeaIceModel.strain(self, grad(u))
+        return 0.5 * zeta * self.strain(grad(u))
 
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
@@ -89,7 +86,7 @@ class ViscousPlastic(SeaIceModel):
         sigma_exp = self.zeta * self.strain(grad(ics_values[0]))
 
         eqn = self.mom_equ(self.u1, self.u0, v, sigma, sigma_exp)
-        bcs = self.bcs( self.V)
+        bcs = self.bcs(self.V)
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
