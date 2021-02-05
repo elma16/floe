@@ -77,13 +77,11 @@ class ViscousPlastic(SeaIceModel):
 
         self.zeta = 0.5 * self.Ice_Strength(h, a) / params.Delta_min
         sigma = self.ep_dot(self.zeta, self.u1)
-        pi_x = pi / length
-        self.v_exp = as_vector([-sin(pi_x * self.x) * sin(pi_x * self.y), -sin(pi_x * self.x) * sin(pi_x * self.y)])
 
-        self.u0.interpolate(self.v_exp)
+        self.u0.interpolate(ics_values[0])
         self.u1.assign(self.u0)
 
-        sigma_exp = self.zeta * self.strain(grad(self.v_exp))
+        sigma_exp = self.zeta * self.strain(grad(ics_values[0]))
 
         eqn = self.mom_equ(self.u1, self.u0, v, sigma, sigma_exp)
         bcs = self.bcs(self.V)
