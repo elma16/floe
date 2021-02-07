@@ -35,7 +35,6 @@ v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y
 bcs_values = [0]
 ics_values = [v_exp]
 
-
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
@@ -58,7 +57,9 @@ while t < timescale - 0.5 * timestep:
 end = time()
 print(end - start, "[s]")
 
+'''
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
 plotter.plot()
+'''
