@@ -58,30 +58,22 @@ class SeaIceModel(object):
 
         return mass() - forcing() + rheo()
 
-    def trans_equ(self, h_in, a_in, uh, hh, h1, a1, h0, a0, q, r):
+    def trans_equ(self, h_in, a_in, uh, hh, h1, a1, h0, a0, q, r, ah):
         dh_trial = h1 - h0
         da_trial = a1 - a0
-        lm = 0
-
-        lm += q * dh_trial * dx
-        lm += r * da_trial * dx
-
         n = FacetNormal(self.mesh)
-
         un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
 
-        lm -= self.timestep * (hh * div(q * uh) * dx
-                               - conditional(dot(uh, n) < 0, q * dot(uh, n) * h_in, 0.0) * ds
-                               - conditional(dot(uh, n) > 0, q * dot(uh, n) * hh,
-                                             0.0) * ds
-                               - (q('+') - q('-')) * (un('+') * ah('+') - un('-') * hh('-')) * dS)
+        def in_term(test, trial):
+            return test * trial * dx
 
-        lm -= self.timestep * (ah * div(r * uh) * dx
-                               - conditional(dot(uh, n) < 0, r * dot(uh, n) * a_in, 0.0) * ds
-                               - conditional(dot(uh, n) > 0, r * dot(uh, n) * ah,
-                                             0.0) * ds
-                               - (r('+') - r('-')) * (un('+') * ah('+') - un('-') * ah('-')) * dS)
-        return lm
+        def upwind_term(var1, var2, var3, var4, bc_in, test, normal):
+            return self.timestep * (var1 * div(test * var3) * dx
+                                    - conditional(dot(var3, normal) < 0, test * dot(var3, normal) * bc_in, 0.0) * ds
+                                    - conditional(dot(var3, normal) > 0, test * dot(var3, normal) * var1, 0.0) * ds
+                                    - (test('+') - test('-')) * (var4('+') * var2('+') - var4('-') * var1('-')) * dS)
+
+        return in_term(q, dh_trial) + in_term(r, da_trial) + upwind_term(hh, ah, uh, un, h_in, q, n) + upwind_term(ah, ah, uh, un, a_in, r, n)
 
     def solve(self, usolver):
         usolver.solve()
