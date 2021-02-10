@@ -40,21 +40,25 @@ class SeaIceModel(object):
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
 
-    def mom_equ(self, uh, hh, u1, u0, p, sigma, rho, ocean_curr, geo_wind, C_a, rho_a, rho_w, C_w, cor):
+    def mom_equ(self, hh, u1, u0, p, sigma, rho, func1):
         def momentum_term():
             return inner(rho * hh * (u1 - u0), p) * dx
 
-        def forcing():
-            return self.timestep * inner(rho * hh * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]),
-                                         p) * dx
+        # def forcing():
+        #    return self.timestep * inner(rho * hh * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]),
+        #                                 p) * dx
 
-        def stress_term(density, drag, func):
-            return self.timestep * inner(density * drag * sqrt(dot(func, func)) * func, p) * dx
+        # def stress_term(density, drag, func):
+        #    return self.timestep * inner(density * drag * sqrt(dot(func, func)) * func, p) * dx
+
+        def alt_forcing():
+            return self.timestep * inner(func1, p) * dx
 
         def rheo():
             return self.timestep * inner(sigma, grad(p)) * dx
 
-        return momentum_term() + rheo() + stress_term(rho_w, C_w, ocean_curr - uh) + stress_term(rho_a, C_a, geo_wind)
+        return momentum_term() + rheo() + alt_forcing()
+        # stress_term(rho_w, C_w, ocean_curr - uh) + stress_term(rho_a, C_a, geo_wind)
 
     def trans_equ(self, h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n):
         def in_term(var1, var2, test):
@@ -120,9 +124,7 @@ class ViscousPlastic(SeaIceModel):
 
         sigma_exp = self.zeta * self.strain(grad(ics_values[0]))
 
-        eqn = inner((self.u1 - self.u0), v) * dx
-        eqn += self.timestep * inner(sigma, self.strain(grad(v))) * dx
-        eqn -= self.timestep * inner(-div(sigma_exp), v) * dx
+        eqn = self.mom_equ(1, self.u1, self.u0, v, sigma, 1, -div(sigma_exp))
         bcs = self.bcs(self.V)
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
