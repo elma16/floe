@@ -40,22 +40,21 @@ class SeaIceModel(object):
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
 
-    def mom_equ(self, uh, hh, u1, u0, p, sigma, rho, func_p, ocean_curr, geo_wind, C_a, rho_a, rho_w, C_w,
-                cor):
-        def mass():
+    def mom_equ(self, uh, hh, u1, u0, p, sigma, rho, ocean_curr, geo_wind, C_a, rho_a, rho_w, C_w, cor):
+        def momentum_term():
             return inner(rho * hh * (u1 - u0), p) * dx
 
         def forcing():
-            return self.timestep * inner(rho * hh * cor * cross(as_vector([0, 0, 1]), ocean_curr), p) * dx
+            return self.timestep * inner(rho * hh * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]),
+                                         p) * dx
 
-        def ocean_wind_forcing():
-            return self.timestep * inner(rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(
-                dot(uh - ocean_curr, uh - ocean_curr)) * (ocean_curr - uh), p) * dx
+        def stress_term(density, drag, func):
+            return self.timestep * inner(density * drag * sqrt(dot(func, func)) * func, p) * dx
 
         def rheo():
-            return self.timestep * inner(sigma, func_p) * dx
+            return self.timestep * inner(sigma, grad(p)) * dx
 
-        return mass() - forcing() + ocean_wind_forcing() + rheo()
+        return momentum_term() + rheo() + stress_term(rho_w, C_w, ocean_curr - uh) + stress_term(rho_a, C_a, geo_wind)
 
     def trans_equ(self, h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n):
         def in_term(var1, var2, test):
@@ -94,7 +93,7 @@ class SeaIceModel(object):
             else:
                 variables.interpolate(self.ics_values[ix // 2])
 
-    def inital_dump(self, *args):
+    def initial_dump(self, *args):
         return self.outfile.write(*args, time=0)
 
     def progress(self, t):
@@ -121,13 +120,15 @@ class ViscousPlastic(SeaIceModel):
 
         sigma_exp = self.zeta * self.strain(grad(ics_values[0]))
 
-        eqn = self.mom_equ(1, 1, self.u1, self.u0, v, sigma, sigma_exp, 1, self.strain(grad(v)), 1, 1)
+        eqn = inner((self.u1 - self.u0), v) * dx
+        eqn += self.timestep * inner(sigma, self.strain(grad(v))) * dx
+        eqn -= self.timestep * inner(-div(sigma_exp), v) * dx
         bcs = self.bcs(self.V)
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
-        self.inital_dump(self.u1)
+        self.initial_dump(self.u1)
 
 
 class ElasticViscousPlastic(SeaIceModel):
@@ -165,19 +166,19 @@ class ElasticViscousPlastic(SeaIceModel):
 
         self.u1, self.s1 = self.w1.split()
 
-        self.inital_dump(self.u1, self.s1)
+        self.initial_dump(self.u1, self.s1)
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
 
-        self.w0 = Function(self.W)
-        self.w1 = Function(self.W)
+        self.w0 = Function(self.W2)
+        self.w1 = Function(self.W2)
 
         u0, h0, a0 = self.w0.split()
 
-        p, q, r = TestFunctions(self.W)
+        p, q, r = TestFunctions(self.W2)
 
         self.initial_conditions(u0, u1, h0, h1, a0, a1)
 
@@ -198,14 +199,15 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(
             2)
 
-        mom_eqn = self.mom_equ()
+        mom_eqn = self.mom_equ(uh, hh, u1, u0, p, sigma, params.rho, ocean_curr, geo_wind, params.C_a, params.rho_a,
+                               params.rho_w, param.C_w, params.cor)
         tran_eqn = self.trans_equ(0.5, 0.5)
         eqn = mom_eqn + tran_eqn
-        bcs = self.bcs(self.W)
+        bcs = self.bcs(self.W2)
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
 
         self.u1, self.h1, self.a1 = self.w1.split()
 
-        self.inital_dump(self.u1, self.h1, self.a1)
+        self.initial_dump(self.u1, self.h1, self.a1)
