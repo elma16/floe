@@ -81,21 +81,22 @@ class SeaIceModel(object):
     def update(self, old_var, new_var):
         old_var.assign(new_var)
 
-    def dump(self, new_var, t):
+    def dump(self, var1, t):
         """
         Output the diagnostics
         """
         self.dump_count += 1
         if self.dump_count == self.dump_freq:
             self.dump_count -= self.dump_freq
-            self.outfile.write(new_var, time=t)
+            self.outfile.write(var1, time=t)
 
-    def inital_conditions(self, var0, var1):
-        if type(self.ics_values[0]) == int:
-            var0.assign(self.ics_values[0])
-        else:
-            var0.interpolate(self.ics_values[0])
-        var1.assign(var0)
+    def initial_conditions(self, *args):
+        for vars in args:
+            ix = args.index(vars)
+            if type(self.ics_values[ix//2]) == int:
+                vars.assign(self.ics_values[ix//2])
+            else:
+                vars.interpolate(self.ics_values[ix//2])
 
     def formulate_problem(self, eqn, var, bcs, solver_params):
         return
@@ -123,7 +124,7 @@ class ViscousPlastic(SeaIceModel):
         self.zeta = 0.5 * self.Ice_Strength(h, a) / params.Delta_min
         sigma = self.ep_dot(self.zeta, self.u1)
 
-        self.inital_conditions(self.u0, self.u1)
+        self.initial_conditions(self.u0, self.u1)
 
         sigma_exp = self.zeta * self.strain(grad(ics_values[0]))
 
