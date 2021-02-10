@@ -21,10 +21,12 @@ class SeaIceModel(object):
         self.ics_values = ics_values
 
         self.x, self.y = SpatialCoordinate(mesh)
+        self.n = FacetNormal(mesh)
         self.V = VectorFunctionSpace(mesh, "CR", 1)
         self.U = FunctionSpace(mesh, "CR", 1)
         self.S = TensorFunctionSpace(mesh, "DG", 0)
-        self.W = MixedFunctionSpace([self.V, self.U, self.U])
+        self.W1 = MixedFunctionSpace([self.V, self.S])
+        self.W2 = MixedFunctionSpace([self.V, self.U, self.U])
 
     def Ice_Strength(self, h, a):
         return self.params.P_star * h * exp(-self.params.C * (1 - a))
@@ -38,42 +40,54 @@ class SeaIceModel(object):
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
 
-    def mom_equ(self, uh, hh, u1, u0, v, sigma, sigma_exp, rho, func_v, ocean_curr, geo_wind):
+    def mom_equ(self, uh, hh, u1, u0, p, sigma, sigma_exp, rho, func_p, ocean_curr, geo_wind, C_a, rho_a, rho_w, C_w,
+                cor):
         def mass():
-            return inner(rho * hh * (u1 - u0), v) * dx
+            return inner(rho * hh * (u1 - u0), p) * dx
 
         def forcing():
-            return self.timestep * inner(-div(sigma_exp), v) * dx
-
-        def forcing2(rho_a, C_a, rho_w, C_w):
-            return self.timestep * inner(rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(
-                dot(uh - ocean_curr, uh - ocean_curr)) * (ocean_curr - uh), v) * dx
-
-        def forcing3(cor):
             return self.timestep * inner(rho * hh * cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0] - uh[0]]),
-                                         v) * dx
+                                         p) * dx
+
+        def ocean_wind_forcing():
+            return self.timestep * inner(rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(
+                dot(uh - ocean_curr, uh - ocean_curr)) * (ocean_curr - uh), p) * dx
 
         def rheo():
-            return self.timestep * inner(sigma, func_v) * dx
+            return self.timestep * inner(sigma, func_p) * dx
 
-        return mass() - forcing() + rheo()
+        def rheo2():
+            return self.timestep * inner(-div(sigma_exp), p) * dx
 
-    def trans_equ(self, h_in, a_in, uh, hh, h1, a1, h0, a0, q, r, ah):
-        dh_trial = h1 - h0
-        da_trial = a1 - a0
-        n = FacetNormal(self.mesh)
-        un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
+        return mass() - forcing() + ocean_wind_forcing() + rheo()
 
-        def in_term(test, trial):
+    '''
+    mass(params.rho,h,u1,u0,p)
+    lm += timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestep * (0.5 * e ** 2 / T * sh + (0.25 * (1 - e ** 2) / T * tr(sh) + 0.25 * P / T) * Identity(2)))) * dx
+    lm -= timestep * inner(C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), p) * dx(degree=3)
+    lm -= inner(q * zeta * timestep / T, ep_dot) * dx
+    '''
+
+    '''
+    mass(params.rho,hh,u1,u0,p)
+    lm -= timestep * inner(rho * hh * cor * as_vector([uh[1] - ocean_curr[1], ocean_curr[0] - uh[0]]), p) * dx
+    lm += timestep * inner(rho_a * C_a * dot(geo_wind, geo_wind) * geo_wind + rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (ocean_curr - uh), p) * dx
+    lm += timestep * inner(sigma, grad(p)) * dx
+    '''
+
+    def trans_equ(self, h_in, a_in, uh, hh, h1, a1, h0, a0, q, r, ah, n):
+        def in_term(var1, var2, test):
+            trial = var2 - var1
             return test * trial * dx
 
-        def upwind_term(var1, var2, var3, var4, bc_in, test, normal):
-            return self.timestep * (var1 * div(test * var3) * dx
-                                    - conditional(dot(var3, normal) < 0, test * dot(var3, normal) * bc_in, 0.0) * ds
-                                    - conditional(dot(var3, normal) > 0, test * dot(var3, normal) * var1, 0.0) * ds
-                                    - (test('+') - test('-')) * (var4('+') * var2('+') - var4('-') * var1('-')) * dS)
+        def upwind_term(var1, bc_in, test):
+            un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
+            return self.timestep * (var1 * div(test * uh) * dx
+                                    - conditional(dot(uh, n) < 0, test * dot(uh, n) * bc_in, 0.0) * ds
+                                    - conditional(dot(uh, n) > 0, test * dot(uh, n) * var1, 0.0) * ds
+                                    - (test('+') - test('-')) * (un('+') * ah('+') - un('-') * var1('-')) * dS)
 
-        return in_term(q, dh_trial) + in_term(r, da_trial) + upwind_term(hh, ah, uh, un, h_in, q, n) + upwind_term(ah, ah, uh, un, a_in, r, n)
+        return in_term(h0, h1, q) + in_term(a0, a1, r) + upwind_term(hh, h_in, q) + upwind_term(ah, a_in, r)
 
     def solve(self, usolver):
         usolver.solve()
@@ -93,13 +107,10 @@ class SeaIceModel(object):
     def initial_conditions(self, *args):
         for vars in args:
             ix = args.index(vars)
-            if type(self.ics_values[ix//2]) == int:
-                vars.assign(self.ics_values[ix//2])
+            if type(self.ics_values[ix // 2]) == int:
+                vars.assign(self.ics_values[ix // 2])
             else:
-                vars.interpolate(self.ics_values[ix//2])
-
-    def formulate_problem(self, eqn, var, bcs, solver_params):
-        return
+                vars.interpolate(self.ics_values[ix // 2])
 
     def inital_dump(self, *args):
         return self.outfile.write(*args, time=0)
@@ -141,20 +152,21 @@ class ElasticViscousPlastic(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
 
+        self.w0 = Function(self.W1)
+        self.w1 = Function(self.W1)
         a = Function(self.U)
-        w0 = Function(self.W)
-        u0, s0 = w0.split()
-        p, q = TestFunctions(self.W)
+        h = Constant(1)
+
+        u0, s0 = self.w0.split()
+        p, q = TestFunctions(self.W1)
 
         u0.assign(ics_values[0])
-        a.interpolate(self.x / length)
-        h = Constant(1)
-        s0.assign(as_matrix([[1, 2], [3, 4]]))
+        a.interpolate(ics_values[1])
+        s0.assign(ics_values[2])
 
-        w1 = Function(self.W)
-        w1.assign(w0)
-        u1, s1 = split(w1)
-        u0, s0 = split(w0)
+        self.w1.assign(self.w0)
+        u1, s1 = split(self.w1)
+        u0, s0 = split(self.w0)
 
         uh = 0.5 * (u0 + u1)
         sh = 0.5 * (s0 + s1)
@@ -164,12 +176,12 @@ class ElasticViscousPlastic(SeaIceModel):
         zeta = 0.5 * self.Ice_Strength(h, a) / Delta
 
         eqn = self.mom_equ()
-        bcs = self.bcs(self.W)
+        bcs = self.bcs(self.W1)
 
-        uprob = NonlinearVariationalProblem(eqn, w1, bcs)
+        uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
-        self.u1, self.s1 = w1.split()
+        self.u1, self.s1 = self.w1.split()
 
         self.inital_dump(self.u1, self.s1)
 
@@ -183,14 +195,9 @@ class ElasticViscousPlasticTransport(SeaIceModel):
 
         u0, h0, a0 = self.w0.split()
 
-        # test functions
         p, q, r = TestFunctions(self.W)
 
-        # initial conditions
-        u0.assign(ics_values[0])
-        h0.assign(ics_values[1])
-        a0.assign(ics_values[2])
-        # TODO want to assign x / l for a0 - is that possible?
+        self.initial_conditions(u0, u1, h0, h1, a0, a1)
 
         self.w1.assign(self.w0)
 
