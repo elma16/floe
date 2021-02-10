@@ -7,7 +7,7 @@ timestep = 10 ** (-1)
 dumpfreq = 10
 timescale = 10
 
-dirname = "./output/EVP/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = "./plot/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
@@ -24,15 +24,15 @@ output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-evp = ElasticViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
-                            timestepping=timestepping, output=output, params=params, solver_params=solver, forcing=forcing)
+evps = ElasticViscousPlasticStress(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
+                                   timestepping=timestepping, output=output, params=params, solver_params=solver,
+                                   forcing=forcing)
 
 t = 0
 
 while t < timescale - 0.5 * timestep:
-    evp.solve(evp.usolver)
-    evp.update(evp.w0, evp.w1)
-    evp.dump(evp.w1, t)
+    evps.solve(evps.usolver, evps.ssolver)
+    evps.update(evps.u0, evps.u1)
+    evps.dump(evps.u1, t)
     t += timestep
-    evp.progress(t)
-
+    evps.progress(t)
