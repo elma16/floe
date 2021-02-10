@@ -105,12 +105,12 @@ class SeaIceModel(object):
             self.outfile.write(var1, time=t)
 
     def initial_conditions(self, *args):
-        for vars in args:
-            ix = args.index(vars)
+        for variables in args:
+            ix = args.index(variables)
             if type(self.ics_values[ix // 2]) == int:
-                vars.assign(self.ics_values[ix // 2])
+                variables.assign(self.ics_values[ix // 2])
             else:
-                vars.interpolate(self.ics_values[ix // 2])
+                variables.interpolate(self.ics_values[ix // 2])
 
     def inital_dump(self, *args):
         return self.outfile.write(*args, time=0)
