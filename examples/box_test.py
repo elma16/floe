@@ -25,15 +25,15 @@ length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
-# initalise geo_wind
+ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 t0 = Constant(0)
-
 geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
 bcs_values = [0, 1, 1]
-ics_values = [0, 0, 1]
+ics_values = [0, 1, x/length]
+forcing = [ocean_curr,geo_wind]
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
@@ -41,7 +41,7 @@ solver = SolverParameters()
 params = SeaIceParameters()
 
 bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
-                                    timestepping=timestepping, output=output, params=params, solver_params=solver)
+                                    timestepping=timestepping, output=output, params=params, solver_params=solver, forcing=forcing)
 
 t = 0
 while t < timescale - 0.5 * timestep:
