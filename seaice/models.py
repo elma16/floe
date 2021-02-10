@@ -2,7 +2,7 @@ from firedrake import *
 
 
 class SeaIceModel(object):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing):
         self.timestepping = timestepping
         self.timestep = timestepping.timestep
         self.timescale = timestepping.timescale
@@ -18,6 +18,7 @@ class SeaIceModel(object):
         self.mesh = mesh
         self.length = length
         self.bcs_values = bcs_values
+        self.forcing = forcing
         self.ics_values = ics_values
 
         self.x, self.y = SpatialCoordinate(mesh)
@@ -121,8 +122,8 @@ class SeaIceModel(object):
 
 
 class ViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
-        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing)
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
@@ -149,8 +150,8 @@ class ViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
-        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing)
 
         self.w0 = Function(self.W1)
         self.w1 = Function(self.W1)
@@ -175,7 +176,8 @@ class ElasticViscousPlastic(SeaIceModel):
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * self.Ice_Strength(h, a) / Delta
 
-        eqn = self.mom_equ()
+        eqn = self.mom_equ(h, u1, u0, p, sigma, params.rho, uh=uh, ocean_curr=forcing[0], rho_a=params.rho_a,
+                           C_a=params.C_a, C_w=params.C_w)
         bcs = self.bcs(self.W1)
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
@@ -187,8 +189,8 @@ class ElasticViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params):
-        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params)
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing)
 
         self.w0 = Function(self.W2)
         self.w1 = Function(self.W2)
@@ -197,7 +199,9 @@ class ElasticViscousPlasticTransport(SeaIceModel):
 
         p, q, r = TestFunctions(self.W2)
 
-        self.initial_conditions(u0, u1, h0, h1, a0, a1)
+        u0.assign(0)
+        h0.assign(1)
+        a0.interpolate(self.x / length)
 
         self.w1.assign(self.w0)
 
@@ -212,14 +216,14 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * self.Ice_Strength(hh, ah) / Delta
         eta = zeta * params.e ** (-2)
-
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(
             2)
 
-        mom_eqn = self.mom_equ(uh, hh, u1, u0, p, sigma, params.rho, ocean_curr, geo_wind, params.C_a, params.rho_a,
-                               params.rho_w, param.C_w, params.cor)
-        tran_eqn = self.trans_equ(0.5, 0.5)
-        eqn = mom_eqn + tran_eqn
+        mom_eqn = self.mom_equ(hh, u1, u0, p, sigma, params.rho, uh=uh, ocean_curr=forcing[0], rho_a=params.rho_a,
+                               C_a=params.C_a, rho_w=params.rho_w, C_w=params.C_w, geo_wind=forcing[1])
+
+        trans_eqn = self.trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
+        eqn = mom_eqn + trans_eqn
         bcs = self.bcs(self.W2)
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)

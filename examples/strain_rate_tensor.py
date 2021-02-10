@@ -33,6 +33,7 @@ x, y = SpatialCoordinate(mesh)
 pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 bcs_values = [0]
+forcing = []
 ics_values = [v_exp]
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
@@ -40,8 +41,8 @@ output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values, timestepping=timestepping,
-                     output=output, params=params, solver_params=solver)
+srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, forcing=forcing, ics_values=ics_values,
+                     timestepping=timestepping, output=output, params=params, solver_params=solver)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 

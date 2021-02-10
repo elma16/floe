@@ -13,9 +13,11 @@ number_of_triangles = 35
 length = 5 * 10 ** 5
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
+
 bcs_values = [0, 1, 1]
 ics_values = [0, x / length, as_matrix([[1, 2], [3, 4]])]
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
+forcing = [ocean_curr]
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
