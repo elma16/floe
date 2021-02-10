@@ -1,4 +1,5 @@
 from firedrake import *
+from seaice.equations import *
 
 
 class SeaIceModel(object):
@@ -186,6 +187,86 @@ class ElasticViscousPlastic(SeaIceModel):
         self.u1, self.s1 = self.w1.split()
 
         self.initial_dump(self.u1, self.s1)
+
+
+class ElasticViscousPlasticStress(SeaIceModel):
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing)
+
+    u0 = Function(self.V, name="Velocity")
+    u1 = Function(V, name="VelocityNext")
+
+    sigma0 = Function(S, name="StressTensor")
+    sigma1 = Function(S, name="StressTensorNext")
+
+    uh = 0.5 * (u1 + u0)
+
+    a = Function(U)
+
+    v = TestFunction(V)
+    w = TestFunction(S)
+
+    u0.assign(0)
+
+    h = Constant(1)
+    a.interpolate(x / L)
+
+    # ocean current
+    ocean_curr = as_vector([0.1 * (2 * y - L) / L, -0.1 * (L - 2 * x) / L])
+
+    # strain rate tensor
+    ep_dot = 0.5 * (grad(uh) + transpose(grad(uh)))
+
+    # ice strength
+    P = P_star * h * exp(-C * (1 - a))
+
+    Delta = sqrt(Delta_min ** 2 + 2 * e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
+
+    zeta = 0.5 * self.Ice_Strength(h, a) / Delta
+    eta = zeta * e ** (-2)
+
+    sigma0.interpolate(2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * P * Identity(2))
+    sigma1.assign(sigma0)
+
+    def sigma_next(self, timestep, e, zeta, T, ep_dot, sigma, P):
+        A = 1 + 0.25 * (timestep * e ** 2) / T
+        B = timestep * 0.125 * (1 - e ** 2) / T
+        rhs = (1 - (timestep * e ** 2) / (4 * T)) * sigma - timestep / T * (
+                0.125 * (1 - e ** 2) * tr(sigma) * Identity(2) - 0.25 * P * Identity(2) + zeta * ep_dot)
+        C = (rhs[0, 0] - rhs[1, 1]) / A
+        D = (rhs[0, 0] + rhs[1, 1]) / (A + 2 * B)
+        sigma00 = 0.5 * (C + D)
+        sigma11 = 0.5 * (D - C)
+        sigma01 = rhs[0, 1]
+        sigma = as_matrix([[sigma00, sigma01], [sigma01, sigma11]])
+
+        return sigma
+
+    # momentum equation
+
+    s = sigma_next(timestep, e, zeta, T, ep_dot, sigma0, P)
+
+    sh = 0.5 * (s + sigma0)
+
+    lm = inner(rho * h * (u1 - u0), v) * dx
+    lm += timestepc * inner(rho_w * C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr), v) * dx(
+        degree=3)
+    lm += timestepc * inner(sh, grad(v)) * dx
+
+    ls = inner(w, sigma1 - s) * dx
+
+    t = 0
+    bcs = self.bcs(self.V)
+    uprob = NonlinearVariationalProblem(lm, u1, bcs)
+    usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
+    sprob = NonlinearVariationalProblem(ls, sigma1)
+    ssolver = NonlinearVariationalSolver(sprob, solver_parameters=params)
+
+    pathname = './output/implicit_evp_matrix/T={}_u_k={}.pvd'.format(timescale, timestep)
+
+    implicit_midpoint_matrix_evp_solver(timescale, timestep, u0, t, usolver, ssolver, u1, pathname)
+
+    print('...done!')
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):

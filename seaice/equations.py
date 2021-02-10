@@ -1,40 +1,18 @@
 from firedrake import *
+from seaice.models import *
+
 
 class Equation(object):
-    def __init__(self, h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep, u1, u0, sigma, rho, p, cor,
-                 ocean_curr, rho_w, rho_a=None, C_w=None, C_a=None, geo_wind=None):
-        self.h_in = h_in
-        self.a_in = a_in
-        self.uh = uh
-        self.hh = hh
-        self.ah = ah
-        self.h1 = h1
-        self.h0 = h0
-        self.a1 = a1
-        self.a0 = a0
-        self.q = q
-        self.r = r
-        self.n = n
-        self.u1 = u1
-        self.u0 = u0
-        self.sigma = sigma
-        self.rho = rho
-        self.p = p
-        self.cor = cor
-        self.ocean_curr = ocean_curr
-        self.rho_w = rho_w
-        self.C_w = C_w
-        self.C_a = C_a
-        self.rho_a = rho_a
-        self.geo_wind = geo_wind
-        self.timestep = timestep
+    def __init__(self, model):
+        self.model = model
 
     def mom_equ(self, hh, u1, u0, p, sigma, rho, func1=None, uh=None, ocean_curr=None, rho_a=None, C_a=None, rho_w=None,
                 C_w=None, geo_wind=None):
-        # TODO make forcing cross product shorter
+
         def momentum():
             return inner(rho * hh * (u1 - u0), p) * dx
 
+        # TODO make forcing cross product shorter
         def forcing():
             if ocean_curr is None:
                 return 0
@@ -85,6 +63,4 @@ class Equation(object):
             pass
 
     def assemble(self):
-        return self.mom_equ(self.hh, self.u1, self.u0, self.p, self.sigma, self.rho, func1=None, uh=None, ocean_curr=None, rho_a=None, C_a=None, rho_w=None,
-                C_w=None, geo_wind=None)
-
+        return self.mom_equ(self.model.hh,self.model.u1,self.model.u0,self.model.p,) + self.trans_equ()

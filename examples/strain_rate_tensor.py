@@ -58,9 +58,9 @@ while t < timescale - 0.5 * timestep:
 end = time()
 print(end - start, "[s]")
 
-'''
+
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
 plotter.plot()
-'''
+

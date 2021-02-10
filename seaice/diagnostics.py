@@ -3,7 +3,6 @@ from netCDF4 import Dataset
 import time
 import numpy as np
 
-# TODO Get the Error diagnostic to the point in which you can plot stuff with it
 # TODO : get component of UFL velocity
 
 

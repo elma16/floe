@@ -16,7 +16,6 @@ class Plotter(object):
         self.timescale = timestepping.timescale
 
         dataset = Dataset(dataset_dirname, mode='r')
-
         self.yaxis = dataset.variables[diagnostic][:]
         dataset.close()
 
