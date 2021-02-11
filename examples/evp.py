@@ -6,14 +6,14 @@ Path("./output/evp").mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
 
-timestep = 10 ** (-1)
+timestep = 10
 dumpfreq = 10
-timescale = 10
+timescale = 10**3
 
 dirname = "./output/evp/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp/evp.nc"
-plot_dirname = "./output/evp/evp_energy.png"
+plot_dirname = "./output/evp/evp_energy1000.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5

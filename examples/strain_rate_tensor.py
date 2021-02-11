@@ -54,7 +54,7 @@ end = time()
 print(end - start, "[s]")
 
 
-plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
 plotter.plot()

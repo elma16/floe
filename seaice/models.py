@@ -1,6 +1,30 @@
 from firedrake import *
 
 
+def mom_equ(hh, u1, u0, p, sigma, rho, func1=None, uh=None, ocean_curr=None, rho_a=None, C_a=None, rho_w=None, C_w=None,
+            geo_wind=None, cor=None):
+    # TODO make forcing cross product shorter
+    def momentum():
+        return inner(rho * hh * (u1 - u0), p) * dx
+
+    def perp(u):
+        return as_vector([-u[1], u[0]])
+
+    def forcing():
+        return inner(rho * hh * cor * perp(ocean_curr - u1), p) * dx
+
+    def stress(density, drag, func):
+        return inner(density * drag * sqrt(dot(func, func)) * func, p) * dx(degree=3)
+
+    def alt_forcing():
+        return inner(func1, p) * dx
+
+    def rheo():
+        return inner(sigma, grad(p)) * dx
+
+    return momentum() - forcing() - ocean_stress() - air_stress() + alt_forcing() - rheo()
+
+
 class SeaIceModel(object):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing):
         self.timestepping = timestepping
@@ -40,57 +64,6 @@ class SeaIceModel(object):
 
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
-
-    # TODO consider turning this equation into a class
-    def mom_equ(self, hh, u1, u0, p, sigma, rho, func1=None, uh=None, ocean_curr=None, rho_a=None, C_a=None, rho_w=None,
-                C_w=None, geo_wind=None, cor=None):
-        # TODO make forcing cross product shorter
-        def momentum():
-            return inner(rho * hh * (u1 - u0), p) * dx
-
-        def forcing():
-            if ocean_curr or cor is None:
-                return 0
-            else:
-                return inner(rho * hh * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]), p) * dx
-
-        def ocean_stress():
-            if ocean_curr is None:
-                return 0
-            else:
-                return inner(rho_w * C_w * sqrt(dot(ocean_curr - uh, ocean_curr - uh)) * (ocean_curr - uh), p) * dx(
-                    degree=3)
-
-        def air_stress():
-            if geo_wind is None:
-                return 0
-            else:
-                return inner(rho_a * C_a * sqrt(dot(geo_wind, geo_wind)) * geo_wind, p) * dx
-
-        def alt_forcing():
-            if func1 is None:
-                return 0
-            else:
-                return inner(func1, p) * dx
-
-        def rheo():
-            return inner(sigma, grad(p)) * dx
-
-        return momentum() - forcing() - ocean_stress() - air_stress() + alt_forcing() - rheo()
-
-    def trans_equ(self, h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n):
-        def in_term(var1, var2, test):
-            trial = var2 - var1
-            return test * trial * dx
-
-        def upwind_term(var1, bc_in, test):
-            un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
-            return self.timestep * (var1 * div(test * uh) * dx
-                                    - conditional(dot(uh, n) < 0, test * dot(uh, n) * bc_in, 0.0) * ds
-                                    - conditional(dot(uh, n) > 0, test * dot(uh, n) * var1, 0.0) * ds
-                                    - (test('+') - test('-')) * (un('+') * ah('+') - un('-') * var1('-')) * dS)
-
-        return in_term(h0, h1, q) + in_term(a0, a1, r) + upwind_term(hh, h_in, q) + upwind_term(ah, a_in, r)
 
     def solve(self, *args):
         for solvers in args:
@@ -287,6 +260,20 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         eta = zeta * params.e ** (-2)
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(
             2)
+
+        def trans_equ(self, h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n):
+            def in_term(var1, var2, test):
+                trial = var2 - var1
+                return test * trial * dx
+
+            def upwind_term(var1, bc_in, test):
+                un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
+                return self.timestep * (var1 * div(test * uh) * dx
+                                        - conditional(dot(uh, n) < 0, test * dot(uh, n) * bc_in, 0.0) * ds
+                                        - conditional(dot(uh, n) > 0, test * dot(uh, n) * var1, 0.0) * ds
+                                        - (test('+') - test('-')) * (un('+') * ah('+') - un('-') * var1('-')) * dS)
+
+            return in_term(h0, h1, q) + in_term(a0, a1, r) + upwind_term(hh, h_in, q) + upwind_term(ah, a_in, r)
 
         mom_eqn = self.mom_equ(hh, u1, u0, p, sigma, params.rho, uh=uh, ocean_curr=forcing[0], rho_a=params.rho_a,
                                C_a=params.C_a, rho_w=params.rho_w, C_w=params.C_w, geo_wind=forcing[1], cor=params.cor)
