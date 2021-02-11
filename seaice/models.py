@@ -48,7 +48,7 @@ class SeaIceModel(object):
             return inner(rho * hh * (u1 - u0), p) * dx
 
         def forcing():
-            if ocean_curr is None:
+            if ocean_curr or cor is None:
                 return 0
             else:
                 return inner(rho * hh * cor * as_vector([u1[1] - ocean_curr[1], ocean_curr[0] - u1[0]]), p) * dx
@@ -165,6 +165,7 @@ class ElasticViscousPlastic(SeaIceModel):
         u0.assign(ics_values[0])
         a.interpolate(ics_values[1])
         s0.assign(ics_values[2])
+        ocean_curr = forcing[0]
 
         self.w1.assign(self.w0)
         u1, s1 = split(self.w1)
@@ -177,27 +178,25 @@ class ElasticViscousPlastic(SeaIceModel):
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * self.Ice_Strength(h, a) / Delta
 
+        lm = inner(p, params.rho * h * (u1 - u0))*dx
+        lm -= self.timestep * inner(p,
+                                    params.C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(
+            degree=3)
+        lm += self.timestep * inner(grad(p), sh)*dx
 
+        lm += self.timestep * inner(q, (s1 - s0) + self.timestep * (0.5 * params.e ** 2 / params.T * sh + (0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * self.Ice_Strength(h,a) / params.T) * Identity(2))) * dx
 
-        lm = inner(rho * h * (u1 - u0),p) * dx
-        lm += (inner(p, rho * h * (u1 - u0)) + timestep * inner(grad(p), sh) + inner(q, (s1 - s0) + timestepc * (0.5 * e ** 2 / T * sh + (0.25 * (1 - e ** 2) / T * tr(sh) + 0.25 * P / T) * Identity(2)))) * dx
-        lm += self.timestep * inner(grad(p), sh) * dx
-        lm += inner(s1 - s0, q)
-        lm += self.timestep * (0.5 * params.e ** 2 / params.T * sh + (0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * self.Ice_Strength(h,a) / params.T) * Identity(2)) * dx
-        lm -= self.timestep * inner(p, C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(degree=3)
         lm -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
+        eqn = self.mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=forcing[0], rho_a=params.rho_a,C_a=params.C_a, C_w=params.C_w)
+        bcs = self.bcs(self.W1.sub(0))
 
-        eqn = self.mom_equ(h, u1, u0, p, sigma, params.rho, uh=uh, ocean_curr=forcing[0], rho_a=params.rho_a,
-                           C_a=params.C_a, C_w=params.C_w)
-        bcs = self.bcs(self.W1(0))
-
-        uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
+        uprob = NonlinearVariationalProblem(lm, self.w1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.u1, self.s1 = self.w1.split()
 
-        self.initial_dump(self.u1, self.s1)
+        self.initial_dump(self.u1)
 
 
 class ElasticViscousPlasticStress(SeaIceModel):
@@ -291,7 +290,7 @@ class ElasticViscousPlasticTransport(SeaIceModel):
             2)
 
         mom_eqn = self.mom_equ(hh, u1, u0, p, sigma, params.rho, uh=uh, ocean_curr=forcing[0], rho_a=params.rho_a,
-                               C_a=params.C_a, rho_w=params.rho_w, C_w=params.C_w, geo_wind=forcing[1],cor=params.cor)
+                               C_a=params.C_a, rho_w=params.rho_w, C_w=params.C_w, geo_wind=forcing[1], cor=params.cor)
         trans_eqn = self.trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
         eqn = mom_eqn + trans_eqn
         bcs = self.bcs(self.W2.sub(0))
