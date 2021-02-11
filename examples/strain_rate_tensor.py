@@ -2,15 +2,10 @@ import sys
 from seaice import *
 from firedrake import *
 from time import time
+from pathlib import Path
+Path("./output/srt").mkdir(parents=True, exist_ok=True)
 
 # TEST 1 : STRAIN RATE TENSOR
-
-"""
-rho = 1 
-h = 1
-A = 1
-No forcing
-"""
 
 if '--test' in sys.argv:
     timestep = 10 ** (-6)
@@ -21,10 +16,10 @@ else:
     dumpfreq = 10
     timescale = 10
 
-dirname = "./output/strain_rate_tensor/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = "./output/srt/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 title = "Test Plot"
-diagnostic_dirname = "./output/data/strain_rate.nc"
-plot_dirname = "./plots/strain_rate_error.png"
+diagnostic_dirname = "./output/srt/strain_rate.nc"
+plot_dirname = "./output/srt/strain_rate_error.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5

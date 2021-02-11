@@ -32,8 +32,8 @@ geo_wind = as_vector(
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
 bcs_values = [0, 1, 1]
-ics_values = [0, 1, x/length]
-forcing = [ocean_curr,geo_wind]
+ics_values = [0, 1, x / length]
+forcing = [ocean_curr, geo_wind]
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
@@ -41,7 +41,8 @@ solver = SolverParameters()
 params = SeaIceParameters()
 
 bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
-                                    timestepping=timestepping, output=output, params=params, solver_params=solver, forcing=forcing)
+                                    timestepping=timestepping, output=output, params=params, solver_params=solver,
+                                    forcing=forcing)
 
 t = 0
 while t < timescale - 0.5 * timestep:
@@ -50,4 +51,3 @@ while t < timescale - 0.5 * timestep:
     bt.dump(bt.w1, t)
     t += timestep
     bt.progress(t)
-

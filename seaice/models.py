@@ -57,7 +57,8 @@ class SeaIceModel(object):
             if ocean_curr is None:
                 return 0
             else:
-                return inner(rho_w * C_w * sqrt(dot(ocean_curr - uh, ocean_curr - uh)) * (ocean_curr - uh), p) * dx
+                return inner(rho_w * C_w * sqrt(dot(ocean_curr - uh, ocean_curr - uh)) * (ocean_curr - uh), p) * dx(
+                    degree=3)
 
         def air_stress():
             if geo_wind is None:
@@ -165,7 +166,6 @@ class ElasticViscousPlastic(SeaIceModel):
         u0.assign(ics_values[0])
         a.interpolate(ics_values[1])
         s0.assign(ics_values[2])
-        ocean_curr = forcing[0]
 
         self.w1.assign(self.w0)
         u1, s1 = split(self.w1)
@@ -178,20 +178,16 @@ class ElasticViscousPlastic(SeaIceModel):
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * self.Ice_Strength(h, a) / Delta
 
-        lm = inner(p, params.rho * h * (u1 - u0))*dx
-        lm -= self.timestep * inner(p,
-                                    params.C_w * sqrt(dot(uh - ocean_curr, uh - ocean_curr)) * (uh - ocean_curr)) * dx(
-            degree=3)
-        lm += self.timestep * inner(grad(p), sh)*dx
-
-        lm += self.timestep * inner(q, (s1 - s0) + self.timestep * (0.5 * params.e ** 2 / params.T * sh + (0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * self.Ice_Strength(h,a) / params.T) * Identity(2))) * dx
-
-        lm -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
-
-        eqn = self.mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=forcing[0], rho_a=params.rho_a,C_a=params.C_a, C_w=params.C_w)
+        eqn = self.mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=forcing[0], rho_w=params.rho_w,
+                           rho_a=params.rho_a, C_a=params.C_a, C_w=params.C_w)
+        eqn += self.timestep * inner(q, (s1 - s0) + self.timestep * (0.5 * params.e ** 2 / params.T * sh + (
+                0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * self.Ice_Strength(h,
+                                                                                          a) / params.T) * Identity(
+            2))) * dx
+        eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
         bcs = self.bcs(self.W1.sub(0))
 
-        uprob = NonlinearVariationalProblem(lm, self.w1, bcs)
+        uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.u1, self.s1 = self.w1.split()
