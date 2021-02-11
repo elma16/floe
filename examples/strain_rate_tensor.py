@@ -46,7 +46,7 @@ start = time()
 while t < timescale - 0.5 * timestep:
     srt.solve(srt.usolver)
     srt.update(srt.u0, srt.u1)
-    diag.dump(srt.u1, v_exp, t)
+    diag.dump(srt.u1, t, v_exp)
     srt.dump(srt.u1, t)
     t += timestep
     srt.progress(t)

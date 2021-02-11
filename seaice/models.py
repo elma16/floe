@@ -41,6 +41,7 @@ class SeaIceModel(object):
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
 
+    # TODO consider turning this equation into a class
     def mom_equ(self, hh, u1, u0, p, sigma, rho, func1=None, uh=None, ocean_curr=None, rho_a=None, C_a=None, rho_w=None,
                 C_w=None, geo_wind=None, cor=None):
         # TODO make forcing cross product shorter
@@ -174,10 +175,12 @@ class ElasticViscousPlastic(SeaIceModel):
         uh = 0.5 * (u0 + u1)
         sh = 0.5 * (s0 + s1)
 
+        # TODO turn this into a parent class function?
         ep_dot = self.ep_dot(1, uh)
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * self.Ice_Strength(h, a) / Delta
 
+        # TODO clean up this equation
         eqn = self.mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=forcing[0], rho_w=params.rho_w,
                            rho_a=params.rho_a, C_a=params.C_a, C_w=params.C_w)
         eqn += self.timestep * inner(q, (s1 - s0) + self.timestep * (0.5 * params.e ** 2 / params.T * sh + (

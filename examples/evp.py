@@ -1,5 +1,8 @@
 from seaice import *
 from firedrake import *
+from pathlib import Path
+
+Path("./output/evp").mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
 
@@ -7,7 +10,10 @@ timestep = 10 ** (-1)
 dumpfreq = 10
 timescale = 10
 
-dirname = "./output/EVP/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = "./output/evp/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+title = "EVP Plot"
+diagnostic_dirname = "./output/evp/evp.nc"
+plot_dirname = "./output/evp/evp_energy.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
@@ -28,11 +34,19 @@ evp = ElasticViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics
                             timestepping=timestepping, output=output, params=params, solver_params=solver,
                             forcing=forcing)
 
+diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
+
 t = 0
 
 while t < timescale - 0.5 * timestep:
     evp.solve(evp.usolver)
     evp.update(evp.w0, evp.w1)
+    diag.dump(evp.u1, t)
     evp.dump(evp.u1, t)
     t += timestep
     evp.progress(t)
+
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
+                  timestepping=timestepping, title=title)
+
+plotter.plot()

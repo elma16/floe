@@ -75,11 +75,12 @@ class OutputDiagnostics(object):
             dataset.createVariable("energy", np.float64, ("time",))
             dataset.createVariable("error", np.float64, ("time",))
 
-    def dump(self, variable, solution, t):
+    def dump(self, variable, t, solution=None):
         with Dataset(self.dirname, "a") as dataset:
             idx = dataset.dimensions["time"].size
             dataset.variables["time"][idx:idx + 1] = t
             energy = dataset.variables["energy"]
             error = dataset.variables["error"]
             energy[idx:idx + 1] = Energy.compute(variable)
-            error[idx:idx + 1] = Error.compute(variable, solution)
+            if solution is not None:
+                error[idx:idx + 1] = Error.compute(variable, solution)

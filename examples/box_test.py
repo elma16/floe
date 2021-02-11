@@ -1,6 +1,8 @@
 import sys
 from seaice import *
 from firedrake import *
+from pathlib import Path
+Path("./output/bt").mkdir(parents=True, exist_ok=True)
 
 # TEST 3 : BOX TEST
 
@@ -17,9 +19,9 @@ else:
     timestep = 1
     dumpfreq = 10
 
-dirname = "./output/box_test/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = "./output/bt/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
-plot_dirname = "./plots/box_test_energy.png"
+plot_dirname = "./output/bt/box_test_energy.png"
 
 length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
