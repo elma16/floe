@@ -175,6 +175,8 @@ class ElasticViscousPlastic(SeaIceModel):
                                                                                           a) / params.T) * Identity(
             2))) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
+        if self.stabilised is True:
+            eqn += stab(mesh, uh, p)
         bcs = self.bcs(self.W1.sub(0))
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
@@ -186,8 +188,8 @@ class ElasticViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlasticStress(SeaIceModel):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing):
-        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing)
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised)
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
@@ -245,8 +247,8 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing):
-        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing)
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised)
 
         self.w0 = Function(self.W2)
         self.w1 = Function(self.W2)
