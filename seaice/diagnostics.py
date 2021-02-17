@@ -10,50 +10,51 @@ __all__ = ["Error", "Energy", "Velocity", "OutputDiagnostics"]
 
 
 class Diagnostic(object):
-    def __init__(self, variable):
-        self.variable = variable
+    def __init__(self, v):
+        self.v = v
 
 
 class Error(Diagnostic):
 
-    def __init__(self, variable, solution):
-        super().__init__(variable)
+    def __init__(self, v, solution):
+        super().__init__(v)
         self.solution = solution
 
     @staticmethod
-    def compute(variable, solution):
-        return norm(solution - variable)
+    def compute(v, solution):
+        return norm(solution - v)
+
 
 # TODO fix
 class Energy(Diagnostic):
-    def __init__(self, variable):
-        super().__init__(variable)
+    def __init__(self, v):
+        super().__init__(v)
 
     @staticmethod
-    def compute(variable):
-        return norm(variable, norm_type="H1")
+    def compute(v):
+        return assemble(inner(grad(v), grad(v)) * dx)
 
 
 class Velocity(Diagnostic):
-    def __init__(self, variable, mesh):
-        super().__init__(variable)
+    def __init__(self, v, mesh):
+        super().__init__(v)
         self.mesh = mesh
 
     def X_component(self):
-        return self.variable[0]
+        return self.v[0]
 
     def Y_component(self):
-        return self.variable[1]
+        return self.v[1]
 
     def Max_component(self):
         # projecting the solutions of the problem onto 'DG1'
         W = VectorFunctionSpace(self.mesh, "DG", 1)
-        p = project(self.variable, W).dat.data
+        p = project(self.v, W).dat.data
         # print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
         return p
 
     def korn_ineq(self):
-        return norm(grad(self.variable)) > sqrt(norm(grad(self.variable) + transpose(grad(self.variable))))
+        return norm(grad(self.v)) > sqrt(norm(grad(self.v) + transpose(grad(self.v))))
 
 
 class OutputDiagnostics(object):
