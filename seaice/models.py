@@ -66,6 +66,9 @@ class SeaIceModel(object):
     def Ice_Strength(self, h, a):
         return self.params.P_star * h * exp(-self.params.C * (1 - a))
 
+    def zeta(self, h, a, delta):
+        return 0.5 * self.Ice_Strength(h, a) / delta
+
     def strain(self, omega):
         return 0.5 * (omega + transpose(omega))
 
@@ -121,12 +124,14 @@ class ViscousPlastic(SeaIceModel):
         h = Constant(1)
         a = Constant(1)
 
-        self.zeta = 0.5 * self.Ice_Strength(h, a) / params.Delta_min
-        sigma = self.ep_dot(self.zeta, self.u1)
+        zeta = self.zeta(h, a, params.Delta_min)
+        sigma = self.ep_dot(zeta, self.u1)
+
+        sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h, a) * Identity(2)
 
         self.initial_conditions(self.u0, self.u1)
 
-        sigma_exp = self.zeta * self.strain(grad(ics_values[0]))
+        sigma_exp = zeta * self.strain(grad(ics_values[0]))
 
         eqn = mom_equ(1, self.u1, self.u0, v, sigma, 1, div(sigma_exp))
         if self.stabilised is True:
@@ -140,8 +145,10 @@ class ViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised):
-        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised)
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing,
+                 stabilised):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing,
+                         stabilised)
 
         self.w0 = Function(self.W1)
         self.w1 = Function(self.W1)
@@ -188,8 +195,10 @@ class ElasticViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlasticStress(SeaIceModel):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised):
-        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised)
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing,
+                 stabilised):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing,
+                         stabilised)
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
@@ -247,8 +256,10 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
-    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised):
-        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing, stabilised)
+    def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing,
+                 stabilised):
+        super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing,
+                         stabilised)
 
         self.w0 = Function(self.W2)
         self.w1 = Function(self.W2)
