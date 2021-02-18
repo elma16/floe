@@ -72,9 +72,6 @@ class SeaIceModel(object):
     def strain(self, omega):
         return 0.5 * (omega + transpose(omega))
 
-    def ep_dot(self, zeta, u):
-        return 0.5 * zeta * self.strain(grad(u))
-
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
 
@@ -125,9 +122,11 @@ class ViscousPlastic(SeaIceModel):
         a = Constant(1)
 
         zeta = self.zeta(h, a, params.Delta_min)
-        sigma = self.ep_dot(zeta, self.u1)
+        eta = zeta * params.e**(-2)
+        ep_dot = self.strain(grad(self.u1))
+        sigma = zeta * ep_dot
 
-        sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h, a) * Identity(2)
+        #sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h, a) * Identity(2)
 
         self.initial_conditions(self.u0, self.u1)
 
@@ -170,7 +169,7 @@ class ElasticViscousPlastic(SeaIceModel):
         sh = 0.5 * (s0 + s1)
 
         # TODO turn this into a parent class function?
-        ep_dot = self.ep_dot(1, uh)
+        ep_dot = self.strain(grad(uh))
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * self.Ice_Strength(h, a) / Delta
 
@@ -217,7 +216,7 @@ class ElasticViscousPlasticStress(SeaIceModel):
         h = Constant(1)
         a.interpolate(ics_values[1])
 
-        ep_dot = self.ep_dot(1, uh)
+        ep_dot = self.strain(grad(uh))
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * self.Ice_Strength(h, a) / Delta
         eta = zeta * params.e ** (-2)
@@ -281,7 +280,7 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         ah = 0.5 * (a0 + a1)
         hh = 0.5 * (h0 + h1)
 
-        ep_dot = self.ep_dot(1, uh)
+        ep_dot = self.strain(grad(uh))
         Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
         zeta = 0.5 * self.Ice_Strength(hh, ah) / Delta
         eta = zeta * params.e ** (-2)
