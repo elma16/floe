@@ -42,9 +42,10 @@ output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
+# TODO fix the divergence of the solution
 bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
                                     timestepping=timestepping, output=output, params=params, solver_params=solver,
-                                    forcing=forcing)
+                                    forcing=forcing,stabilised=False)
 
 t = 0
 while t < timescale - 0.5 * timestep:
@@ -52,4 +53,5 @@ while t < timescale - 0.5 * timestep:
     bt.update(bt.w0, bt.w1)
     bt.dump(bt.w1, t)
     t += timestep
+    t0.assign(t)
     bt.progress(t)

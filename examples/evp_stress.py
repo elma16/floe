@@ -1,6 +1,7 @@
 from seaice import *
 from firedrake import *
 from pathlib import Path
+
 Path("./output/evp_stress").mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
@@ -20,7 +21,7 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 bcs_values = [0, 1, 1]
-ics_values = [0, x / length, as_matrix([[1, 2], [3, 4]])]
+ics_values = [0, x / length, as_matrix([[0, 0], [0, 0]])]
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 forcing = [ocean_curr]
 
@@ -31,7 +32,7 @@ params = SeaIceParameters()
 
 evps = ElasticViscousPlasticStress(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
                                    timestepping=timestepping, output=output, params=params, solver_params=solver,
-                                   forcing=forcing)
+                                   forcing=forcing, stabilised=False)
 
 diag = OutputDiagnostics(description="EVP Matrix Test", dirname=diagnostic_dirname)
 

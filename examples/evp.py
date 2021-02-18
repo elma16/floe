@@ -6,6 +6,8 @@ Path("./output/evp").mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
 
+# TODO velocities converge against stationary solution. Construct stationary solution
+
 timestep = 10
 dumpfreq = 10
 timescale = 10**3
@@ -32,7 +34,7 @@ params = SeaIceParameters()
 
 evp = ElasticViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
                             timestepping=timestepping, output=output, params=params, solver_params=solver,
-                            forcing=forcing)
+                            forcing=forcing,stabilised=False)
 
 diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 

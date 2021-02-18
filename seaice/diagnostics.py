@@ -46,11 +46,11 @@ class Velocity(Diagnostic):
     def Y_component(self):
         return self.v[1]
 
-    def Max_component(self):
-        # projecting the solutions of the problem onto 'DG1'
-        W = VectorFunctionSpace(self.mesh, "DG", 1)
-        p = project(self.v, W).dat.data
-        # print([all_u[i].evaluate((,),'x',0,0) for i in range(len(all_u))])
+    @staticmethod
+    # TODO i don't know what this output means
+    def Max_component(v, mesh):
+        W = VectorFunctionSpace(mesh, "DG", 1)
+        p = project(v, W).dat.data
         return p
 
     def korn_ineq(self):

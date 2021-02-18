@@ -3,6 +3,7 @@ from seaice import *
 from firedrake import *
 from time import time
 from pathlib import Path
+
 path = "./output/srt"
 Path(path).mkdir(parents=True, exist_ok=True)
 
@@ -38,7 +39,7 @@ solver = SolverParameters()
 params = SeaIceParameters()
 
 srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, forcing=forcing, ics_values=ics_values,
-                     timestepping=timestepping, output=output, params=params, solver_params=solver)
+                     timestepping=timestepping, output=output, params=params, solver_params=solver, stabilised=False)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
@@ -54,9 +55,7 @@ while t < timescale - 0.5 * timestep:
 end = time()
 print(end - start, "[s]")
 
-
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
 plotter.plot()
-
