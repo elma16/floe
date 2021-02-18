@@ -39,7 +39,8 @@ solver = SolverParameters()
 params = SeaIceParameters()
 
 srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, forcing=forcing, ics_values=ics_values,
-                     timestepping=timestepping, output=output, params=params, solver_params=solver, stabilised=False)
+                     timestepping=timestepping, output=output, params=params, solver_params=solver,
+                     stabilised=False, simple=True)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 

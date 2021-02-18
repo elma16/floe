@@ -72,6 +72,11 @@ class SeaIceModel(object):
     def strain(self, omega):
         return 0.5 * (omega + transpose(omega))
 
+    def delta(self, u):
+        return sqrt(self.params.Delta_min ** 2 + 2 * self.params.e ** (-2) * inner(dev(self.strain(grad(u))),
+                                                                                   dev(self.strain(grad(u)))) + tr(
+            self.strain(grad(u))) ** 2)
+
     def bcs(self, space):
         return [DirichletBC(space, values, "on_boundary") for values in self.bcs_values]
 
@@ -109,9 +114,11 @@ class SeaIceModel(object):
 
 class ViscousPlastic(SeaIceModel):
     def __init__(self, mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing,
-                 stabilised):
+                 stabilised, simple):
         super().__init__(mesh, bcs_values, ics_values, length, timestepping, params, output, solver_params, forcing,
                          stabilised)
+
+        self.simple = simple
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
@@ -121,19 +128,24 @@ class ViscousPlastic(SeaIceModel):
         h = Constant(1)
         a = Constant(1)
 
-        zeta = self.zeta(h, a, params.Delta_min)
-        eta = zeta * params.e**(-2)
         ep_dot = self.strain(grad(self.u1))
-        sigma = zeta * ep_dot
 
-        #sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h, a) * Identity(2)
+        if simple:
+            zeta = self.zeta(h, a, params.Delta_min)
+            sigma = zeta * ep_dot
+        else:
+            zeta = self.zeta(h, a, self.delta(self.u1))
+            eta = zeta * params.e ** (-2)
+            sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,
+                                                                                                         a) * Identity(
+                2)
 
         self.initial_conditions(self.u0, self.u1)
 
         sigma_exp = zeta * self.strain(grad(ics_values[0]))
 
         eqn = mom_equ(1, self.u1, self.u0, v, sigma, 1, div(sigma_exp))
-        if self.stabilised is True:
+        if self.stabilised:
             eqn += stab(mesh, self.u1, v)
         bcs = self.bcs(self.V)
 
@@ -168,10 +180,8 @@ class ElasticViscousPlastic(SeaIceModel):
         uh = 0.5 * (u0 + u1)
         sh = 0.5 * (s0 + s1)
 
-        # TODO turn this into a parent class function?
         ep_dot = self.strain(grad(uh))
-        Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
-        zeta = 0.5 * self.Ice_Strength(h, a) / Delta
+        zeta = self.zeta(h, a, self.delta(uh))
 
         # TODO clean up this equation
         eqn = mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=forcing[0], rho_w=params.rho_w,
@@ -217,8 +227,7 @@ class ElasticViscousPlasticStress(SeaIceModel):
         a.interpolate(ics_values[1])
 
         ep_dot = self.strain(grad(uh))
-        Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
-        zeta = 0.5 * self.Ice_Strength(h, a) / Delta
+        zeta = self.zeta(h, a, self.delta(uh))
         eta = zeta * params.e ** (-2)
 
         self.sigma0.interpolate(
@@ -281,8 +290,7 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         hh = 0.5 * (h0 + h1)
 
         ep_dot = self.strain(grad(uh))
-        Delta = sqrt(params.Delta_min ** 2 + 2 * params.e ** (-2) * inner(dev(ep_dot), dev(ep_dot)) + tr(ep_dot) ** 2)
-        zeta = 0.5 * self.Ice_Strength(hh, ah) / Delta
+        zeta = self.zeta(hh, ah, self.delta(uh))
         eta = zeta * params.e ** (-2)
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(
             2)
