@@ -120,8 +120,8 @@ class ViscousPlastic(SeaIceModel):
 
         self.simple = simple
 
-        self.u0 = Function(self.V, name="Velocity")
-        self.u1 = Function(self.V, name="VelocityNext")
+        self.w0 = Function(self.W2)
+        self.w1 = Function(self.W2)
 
         v = TestFunction(self.V)
 
