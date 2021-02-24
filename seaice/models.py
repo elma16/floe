@@ -103,9 +103,6 @@ class SeaIceModel(object):
             else:
                 variables.interpolate(self.ics_values[ix // 2])
 
-    def initial_dump(self, *args):
-        return self.outfile.write(*args, time=0)
-
     def progress(self, t):
         print("Time:", t, "[s]")
         print(int(min(t / self.timescale * 100, 100)), "% complete")
@@ -195,8 +192,6 @@ class ElasticViscousPlastic(SeaIceModel):
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
         self.u1, self.s1 = self.w1.split()
-
-        self.initial_dump(self.u1)
 
 
 class ElasticViscousPlasticStress(SeaIceModel):
@@ -315,5 +310,3 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
 
         self.u1, self.h1, self.a1 = self.w1.split()
-
-        self.initial_dump(self.u1, self.h1, self.a1)
