@@ -122,7 +122,7 @@ class ViscousPlastic(SeaIceModel):
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
 
-        v = TestFunction(self.V)
+        self.v = TestFunction(self.V)
 
         h = Constant(1)
         a = Constant(1)
@@ -134,21 +134,20 @@ class ViscousPlastic(SeaIceModel):
             sigma = self.zeta * ep_dot
         else:
             self.zeta = self.zeta(h, a, self.delta(self.u1))
-            eta = self.zeta * params.e ** (-2)
+            eta = self.zeta * params.e ** -2
             sigma = 2 * eta * ep_dot + (self.zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,
                                                                                                               a) * Identity(
                 2)
 
         self.initial_conditions(self.u0, self.u1)
 
-        eqn = mom_equ(h, self.u1, self.u0, v, sigma, 1)
-        sigma_exp = self.zeta * self.strain(grad(ics_values[0]))
-        eqn += inner(div(sigma_exp), v) * dx
+        self.eqn = mom_equ(h, self.u1, self.u0, self.v, sigma, 1)
+
         if self.stabilised:
-            eqn += stab(alpha=5, zeta=self.zeta, mesh=mesh, v=self.u1, test=v)
+            self.eqn += stab(alpha=5, zeta=self.zeta, mesh=mesh, v=self.u1, test=self.v)
         bcs = self.bcs(self.V)
 
-        uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
+        uprob = NonlinearVariationalProblem(self.eqn, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
 

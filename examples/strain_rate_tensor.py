@@ -46,7 +46,8 @@ diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
 t = 0
 
-
+sigma_exp = srt.zeta * srt.strain(grad(ics_values[0]))
+srt.eqn += inner(div(sigma_exp), srt.v) * dx
 #v = Function(srt.V).interpolate(v_exp)
 start = time()
 while t < timescale - 0.5 * timestep:
