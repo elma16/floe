@@ -121,12 +121,15 @@ class ViscousPlastic(SeaIceModel):
         a = Constant(1)
 
         ep_dot = self.strain(grad(self.u1))
+        eqn = 0
 
         if simple:
             zeta = self.zeta(h, a, params.Delta_min)
             sigma = zeta * ep_dot
             # TODO want to move this to example/
             sigma_exp = zeta * self.strain(grad(conditions['ic'][0]))
+            eqn = mom_equ(h, self.u1, self.u0, v, sigma, 1)
+            eqn += inner(div(sigma_exp), v) * dx
 
         else:
             zeta = self.zeta(h, a, self.delta(self.u1))
@@ -134,11 +137,10 @@ class ViscousPlastic(SeaIceModel):
             sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,
                                                                                                          a) * Identity(
                 2)
+            eqn = mom_equ(h, self.u1, self.u0, v, sigma, params.rho, self.u1, conditions['ocean_curr'], params.rho_a,
+                          params.C_a, params.rho_w, params.C_w, conditions['geo_wind'], params.cor)
 
         self.initial_conditions(self.u0, self.u1)
-
-        eqn = mom_equ(h, self.u1, self.u0, v, sigma, 1)
-        eqn += inner(div(sigma_exp), v) * dx
 
         if self.stabilised:
             eqn += stab(alpha=5, zeta=zeta, mesh=mesh, v=self.u1, test=v)
@@ -183,7 +185,7 @@ class ElasticViscousPlastic(SeaIceModel):
             2))) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
         if self.stabilised is True:
-            eqn += stab(mesh, uh, p)
+            eqn += stab(alpha=2, zeta=zeta, mesh=mesh, v=uh, test=p)
         bcs = self.bcs(self.W1.sub(0))
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
