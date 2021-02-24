@@ -21,7 +21,7 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 bcs_values = [0, 1, 1]
-ics_values = [0, x / length, as_matrix([[0, 0], [0, 0]])]
+ics_values = [0, x / length]
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 forcing = [ocean_curr]
 

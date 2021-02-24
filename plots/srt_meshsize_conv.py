@@ -8,15 +8,15 @@ from pathlib import Path
 path = "./output/srt_meshsize_conv"
 Path(path).mkdir(parents=True, exist_ok=True)
 
-timestep = 1
-dumpfreq = 10
+timestep = 0.01
+dumpfreq = 10**6
 timescale = 10
 
 dirname = path + "/test.pvd"
 plot_dirname = path + "/strain_rate_error_T={}_t={}.png".format(timescale, timestep)
 plot_dirname2 = path + "/strain_rate_energy_T={}_t={}.png".format(timescale, timestep)
 
-number_of_triangles = np.arange(3, 100, 1)
+number_of_triangles = [5, 10, 20, 40]
 length = 5 * 10 ** 5
 pi_x = pi / length
 bcs_values = [0]
@@ -37,7 +37,7 @@ for values in number_of_triangles:
     ics_values = [v_exp]
     srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, forcing=forcing, ics_values=ics_values,
                          timestepping=timestepping, output=output, params=params, solver_params=solver,
-                         stabilised=False)
+                         stabilised=False, simple=True)
 
     t = 0
 
@@ -67,5 +67,3 @@ plt.legend(loc='best')
 plt.xlabel('Meshsize')
 plt.ylabel('Error of solution')
 plt.savefig(plot_dirname)
-
-

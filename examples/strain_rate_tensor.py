@@ -15,10 +15,10 @@ if '--test' in sys.argv:
     timescale = 10
 else:
     timestep = 1
-    dumpfreq = 10
+    dumpfreq = 1
     timescale = 10
 
-dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = path + "/u_timescale={}_timestep={}_new.pvd".format(timescale, timestep)
 title = "Test Plot"
 diagnostic_dirname = path + "/strain_rate_T={}_t={}.nc".format(timescale, timestep)
 plot_dirname = path + "/strain_rate_error_T={}_t={}.png".format(timescale, timestep)
@@ -45,12 +45,15 @@ srt = ViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, forcing=fo
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
 t = 0
+
+
+#v = Function(srt.V).interpolate(v_exp)
 start = time()
 while t < timescale - 0.5 * timestep:
     srt.solve(srt.usolver)
     srt.update(srt.u0, srt.u1)
     diag.dump(srt.u1, t, v_exp)
-    srt.dump(srt.u1, t)
+    srt.dump(srt.u1, t=t)
     t += timestep
     srt.progress(t)
 end = time()
