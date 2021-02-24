@@ -20,19 +20,15 @@ length = 5 * 10 ** 5
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
-bcs_values = [0, 1, 1]
-ics_values = [0, x / length]
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-forcing = [ocean_curr]
-
+conditions = {'ic': [0, x / length], 'bc': [0, 1, 1], 'ocean_curr': ocean_curr}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-evps = ElasticViscousPlasticStress(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
-                                   timestepping=timestepping, output=output, params=params, solver_params=solver,
-                                   forcing=forcing, stabilised=False)
+evps = ElasticViscousPlasticStress(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
+                                   output=output, params=params, solver_params=solver, stabilised=False)
 
 diag = OutputDiagnostics(description="EVP Matrix Test", dirname=diagnostic_dirname)
 
@@ -42,7 +38,7 @@ while t < timescale - 0.5 * timestep:
     evps.solve(evps.usolver, evps.ssolver)
     evps.update(evps.u0, evps.u1)
     diag.dump(evps.u1, t)
-    evps.dump(evps.u1, t)
+    evps.dump(evps.u1, t=t)
     t += timestep
     evps.progress(t)
 

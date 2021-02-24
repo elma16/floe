@@ -2,6 +2,7 @@ import sys
 from seaice import *
 from firedrake import *
 from pathlib import Path
+
 Path("./output/bt").mkdir(parents=True, exist_ok=True)
 
 # TEST 3 : BOX TEST
@@ -33,25 +34,21 @@ geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-bcs_values = [0, 1, 1]
-ics_values = [0, 1, x / length]
-forcing = [ocean_curr, geo_wind]
-
+conditions = {'bc': [0, 1, 1], 'ic': [0, 1, x / length], 'ocean_curr': ocean_curr, 'geo_wind': geo_wind}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
 # TODO fix the divergence of the solution
-bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
-                                    timestepping=timestepping, output=output, params=params, solver_params=solver,
-                                    forcing=forcing,stabilised=False)
+bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
+                                    output=output, params=params, solver_params=solver, stabilised=False)
 
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
-    bt.dump(bt.w1, t)
+    bt.dump(bt.w1, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)

@@ -10,7 +10,7 @@ Path("./output/evp").mkdir(parents=True, exist_ok=True)
 
 timestep = 10
 dumpfreq = 10
-timescale = 10**3
+timescale = 10 ** 3
 
 dirname = "./output/evp/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 title = "EVP Plot"
@@ -22,19 +22,15 @@ length = 5 * 10 ** 5
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
-bcs_values = [0, 1, 1]
-ics_values = [0, x / length, as_matrix([[1, 2], [3, 4]])]
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-forcing = [ocean_curr]
-
+conditions = {'bc': [0, 1, 1], 'ic': [0, x / length, as_matrix([[1, 2], [3, 4]])], 'ocean_curr': ocean_curr}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-evp = ElasticViscousPlastic(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
-                            timestepping=timestepping, output=output, params=params, solver_params=solver,
-                            forcing=forcing,stabilised=False)
+evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
+                            params=params, solver_params=solver, stabilised=False)
 
 diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 
@@ -44,7 +40,7 @@ while t < timescale - 0.5 * timestep:
     evp.solve(evp.usolver)
     evp.update(evp.w0, evp.w1)
     diag.dump(evp.u1, t)
-    evp.dump(evp.u1, t)
+    evp.dump(evp.u1, t=t)
     t += timestep
     evp.progress(t)
 

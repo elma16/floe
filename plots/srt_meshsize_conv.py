@@ -8,7 +8,7 @@ from pathlib import Path
 path = "./output/srt_meshsize_conv"
 Path(path).mkdir(parents=True, exist_ok=True)
 
-timestep = 0.01
+timestep = 0.001
 dumpfreq = 10**6
 timescale = 10
 
