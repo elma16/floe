@@ -4,30 +4,58 @@ zero_vector = Constant(as_vector([0, 0]))
 zero = Constant(0)
 
 
-def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero,
-            geo_wind=zero_vector, cor=zero):
-    def momentum_term():
-        return inner(rho * hh * (u1 - u0), p) * dx
+# def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero,
+#             geo_wind=zero_vector, cor=zero):
 
+class MomentumEquation(object):
+    def __init__(self, rho, h, u1, u0, u, test, ocean_curr, cor, sigma, rho_w, C_w, rho_a, C_a, geo_wind, alpha, zeta,
+                 mesh):
+        self.rho = rho
+        self.h = h
+        self.u1 = u1
+        self.u0 = u0
+        self.u = u
+        self.sigma = sigma
+        self.test = test
+        self.cor = cor
+        self.ocean_curr = ocean_curr
+        self.rho_w = rho_w
+        self.alpha = alpha
+        self.zeta = zeta
+        self.mesh = mesh
+        self.C_w = C_w
+        self.rho_a = rho_a
+        self.geo_wind = geo_wind
+        self.C_a = C_a
+
+    def momentum_term(self):
+        return inner(self.rho * self.h * (self.u1 - self.u0), self.test) * dx
+
+    @staticmethod
     def perp(u):
         return as_vector([-u[1], u[0]])
 
-    def forcing_term():
-        return inner(rho * hh * cor * perp(ocean_curr - uh), p) * dx
+    def forcing_term(self):
+        return inner(self.rho * self.h * self.cor * perp(self.ocean_curr - self.u), self.test) * dx
 
-    def stress_term(density, drag, func):
-        return inner(density * drag * sqrt(dot(func, func)) * func, p) * dx(degree=3)
+    def stress_term(self, density, drag, func):
+        return inner(density * drag * sqrt(dot(func, func)) * func, self.test) * dx(degree=3)
 
-    def rheology_term():
-        return inner(sigma, grad(p)) * dx
+    def rheology_term(self):
+        return inner(self.sigma, grad(self.test)) * dx
 
-    return momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a, geo_wind) - rheology_term()
+    # TODO tune alpha
+    def stabilisation_term(self):
+        e = avg(CellVolume(self.mesh)) / FacetArea(self.mesh)
+        return 2 * self.alpha * self.zeta / e * (dot(jump(self.u), jump(self.test))) * dS
 
-
-# TODO tune alpha
-def stabilisation_term(alpha, zeta, mesh, v, test):
-    e = avg(CellVolume(mesh)) / FacetArea(mesh)
-    return 2 * alpha * zeta / e * (dot(jump(v), jump(test))) * dS
+    def assemble(self):
+        L = self.momentum_term()
+        L -= self.forcing_term()
+        L -= self.stress_term(self.rho_w, self.C_w, self.ocean_curr - self.u)
+        L -= self.stress_term(self.rho_a, self.C_a, self.geo_wind)
+        L -= self.rheology_term()
+        return L
 
 
 class SeaIceModel(object):
