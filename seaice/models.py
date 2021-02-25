@@ -1,60 +1,40 @@
 from firedrake import *
 
-zero_vector = Constant(as_vector([0, 0]))
-zero = Constant(0)
-
-
-# def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero,
-#             geo_wind=zero_vector, cor=zero):
-
 class MomentumEquation(object):
-    def __init__(self, rho, h, u1, u0, u, test, ocean_curr, cor, sigma, rho_w, C_w, rho_a, C_a, geo_wind, alpha, zeta,
-                 mesh):
-        self.rho = rho
-        self.h = h
-        self.u1 = u1
-        self.u0 = u0
-        self.u = u
-        self.sigma = sigma
-        self.test = test
-        self.cor = cor
-        self.ocean_curr = ocean_curr
-        self.rho_w = rho_w
+    def __init__(self, model, alpha):
         self.alpha = alpha
-        self.zeta = zeta
-        self.mesh = mesh
-        self.C_w = C_w
-        self.rho_a = rho_a
-        self.geo_wind = geo_wind
-        self.C_a = C_a
+        self.model = model
 
     def momentum_term(self):
-        return inner(self.rho * self.h * (self.u1 - self.u0), self.test) * dx
+        return inner(self.model.rho * self.model.h * (self.model.u1 - self.model.u0), self.model.test) * dx
 
     @staticmethod
     def perp(u):
         return as_vector([-u[1], u[0]])
 
     def forcing_term(self):
-        return inner(self.rho * self.h * self.cor * perp(self.ocean_curr - self.u), self.test) * dx
+        return inner(self.model.rho * self.model.h * self.model.params.cor * perp(
+            self.model.conditions.ocean_curr - self.model.u), self.model.test) * dx
 
     def stress_term(self, density, drag, func):
-        return inner(density * drag * sqrt(dot(func, func)) * func, self.test) * dx(degree=3)
+        return inner(density * drag * sqrt(dot(func, func)) * func, self.model.test) * dx(degree=3)
 
     def rheology_term(self):
-        return inner(self.sigma, grad(self.test)) * dx
+        return inner(self.model.sigma, grad(self.model.test)) * dx
 
-    # TODO tune alpha
     def stabilisation_term(self):
-        e = avg(CellVolume(self.mesh)) / FacetArea(self.mesh)
-        return 2 * self.alpha * self.zeta / e * (dot(jump(self.u), jump(self.test))) * dS
+        e = avg(CellVolume(self.model.mesh)) / FacetArea(self.model.mesh)
+        return 2 * self.alpha * self.model.zeta / e * (dot(jump(self.model.u), jump(self.model.test))) * dS
 
     def assemble(self):
         L = self.momentum_term()
         L -= self.forcing_term()
-        L -= self.stress_term(self.rho_w, self.C_w, self.ocean_curr - self.u)
-        L -= self.stress_term(self.rho_a, self.C_a, self.geo_wind)
+        L -= self.stress_term(self.model.params.rho_w, self.model.params.C_w,
+                              self.model.conditions.ocean_curr - self.model.u)
+        L -= self.stress_term(self.model.params.rho_a, self.model.params.C_a, self.model.conditions.geo_wind)
         L -= self.rheology_term()
+        if self.alpha != 0:
+            L += self.stabilisation_term()
         return L
 
 
