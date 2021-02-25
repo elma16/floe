@@ -1,5 +1,6 @@
 from firedrake import *
 
+
 class MomentumEquation(object):
     def __init__(self, model, alpha):
         self.alpha = alpha
@@ -127,6 +128,11 @@ class ViscousPlastic(SeaIceModel):
         h = Constant(1)
         a = Constant(1)
 
+        if stabilised:
+            alpha = 2
+        else:
+            alpha = 0
+
         ep_dot = self.strain(grad(self.u1))
 
         if simple:
@@ -134,7 +140,7 @@ class ViscousPlastic(SeaIceModel):
             sigma = zeta * ep_dot
             # TODO want to move this to example/
             sigma_exp = zeta * self.strain(grad(conditions['ic'][0]))
-            eqn = mom_equ(h, self.u1, self.u0, v, sigma, 1)
+            eqn = MomentumEquation(ViscousPlastic, alpha).assemble()
             eqn += inner(div(sigma_exp), v) * dx
 
         else:
