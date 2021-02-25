@@ -4,28 +4,29 @@ zero_vector = Constant(as_vector([0, 0]))
 zero = Constant(0)
 
 
-def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero,
-            geo_wind=zero_vector, cor=zero):
-    def momentum():
+def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero,
+            C_w=zero, geo_wind=zero_vector, cor=zero):
+    def momentum_term():
         return inner(rho * hh * (u1 - u0), p) * dx
 
     def perp(u):
         return as_vector([-u[1], u[0]])
 
-    def forcing():
+    def forcing_term():
         return inner(rho * hh * cor * perp(ocean_curr - uh), p) * dx
 
-    def stress(density, drag, func):
+    def stress_term(density, drag, func):
         return inner(density * drag * sqrt(dot(func, func)) * func, p) * dx(degree=3)
 
-    def rheo():
+    def rheology_term():
         return inner(sigma, grad(p)) * dx
 
-    return momentum() - forcing() - stress(rho_w, C_w, ocean_curr - uh) - stress(rho_a, C_a, geo_wind) - rheo()
+    return momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a,
+                                                                                                     geo_wind) - rheology_term()
 
 
 # TODO tune alpha
-def stab(alpha, zeta, mesh, v, test):
+def stabilisation_term(alpha, zeta, mesh, v, test):
     e = avg(CellVolume(mesh)) / FacetArea(mesh)
     return 2 * alpha * zeta / e * (dot(jump(v), jump(test))) * dS
 
@@ -83,9 +84,6 @@ class SeaIceModel(object):
         old_var.assign(new_var)
 
     def dump(self, *args, t):
-        """
-        Output the diagnostics
-        """
         self.dump_count += 1
         if self.dump_count == self.dump_freq:
             self.dump_count -= self.dump_freq
@@ -105,47 +103,45 @@ class SeaIceModel(object):
 
 
 class ViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised,
-                 simple):
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised):
         super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised)
-
-        self.simple = simple
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
 
-        v = TestFunction(self.V)
+        self.v = TestFunction(self.V)
 
-        h = Constant(1)
-        a = Constant(1)
+        self.h = Constant(1)
+        self.a = Constant(1)
 
-        ep_dot = self.strain(grad(self.u1))
+        self.ep_dot = self.strain(grad(self.u1))
 
-        if simple:
-            zeta = self.zeta(h, a, params.Delta_min)
-            sigma = zeta * ep_dot
-            # TODO want to move this to example/
-            sigma_exp = zeta * self.strain(grad(conditions['ic'][0]))
-            eqn = mom_equ(h, self.u1, self.u0, v, sigma, 1)
-            eqn += inner(div(sigma_exp), v) * dx
-
-        else:
-            zeta = self.zeta(h, a, self.delta(self.u1))
-            eta = zeta * params.e ** -2
-            sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,
-                                                                                                         a) * Identity(
-                2)
-            eqn = mom_equ(h, self.u1, self.u0, v, sigma, params.rho, self.u1, conditions['ocean_curr'], params.rho_a,
-                          params.C_a, params.rho_w, params.C_w, conditions['geo_wind'], params.cor)
+        zeta = self.zeta(self.h, self.a, self.delta(self.u1))
+        eta = zeta * params.e ** -2
+        sigma = 2 * eta * self.ep_dot + (zeta - eta) * tr(self.ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(self.h, self.a) * Identity(2)
+        eqn = mom_equ(self.h, self.u1, self.u0, self.v, sigma, params.rho, self.u1, conditions['ocean_curr'], params.rho_a,
+                      params.C_a, params.rho_w, params.C_w, conditions['geo_wind'], params.cor)
 
         self.initial_conditions(self.u0, self.u1)
 
         if self.stabilised:
-            eqn += stab(alpha=5, zeta=zeta, mesh=mesh, v=self.u1, test=v)
+            eqn += stabilisation_term(alpha=5, zeta=zeta, mesh=mesh, v=self.u1, test=self.v)
         bcs = self.bcs(self.V)
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
+
+
+class SimpleViscousPlastic(ViscousPlastic):
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised):
+        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised)
+
+        zeta = self.zeta(self.h, self.a, params.Delta_min)
+        sigma = zeta * self.ep_dot
+        # TODO want to move this to example/
+        sigma_exp = zeta * self.strain(grad(conditions['ic'][0]))
+        eqn = mom_equ(self.h, self.u1, self.u0, self.v, sigma, 1)
+        eqn += inner(div(sigma_exp), self.v) * dx
 
 
 class ElasticViscousPlastic(SeaIceModel):
@@ -183,7 +179,7 @@ class ElasticViscousPlastic(SeaIceModel):
             2))) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
         if self.stabilised is True:
-            eqn += stab(alpha=2, zeta=zeta, mesh=mesh, v=uh, test=p)
+            eqn += stabilisation_term(alpha=2, zeta=zeta, mesh=mesh, v=uh, test=p)
         bcs = self.bcs(self.W1.sub(0))
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)

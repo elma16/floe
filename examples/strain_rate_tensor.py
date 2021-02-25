@@ -36,8 +36,8 @@ output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-srt = ViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                     params=params, solver_params=solver, stabilised=False, simple=True)
+srt = SimpleViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
+                           params=params, solver_params=solver, stabilised=False)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
