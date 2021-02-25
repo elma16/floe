@@ -83,9 +83,6 @@ class SeaIceModel(object):
         old_var.assign(new_var)
 
     def dump(self, *args, t):
-        """
-        Output the diagnostics
-        """
         self.dump_count += 1
         if self.dump_count == self.dump_freq:
             self.dump_count -= self.dump_freq
@@ -182,7 +179,7 @@ class ElasticViscousPlastic(SeaIceModel):
                                                                                           a) / params.T) * Identity(
             2))) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
-        if self.stabilised is True:
+        if self.stabilised:
             eqn += stabilisation_term(alpha=2, zeta=zeta, mesh=mesh, v=uh, test=p)
         bcs = self.bcs(self.W1.sub(0))
 
