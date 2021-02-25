@@ -6,26 +6,26 @@ zero = Constant(0)
 
 def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero,
             geo_wind=zero_vector, cor=zero):
-    def momentum():
+    def momentum_term():
         return inner(rho * hh * (u1 - u0), p) * dx
 
     def perp(u):
         return as_vector([-u[1], u[0]])
 
-    def forcing():
+    def forcing_term():
         return inner(rho * hh * cor * perp(ocean_curr - uh), p) * dx
 
-    def stress(density, drag, func):
+    def stress_term(density, drag, func):
         return inner(density * drag * sqrt(dot(func, func)) * func, p) * dx(degree=3)
 
-    def rheo():
+    def rheology_term():
         return inner(sigma, grad(p)) * dx
 
-    return momentum() - forcing() - stress(rho_w, C_w, ocean_curr - uh) - stress(rho_a, C_a, geo_wind) - rheo()
+    return momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a, geo_wind) - rheology_term()
 
 
 # TODO tune alpha
-def stab(alpha, zeta, mesh, v, test):
+def stabilisation_term(alpha, zeta, mesh, v, test):
     e = avg(CellVolume(mesh)) / FacetArea(mesh)
     return 2 * alpha * zeta / e * (dot(jump(v), jump(test))) * dS
 
@@ -141,7 +141,7 @@ class ViscousPlastic(SeaIceModel):
         self.initial_conditions(self.u0, self.u1)
 
         if self.stabilised:
-            eqn += stab(alpha=5, zeta=zeta, mesh=mesh, v=self.u1, test=v)
+            eqn += stabilisation_term(alpha=5, zeta=zeta, mesh=mesh, v=self.u1, test=v)
         bcs = self.bcs(self.V)
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
@@ -183,7 +183,7 @@ class ElasticViscousPlastic(SeaIceModel):
             2))) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
         if self.stabilised is True:
-            eqn += stab(alpha=2, zeta=zeta, mesh=mesh, v=uh, test=p)
+            eqn += stabilisation_term(alpha=2, zeta=zeta, mesh=mesh, v=uh, test=p)
         bcs = self.bcs(self.W1.sub(0))
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
