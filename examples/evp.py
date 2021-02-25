@@ -12,7 +12,7 @@ timestep = 10
 dumpfreq = 10
 timescale = 10 ** 3
 
-dirname = "./output/evp/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}.pvd".format(timescale, timestep, False)
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp/evp.nc"
 plot_dirname = "./output/evp/evp_energy1000.png"

@@ -17,7 +17,6 @@ plot_dirname = path + "/bt_energy_T={}_t={}.png".format(timescale, timestep)
 
 number_of_triangles = np.arange(3, 20, 1)
 length = 10 ** 6
-bcs_values = [0, 1, 1]
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
@@ -35,12 +34,10 @@ for values in number_of_triangles:
     geo_wind = as_vector(
         [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
          5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
-    ics_values = [0, 1, x / length]
-    forcing = [ocean_curr, geo_wind]
+    conditions = {'bc': [0, 1, 1], 'ic': [0, 1, x / length], 'ocean_curr': ocean_curr, 'geo_wind': geo_wind}
 
-    bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
-                                        timestepping=timestepping, output=output, params=params, solver_params=solver,
-                                        forcing=forcing, stabilised=False)
+    bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
+                                        output=output, params=params, solver_params=solver, stabilised=False)
 
     t = 0
 

@@ -4,8 +4,7 @@ zero_vector = Constant(as_vector([0, 0]))
 zero = Constant(0)
 
 
-def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero,
-            rho_w=zero, C_w=zero,
+def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero,
             geo_wind=zero_vector, cor=zero):
     def momentum():
         return inner(rho * hh * (u1 - u0), p) * dx
@@ -14,7 +13,7 @@ def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, r
         return as_vector([-u[1], u[0]])
 
     def forcing():
-        return inner(rho * hh * cor * perp(ocean_curr - u1), p) * dx
+        return inner(rho * hh * cor * perp(ocean_curr - uh), p) * dx
 
     def stress(density, drag, func):
         return inner(density * drag * sqrt(dot(func, func)) * func, p) * dx(degree=3)
@@ -121,7 +120,6 @@ class ViscousPlastic(SeaIceModel):
         a = Constant(1)
 
         ep_dot = self.strain(grad(self.u1))
-        eqn = 0
 
         if simple:
             zeta = self.zeta(h, a, params.Delta_min)

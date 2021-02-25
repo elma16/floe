@@ -17,7 +17,6 @@ plot_dirname = path + "/evp_stress_energy_T={}_t={}.png".format(timescale, times
 
 number_of_triangles = np.arange(3, 100, 1)
 length = 5 * 10 ** 5
-bcs_values = [0, 1, 1]
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
@@ -30,12 +29,10 @@ for values in number_of_triangles:
     print(values)
     mesh = SquareMesh(values, values, length)
     x, y = SpatialCoordinate(mesh)
-    ics_values = [0, x / length, as_matrix([[0, 0], [0, 0]])]
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-    forcing = [ocean_curr]
-    evps = ElasticViscousPlasticStress(mesh=mesh, length=length, bcs_values=bcs_values, ics_values=ics_values,
-                                       timestepping=timestepping, output=output, params=params, solver_params=solver,
-                                       forcing=forcing, stabilised=False)
+    conditions = {'bc': [0, 1, 1], 'ic': [0, x / length, as_matrix([[0, 0], [0, 0]])], 'ocean_curr': ocean_curr}
+    evps = ElasticViscousPlasticStress(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
+                                       output=output, params=params, solver_params=solver, stabilised=False)
 
     t = 0
 
