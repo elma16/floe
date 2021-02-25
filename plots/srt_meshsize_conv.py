@@ -12,7 +12,7 @@ timestep = 1
 dumpfreq = 10 ** 6
 timescale = 10
 
-number_of_triangles = [5, 10, 20, 40, 100, 200]
+number_of_triangles = [5, 10, 20, 40,100,200]
 start = number_of_triangles[0]
 end = number_of_triangles[-1]
 
@@ -23,8 +23,6 @@ plot_dirname3 = path + "/strain_rate_rel_error_T={}_t={}_start={}_end={}.png".fo
 
 length = 5 * 10 ** 5
 pi_x = pi / length
-bcs_values = [0]
-forcing = []
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
@@ -61,7 +59,7 @@ rel_error_slope = format(np.polyfit(np.log(number_of_triangles), np.log(rel_erro
 
 
 plt.figure(1)
-plt.loglog(number_of_triangles, error_values, 'tab:orange', label='Gradient = {}'.format(error_slope))
+plt.loglog(number_of_triangles, error_values, '.', label='Gradient = {}'.format(error_slope))
 plt.title('SRT Absolute Error vs. Meshsize')
 plt.legend(loc='best')
 plt.xlabel('Meshsize')

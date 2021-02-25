@@ -124,7 +124,7 @@ class ViscousPlastic(SeaIceModel):
             # TODO want to move this to example/
             sigma_exp = zeta * self.strain(grad(conditions['ic'][0]))
             eqn = mom_equ(h, self.u1, self.u0, v, sigma, 1)
-            eqn += inner(div(sigma_exp), v) * dx
+            eqn -= inner(div(sigma_exp), v) * dx
 
         else:
             zeta = self.zeta(h, a, self.delta(self.u1))

@@ -9,8 +9,8 @@ Path("./output/evp").mkdir(parents=True, exist_ok=True)
 # TODO velocities converge against stationary solution. Construct stationary solution
 
 timestep = 10
-dumpfreq = 10
-timescale = 10 ** 3
+dumpfreq = 10 ** 3
+timescale = 10 ** 5
 
 dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}.pvd".format(timescale, timestep, False)
 title = "EVP Plot"

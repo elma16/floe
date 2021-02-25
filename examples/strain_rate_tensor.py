@@ -18,17 +18,21 @@ else:
     dumpfreq = 1
     timescale = 10
 
-dirname = path + "/u_timescale={}_timestep={}_new.pvd".format(timescale, timestep)
+dirname = path + "/u_timescale={}_timestep={}_CR_mesh_new.pvd".format(timescale, timestep)
 title = "Test Plot"
 diagnostic_dirname = path + "/strain_rate_T={}_t={}.nc".format(timescale, timestep)
 plot_dirname = path + "/strain_rate_error_T={}_t={}.png".format(timescale, timestep)
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
-mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
+mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, length, "x")
+Vc = mesh.coordinates.function_space()
 x, y = SpatialCoordinate(mesh)
+f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
+mesh.coordinates.assign(f)
+
 pi_x = pi / length
-v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+v_exp = as_vector([-sin(pi_x * x), -sin(pi_x * x)])
 
 conditions = {'bc': [0], 'ic': [v_exp]}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
@@ -37,7 +41,7 @@ solver = SolverParameters()
 params = SeaIceParameters()
 
 srt = ViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                     params=params, solver_params=solver, stabilised=False, simple=True)
+                     params=params, solver_params=solver, stabilised=True, simple=True)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
@@ -52,6 +56,7 @@ while t < timescale - 0.5 * timestep:
     srt.dump(srt.u1, w, t=t)
     t += timestep
     srt.progress(t)
+    print(Error.compute(srt.u1, w))
 end = time()
 print(end - start, "[s]")
 

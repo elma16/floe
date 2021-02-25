@@ -6,11 +6,11 @@ Path("./output/evp_stress").mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
 
-timestep = 10 ** (-1)
+timestep = 10
 dumpfreq = 10
-timescale = 10
+timescale = 100
 
-dirname = "./output/evp_stress/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, True)
+dirname = "./output/evp_stress/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, False)
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp_stress/evp.nc"
 plot_dirname = "./output/evp_stress/evp_energy.png"
@@ -28,7 +28,7 @@ solver = SolverParameters()
 params = SeaIceParameters()
 
 evps = ElasticViscousPlasticStress(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
-                                   output=output, params=params, solver_params=solver, stabilised=True)
+                                   output=output, params=params, solver_params=solver, stabilised=False)
 
 diag = OutputDiagnostics(description="EVP Matrix Test", dirname=diagnostic_dirname)
 
