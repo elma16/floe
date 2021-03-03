@@ -33,7 +33,7 @@ def stabilisation_term(alpha, zeta, mesh, v, test):
 
 
 class SeaIceModel(object):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised):
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family='CR'):
 
         self.timestepping = timestepping
         self.timestep = timestepping.timestep
@@ -51,12 +51,13 @@ class SeaIceModel(object):
         self.length = length
         self.conditions = conditions
         self.stabilised = stabilised
+        self.family = family
 
         self.x, self.y = SpatialCoordinate(mesh)
         self.n = FacetNormal(mesh)
-        self.V = VectorFunctionSpace(mesh, "CR", 1)
-        self.U = FunctionSpace(mesh, "CR", 1)
-        self.S = TensorFunctionSpace(mesh, "DG", 0)
+        self.V = VectorFunctionSpace(mesh, family, 1)
+        self.U = FunctionSpace(mesh, family, 1)
+        self.S = TensorFunctionSpace(mesh, 'DG', 0)
         self.W1 = MixedFunctionSpace([self.V, self.S])
         self.W2 = MixedFunctionSpace([self.V, self.U, self.U])
 
@@ -104,10 +105,8 @@ class SeaIceModel(object):
 
 
 class ViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised,
-                 simple):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised)
-
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family, simple):
+        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
         self.simple = simple
 
         self.u0 = Function(self.V, name="Velocity")
@@ -148,8 +147,8 @@ class ViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised)
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family):
+        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
 
         self.w0 = Function(self.W1)
         self.w1 = Function(self.W1)
@@ -175,7 +174,6 @@ class ElasticViscousPlastic(SeaIceModel):
 
         eqn = mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=conditions['ocean_curr'], rho_w=params.rho_w,
                       rho_a=params.rho_a, C_a=params.C_a, C_w=params.C_w)
-
         rheology = params.e ** 2 * sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sh) + self.Ice_Strength(h, a))
         eqn += inner(q, s1 - s0 + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
@@ -192,8 +190,8 @@ class ElasticViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlasticStress(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised)
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family):
+        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
@@ -250,8 +248,8 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised)
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family):
+        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
 
         self.w0 = Function(self.W2)
         self.w1 = Function(self.W2)
