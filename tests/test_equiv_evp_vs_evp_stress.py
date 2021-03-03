@@ -1,29 +1,21 @@
 from seaice import *
 from firedrake import *
-from time import time
 import numpy as np
-import matplotlib.pyplot as plt
-from pathlib import Path
-
-path = "./output/evp_meshsize_conv"
-Path(path).mkdir(parents=True, exist_ok=True)
 
 timestep = 1
 dumpfreq = 10
 timescale = 10
 
-dirname = path + "/test.pvd"
-plot_dirname = path + "/evp_evps_diff_T={}_t={}-normal.png".format(timescale, timestep)
+dirname = "test.pvd"
 
-number_of_triangles = [3, 5, 7, 9, 11]
+number_of_triangles = [5, 10, 20, 40, 100]
 length = 5 * 10 ** 5
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
-energy_values = []
+
 error_values = []
-start = time()
 
 for values in number_of_triangles:
     print(values)
@@ -50,14 +42,7 @@ for values in number_of_triangles:
     u1, s1 = evp.w1.split()
     error_values.append(Error.compute(evps.u1, u1))
 
-end = time()
-print(end - start, "[s]")
-
 error_slope = format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f')
 
-plt.loglog(number_of_triangles, error_values, label='Gradient = {}'.format(error_slope))
-plt.title('EVP-EVPS Error vs. Meshsize')
-plt.legend(loc='best')
-plt.xlabel('Meshsize')
-plt.ylabel('Error')
-plt.savefig(plot_dirname)
+def test_srt_initial_value():
+    assert error_slope + 2 < 0.01

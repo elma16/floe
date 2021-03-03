@@ -1,5 +1,6 @@
 from seaice import *
 from firedrake import *
+from random import randint
 from pathlib import Path
 
 Path("./output/evp").mkdir(parents=True, exist_ok=True)
@@ -7,12 +8,13 @@ Path("./output/evp").mkdir(parents=True, exist_ok=True)
 # TEST 2 : EVP
 
 # TODO velocities converge against stationary solution. Construct stationary solution
+# seems to work up to a timestep of 12
 
 timestep = 10
 dumpfreq = 10 ** 3
-timescale = 10 ** 5
+timescale = timestep * dumpfreq
 
-dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}.pvd".format(timescale, timestep, False)
+dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_rand.pvd".format(timescale, timestep, False)
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp/evp.nc"
 plot_dirname = "./output/evp/evp_energy1000.png"
@@ -23,7 +25,10 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-conditions = {'bc': [0, 1, 1], 'ic': [0, x / length, as_matrix([[1, 2], [3, 4]])], 'ocean_curr': ocean_curr}
+conditions = {'bc': [0, 1, 1],
+              'ic': [0, x / length, as_matrix([[0,0], [0, 0]])],
+              'ocean_curr': ocean_curr}
+
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

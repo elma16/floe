@@ -25,7 +25,6 @@ class Error(Diagnostic):
         return norm(solution - v)
 
 
-# TODO fix
 class Energy(Diagnostic):
     def __init__(self, v):
         super().__init__(v)

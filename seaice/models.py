@@ -4,7 +4,8 @@ zero_vector = Constant(as_vector([0, 0]))
 zero = Constant(0)
 
 
-def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero,
+def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero,
+            C_w=zero,
             geo_wind=zero_vector, cor=zero):
     def momentum_term():
         return inner(rho * hh * (u1 - u0), p) * dx
@@ -21,7 +22,8 @@ def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, r
     def rheology_term():
         return inner(sigma, grad(p)) * dx
 
-    return momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a, geo_wind) - rheology_term()
+    return momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a,
+                                                                                                     geo_wind) - rheology_term()
 
 
 # TODO tune alpha
@@ -171,14 +173,13 @@ class ElasticViscousPlastic(SeaIceModel):
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(h, a, self.delta(uh))
 
-        # TODO clean up this equation
         eqn = mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=conditions['ocean_curr'], rho_w=params.rho_w,
                       rho_a=params.rho_a, C_a=params.C_a, C_w=params.C_w)
-        eqn += self.timestep * inner(q, (s1 - s0) + self.timestep * (0.5 * params.e ** 2 / params.T * sh + (
-                0.25 * (1 - params.e ** 2) / params.T * tr(sh) + 0.25 * self.Ice_Strength(h,
-                                                                                          a) / params.T) * Identity(
-            2))) * dx
+
+        rheology = params.e ** 2 * sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sh) + self.Ice_Strength(h, a))
+        eqn += inner(q, s1 - s0 + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
+        # TODO fix
         if self.stabilised:
             eqn += stabilisation_term(alpha=2, zeta=zeta, mesh=mesh, v=uh, test=p)
         bcs = self.bcs(self.W1.sub(0))
