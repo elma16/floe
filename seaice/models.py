@@ -179,9 +179,10 @@ class ElasticViscousPlastic(SeaIceModel):
         rheology = params.e ** 2 * sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sh) + self.Ice_Strength(h, a))
         eqn += inner(q, s1 - s0 + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
-        # TODO fix
+
         if self.stabilised:
-            eqn += stabilisation_term(alpha=2, zeta=zeta, mesh=mesh, v=uh, test=p)
+            fix_zeta = self.zeta(1, conditions['ic'][1], params.Delta_min)
+            eqn += stabilisation_term(alpha=1, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
         bcs = self.bcs(self.W1.sub(0))
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
