@@ -10,14 +10,15 @@ TEST 2 : EVP
 seems to work up to a timestep of 12
 '''
 
-timestep = 1
-dumpfreq = 10 ** 3
+timestep = 0.1
+dumpfreq = 10 ** 4
 timescale = timestep * dumpfreq
 
 stabilise = False
-family = 'CG'
+family = 'CR'
 
-dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise, family)
+dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
+                                                                                       family)
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp/evp.nc"
 plot_dirname = "./output/evp/evp_energy.png"
@@ -37,22 +38,26 @@ output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
+# using theta=0 for backward euler
 evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                            params=params, solver_params=solver, stabilised=stabilise, family=family)
+                            params=params, solver_params=solver, stabilised=stabilise, family=family,theta=0)
 
 diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 
 t = 0
 
 while t < timescale - 0.5 * timestep:
+    u0, s0 = evp.w0.split()
+    print(norm(u0))
     evp.solve(evp.usolver)
     evp.update(evp.w0, evp.w1)
-    diag.dump(evp.u1, t)
+    # diag.dump(evp.u1, t)
     evp.dump(evp.u1, evp.s1, t=t)
+    print('rel error', Error.compute(evp.u1, u0) / norm(evp.u1))
     t += timestep
     evp.progress(t)
 
-plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
-                  timestepping=timestepping, title=title)
+# plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
+#                  timestepping=timestepping, title=title)
 
-plotter.plot()
+# plotter.plot()
