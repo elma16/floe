@@ -166,8 +166,8 @@ class ElasticViscousPlastic(SeaIceModel):
         u1, s1 = split(self.w1)
         u0, s0 = split(self.w0)
 
-        uh = theta * u0 + (1 - theta) * u1
-        sh = theta * s0 + (1 - theta) * s1
+        uh = (1-theta) * u0 + theta * u1
+        sh = (1-theta)* s0 +  theta * s1
 
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(h, a, self.delta(uh))
