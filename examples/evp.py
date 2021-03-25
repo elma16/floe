@@ -43,16 +43,22 @@ diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 
 t = 0
 
+# l = [j for j in range(0,16)]
+
 while t < timescale - 0.5 * timestep:
     u0, s0 = evp.w0.split()
     evp.solve(evp.usolver)
+    # rel_error = Error.compute(evp.u1, u0) / norm(evp.u1)
+    # if rel_error < 10**(-l[0]):
+        # print('relative error < ',10**(-l[0]),'time',t)
+        # l.pop(0)
     evp.update(evp.w0, evp.w1)
-    # diag.dump(evp.u1, t)
+    #diag.dump(evp.u1, t)
     evp.dump(evp.u1, evp.s1, t=t)
     t += timestep
     evp.progress(t)
 
-# plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
+#plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
 #                  timestepping=timestepping, title=title)
 
-# plotter.plot()
+#plotter.plot()
