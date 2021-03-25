@@ -9,13 +9,13 @@ TEST 2 : EVP
 '''
 
 timestep = 0.1
-dumpfreq = 10 ** 1
+dumpfreq = 10 ** 4
 timescale = timestep * dumpfreq
 
 stabilise = False
-family = 'CR'
+family = 'CG'
 
-dirname = "./output/evp/u2_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
+dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
                                                                                        family)
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp/evp.nc"
