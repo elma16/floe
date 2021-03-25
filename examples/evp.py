@@ -10,15 +10,16 @@ TEST 2 : EVP
 seems to work up to a timestep of 12
 '''
 
-timestep = 10**-6
-dumpfreq = 10 ** 3
-timescale = timestep * dumpfreq
+timestep = 10 ** -1
+dumpfreq = 10 ** 1
+timescale = 10 ** 1
 
 stabilise = False
 family = 'CR'
 
-dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
-                                                                                       family)
+#dirname = "./output/evp/u2_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
+#family)
+outfile = File("u.pvd")
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp/evp.nc"
 plot_dirname = "./output/evp/evp_energy.png"
@@ -29,17 +30,17 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-conditions = {'bc': [0, 1, 1],
+conditions = {'bc': [0],
               'ic': [0, x / length, as_matrix([[0, 0], [0, 0]])],
               'ocean_curr': ocean_curr}
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
-output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
+output = OutputParameters(dirname=outfile,dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
 evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                            params=params, solver_params=solver, stabilised=stabilise, family=family, theta=1, steady_state=True)
+                            params=params, solver_params=solver, stabilised=stabilise, family=family, theta=1, steady_state=False)
 
 diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 
@@ -50,13 +51,10 @@ while t < timescale - 0.5 * timestep:
     print(norm(u0))
     evp.solve(evp.usolver)
     rel_error = Error.compute(evp.u1, u0) / norm(evp.u1)
-    print('rel_error',rel_error)
-    if rel_error < 10**(-10):
-        print('time',t)
-        break
     evp.update(evp.w0, evp.w1)
     # diag.dump(evp.u1, t)
-    evp.dump(evp.u1, evp.s1, t=t)
+    # evp.dump(evp.u1, evp.s1, t=t)
+    outfile.write(evp.u1)
     t += timestep
     evp.progress(t)
 
