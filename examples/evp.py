@@ -38,9 +38,8 @@ output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-# using theta=1 for backward euler
 evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                            params=params, solver_params=solver, stabilised=stabilise, family=family,theta=1)
+                            params=params, solver_params=solver, stabilised=stabilise, family=family, theta=1, steady_state=True)
 
 diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 

@@ -1,12 +1,10 @@
+
 import sys
 from seaice import *
 from firedrake import *
 from pathlib import Path
 
 Path("./output/bt").mkdir(parents=True, exist_ok=True)
-
-stabilise = False
-family = 'CG'
 
 # TEST 3 : BOX TEST
 
@@ -18,7 +16,7 @@ if '--test' in sys.argv:
     timescale = month
     dumpfreq = 100
 else:
-    timescale = 10**10
+    timescale = 100
     number_of_triangles = 30
     timestep = 1
     dumpfreq = 10
@@ -45,13 +43,13 @@ params = SeaIceParameters()
 
 # TODO fix the divergence of the solution
 bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
-                                    output=output, params=params, solver_params=solver, stabilised=stabilise, family=family)
+                                    output=output, params=params, solver_params=solver, stabilised=False)
 
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
-    #bt.dump(bt.w1, t=t)
+    bt.dump(bt.w1, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)

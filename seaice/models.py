@@ -6,9 +6,9 @@ zero = Constant(0)
 
 def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero,
             C_w=zero,
-            geo_wind=zero_vector, cor=zero):
+            geo_wind=zero_vector, cor=zero,ind=1):
     def momentum_term():
-        return inner(rho * hh * (u1 - u0), p) * dx
+        return inner(rho * hh * ind * (u1 - u0), p) * dx
 
     def perp(u):
         return as_vector([-u[1], u[0]])
@@ -147,7 +147,7 @@ class ViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family, theta):
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family, theta, steady_state):
         super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
 
         self.w0 = Function(self.W1)
@@ -167,15 +167,20 @@ class ElasticViscousPlastic(SeaIceModel):
         u0, s0 = split(self.w0)
 
         uh = (1-theta) * u0 + theta * u1
-        sh = (1-theta)* s0 +  theta * s1
+        sh = (1-theta) * s0 + theta * s1
 
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(h, a, self.delta(uh))
 
+        if steady_state:
+            ind = 0
+        elif:
+            ind = 1
+            
         eqn = mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=conditions['ocean_curr'], rho_w=params.rho_w,
-                      rho_a=params.rho_a, C_a=params.C_a, C_w=params.C_w)
+                      rho_a=params.rho_a, C_a=params.C_a, C_w=params.C_w, ind=ind)
         rheology = params.e ** 2 * sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sh) + self.Ice_Strength(h, a))
-        eqn += inner(q, s1 - s0 + 0.5 * self.timestep * rheology / params.T) * dx
+        eqn += inner(q, ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
         if self.stabilised:
