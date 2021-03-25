@@ -23,7 +23,7 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-conditions = {'ic': [0, x / length], 'bc': [0, 1, 1], 'ocean_curr': ocean_curr}
+conditions = {'bc': {'u' : 0,'h' : 1,'a' : 1},'ic': {'u' : 0,'a' :  x / length}, 'ocean_curr': ocean_curr}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

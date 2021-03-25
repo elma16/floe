@@ -34,7 +34,7 @@ mesh.coordinates.assign(f)
 pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x), -sin(pi_x * x)])
 
-conditions = {'bc': [0], 'ic': [v_exp]}
+conditions = {'bc': {'u': 0}, 'ic': {'u': v_exp}}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

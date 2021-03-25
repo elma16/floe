@@ -34,7 +34,7 @@ geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-conditions = {'bc': [0, 1, 1], 'ic': [0, 1, x / length], 'ocean_curr': ocean_curr, 'geo_wind': geo_wind}
+conditions = {'bc': {'u' : 0,'h' : 1,'a' : 1}, 'ic': {'u' : 0, 'h' : 1,'a' : x / length}, 'ocean_curr': ocean_curr, 'geo_wind': geo_wind}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
