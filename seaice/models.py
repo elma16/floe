@@ -8,7 +8,7 @@ def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, r
             C_w=zero,
             geo_wind=zero_vector, cor=zero,ind=1):
     def momentum_term():
-        return inner(rho * hh * ind * (u1 - u0), p) * dx
+        return inner(rho * hh * (u1 - u0), p) * dx
 
     def perp(u):
         return as_vector([-u[1], u[0]])
@@ -22,7 +22,7 @@ def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, r
     def rheology_term():
         return inner(sigma, grad(p)) * dx
 
-    return momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a,
+    return ind * momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a,
                                                                                                      geo_wind) - rheology_term()
 
 
@@ -174,7 +174,7 @@ class ElasticViscousPlastic(SeaIceModel):
 
         if steady_state:
             ind = 0
-        elif:
+        else:
             ind = 1
             
         eqn = mom_equ(h, u1, u0, p, sh, params.rho, uh=uh, ocean_curr=conditions['ocean_curr'], rho_w=params.rho_w,

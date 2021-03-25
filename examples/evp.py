@@ -10,7 +10,7 @@ TEST 2 : EVP
 seems to work up to a timestep of 12
 '''
 
-timestep = 0.1
+timestep = 10**-6
 dumpfreq = 10 ** 3
 timescale = timestep * dumpfreq
 
