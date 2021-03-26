@@ -23,7 +23,7 @@ def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, r
         return inner(sigma, grad(p)) * dx
 
     return ind * momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a,
-                                                                                                     geo_wind) - rheology_term()
+                                                                                                     geo_wind) + rheology_term()
 
 
 # TODO tune alpha
@@ -142,6 +142,35 @@ class ViscousPlastic(SeaIceModel):
 
         if self.stabilised:
             eqn += stabilisation_term(alpha=5, zeta=zeta, mesh=mesh, v=self.u1, test=v)
+        bcs = DirichletBC(self.V, self.conditions['ic']['u'], "on_boundary")
+
+        uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
+        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
+
+
+class ViscousPlasticHack(SeaIceModel):
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family):
+        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
+
+        self.u0 = Function(self.V, name="Velocity")
+        self.u1 = Function(self.V, name="VelocityNext")
+        a = Function(self.U)
+
+        v = TestFunction(self.V)
+
+        h = Constant(1)
+        a.interpolate(conditions['ic']['a'])
+
+        ep_dot = self.strain(grad(self.u1))
+
+        zeta = self.zeta(h, a, params.Delta_min)
+        eta = zeta * params.e ** -2
+        sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,a) * Identity(2)
+        eqn = mom_equ(h, self.u1, self.u0, v, sigma, params.rho, self.u0, ocean_curr=conditions['ocean_curr'],rho_w=params.rho_w,rho_a=params.rho_a,C_a=params.C_a,C_w=params.C_w)
+
+        self.u0.assign(conditions['ic']['u'])
+        self.u1.assign(self.u0)
+
         bcs = DirichletBC(self.V, self.conditions['ic']['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)

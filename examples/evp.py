@@ -2,7 +2,7 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-Path("./output/evp").mkdir(parents=True, exist_ok=True)
+Path("./output/evp2").mkdir(parents=True, exist_ok=True)
 
 '''
 TEST 2 : EVP
@@ -13,13 +13,13 @@ dumpfreq = 10 ** 4
 timescale = timestep * dumpfreq
 
 stabilise = False
-family = 'CG'
+family = 'CR'
 
-dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
+dirname = "./output/evp2/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
                                                                                        family)
 title = "EVP Plot"
-diagnostic_dirname = "./output/evp/evp.nc"
-plot_dirname = "./output/evp/evp_energy.png"
+diagnostic_dirname = "./output/evp2/evp.nc"
+plot_dirname = "./output/evp2/evp_energy.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
