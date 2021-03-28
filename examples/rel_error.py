@@ -9,7 +9,7 @@ TEST 2 : EVP
 '''
 
 timestep = 0.1
-dumpfreq = 10 ** 4
+dumpfreq = 10 ** 300
 timescale = timestep * dumpfreq
 
 stabilise = False

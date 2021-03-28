@@ -6,11 +6,13 @@ Path("./output/evp_stress").mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
 
-timestep = 25
+timestep = 20
 dumpfreq = 10 ** 3
 timescale = timestep * dumpfreq
 
-stabilise = True
+stabilise = False
+
+family = 'CR'
 
 dirname = "./output/evp_stress/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, stabilise)
 title = "EVP Plot"
@@ -23,14 +25,16 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-conditions = {'bc': {'u' : 0,'h' : 1,'a' : 1},'ic': {'u' : 0,'a' :  x / length}, 'ocean_curr': ocean_curr}
+conditions = {'bc': {'u' : 0},
+              'ic': {'u' : 0,'a' :  x / length},
+              'ocean_curr': ocean_curr}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
 evps = ElasticViscousPlasticStress(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
-                                   output=output, params=params, solver_params=solver, stabilised=stabilise)
+                                   output=output, params=params, solver_params=solver, stabilised=stabilise, family=family)
 
 diag = OutputDiagnostics(description="EVP Matrix Test", dirname=diagnostic_dirname)
 

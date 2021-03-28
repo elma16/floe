@@ -275,7 +275,8 @@ class ElasticViscousPlasticStress(SeaIceModel):
         equ = mom_equ(h, self.u1, self.u0, v, sh, params.rho, uh=uh, ocean_curr=conditions['ocean_curr'],
                       rho_a=params.rho_a, C_a=params.C_a, rho_w=params.rho_w, C_w=params.C_w, cor=params.cor)
         tensor_eqn = inner(self.sigma1 - s, w) * dx
-        bcs = self.bcs(self.V)
+
+        bcs = DirichletBC(self.V,self.conditions['ic']['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(equ, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
@@ -332,7 +333,8 @@ class ElasticViscousPlasticTransport(SeaIceModel):
                       cor=params.cor)
         trans_eqn = trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
         eqn += trans_eqn
-        bcs = self.bcs(self.W2.sub(0))
+
+        bcs = DirichletBC(self.W2.sub(0), self.conditions['ic']['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)

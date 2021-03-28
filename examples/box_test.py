@@ -12,13 +12,16 @@ if '--test' in sys.argv:
     number_of_triangles = 71
     day = 60 * 60 * 24
     month = 31 * day
-    timescale = month
-    dumpfreq = 100
+    week = 7 * day
+    timescale = week
+    dumpfreq = 144
 else:
-    timescale = 100
     number_of_triangles = 30
     timestep = 1
-    dumpfreq = 10
+    dumpfreq = 1000
+    timescale = timestep * dumpfreq
+
+family = 'CR'
 
 dirname = "./output/bt/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
@@ -34,7 +37,11 @@ geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-conditions = {'bc': {'u' : 0,'h' : 1,'a' : 1}, 'ic': {'u' : 0, 'h' : 1,'a' : x / length}, 'ocean_curr': ocean_curr, 'geo_wind': geo_wind}
+conditions = {'bc': {'u' : 0,'h' : 1,'a' : 1},
+              'ic': {'u' : 0, 'h' : 1,'a' : x / length},
+              'ocean_curr': ocean_curr,
+              'geo_wind': geo_wind}
+
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
@@ -42,13 +49,13 @@ params = SeaIceParameters()
 
 # TODO fix the divergence of the solution
 bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
-                                    output=output, params=params, solver_params=solver, stabilised=False)
+                                    output=output, params=params, solver_params=solver, stabilised=False,family=family)
 
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
-    bt.dump(bt.w1, t=t)
+    bt.dump(bt.u1, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)
