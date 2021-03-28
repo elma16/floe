@@ -9,8 +9,8 @@ Viscous plastic with ocean current forcing, and with zeta = zeta_max
 '''
 
 timestep = 0.1
-dumpfreq = 10000
-timescale = 1000
+dumpfreq = 1000
+timescale = timestep * dumpfreq
 
 stabilise = False
 family = 'CG'
