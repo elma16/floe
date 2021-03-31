@@ -2,7 +2,8 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-Path("./output/evp_stress").mkdir(parents=True, exist_ok=True)
+path = "./output/evp_stress"
+Path(path).mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
 
@@ -14,7 +15,7 @@ stabilise = False
 
 family = 'CR'
 
-dirname = "./output/evp_stress/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, stabilise)
+dirname = path + "/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, stabilise)
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp_stress/evp.nc"
 plot_dirname = "./output/evp_stress/evp_energy.png"

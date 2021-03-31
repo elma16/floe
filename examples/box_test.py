@@ -3,7 +3,8 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-Path("./output/bt").mkdir(parents=True, exist_ok=True)
+path = "./output/bt"
+Path(path).mkdir(parents=True, exist_ok=True)
 
 # TEST 3 : BOX TEST
 
@@ -21,9 +22,9 @@ else:
     dumpfreq = 1000
     timescale = timestep * dumpfreq
 
-family = 'CR'
+family = 'CG'
 
-dirname = "./output/bt/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
 plot_dirname = "./output/bt/box_test_energy.png"
 
@@ -37,7 +38,7 @@ geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-conditions = {'bc': {'u' : 0,'h' : 1,'a' : 1},
+conditions = {'bc': {'u' : 0},
               'ic': {'u' : 0, 'h' : 1,'a' : x / length},
               'ocean_curr': ocean_curr,
               'geo_wind': geo_wind}

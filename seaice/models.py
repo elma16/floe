@@ -56,9 +56,10 @@ class SeaIceModel(object):
         self.n = FacetNormal(mesh)
         self.V = VectorFunctionSpace(mesh, family, 1)
         self.U = FunctionSpace(mesh, family, 1)
+        self.U1 = FunctionSpace(mesh,'DG',1)
         self.S = TensorFunctionSpace(mesh, 'DG', 0)
         self.W1 = MixedFunctionSpace([self.V, self.S])
-        self.W2 = MixedFunctionSpace([self.V, self.U, self.U])
+        self.W2 = MixedFunctionSpace([self.V, self.U1, self.U1])
 
     def Ice_Strength(self, h, a):
         return self.params.P_star * h * exp(-self.params.C * (1 - a))
@@ -177,7 +178,7 @@ class ViscousPlasticHack(SeaIceModel):
 
 
 class ElasticViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family, theta, steady_state):
+    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family, theta, steady_state, alpha):
         super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
 
         self.w0 = Function(self.W1)
@@ -214,7 +215,7 @@ class ElasticViscousPlastic(SeaIceModel):
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
         if self.stabilised:
-            fix_zeta = self.zeta(5, conditions['ic']['u'], params.Delta_min)
+            fix_zeta = self.zeta(alpha, conditions['ic']['u'], params.Delta_min)
             eqn += stabilisation_term(alpha=1, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
         bcs = DirichletBC(self.W1.sub(0), self.conditions['ic']['u'], "on_boundary")
 
