@@ -26,7 +26,6 @@ def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, r
                                                                                                      geo_wind) + rheology_term()
 
 
-# TODO tune alpha
 def stabilisation_term(alpha, zeta, mesh, v, test):
     e = avg(CellVolume(mesh)) / FacetArea(mesh)
     return 2 * alpha * zeta / e * (dot(jump(v), jump(test))) * dS
@@ -215,7 +214,7 @@ class ElasticViscousPlastic(SeaIceModel):
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
         if self.stabilised:
-            fix_zeta = self.zeta(1, conditions['ic'][1], params.Delta_min)
+            fix_zeta = self.zeta(5, conditions['ic']['u'], params.Delta_min)
             eqn += stabilisation_term(alpha=1, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
         bcs = DirichletBC(self.W1.sub(0), self.conditions['ic']['u'], "on_boundary")
 

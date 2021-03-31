@@ -12,10 +12,10 @@ timestep = 0.1
 dumpfreq = 10 ** 4
 timescale = timestep * dumpfreq
 
-stabilise = False
+stabilise = True
 family = 'CR'
 
-dirname = "./output/evp2/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
+dirname = "./output/evp2/u_timescale={}_timestep={}_stabilised5={}_family={}.pvd".format(timescale, timestep, stabilise,
                                                                                        family)
 title = "EVP Plot"
 diagnostic_dirname = "./output/evp2/evp.nc"
