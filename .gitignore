@@ -5,6 +5,7 @@
 *.pvtu
 *.vtu
 *.egg-info/
+*.py~
 
 # Folders to be ignored
 
