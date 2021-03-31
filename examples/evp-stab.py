@@ -12,7 +12,7 @@ Find the value of the stabilisation parameter to obtain a stabilised velocity pl
 '''
 
 timestep = 0.1
-dumpfreq = 10 ** 1
+dumpfreq = 10 ** 4
 timescale = timestep * dumpfreq
 
 stabilise = True
