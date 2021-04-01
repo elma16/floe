@@ -18,7 +18,7 @@ timescale = timestep * dumpfreq
 stabilise = True
 family = 'CR'
 
-for alpha in [10,20,50,100,500,1000]:
+for alpha in [1100,1200,1300,1400,1500,2000,2500,5000]:
     dirname = path + "/u_timescale={}_timestep={}_stabilised={}_value={}.pvd".format(timescale, timestep, stabilise, alpha)
                                                                             
     title = "EVP Plot"
