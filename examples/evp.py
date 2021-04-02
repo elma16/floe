@@ -10,7 +10,7 @@ TEST 2 : EVP
 '''
 
 timestep = 0.1
-dumpfreq = 10 ** 4
+dumpfreq = 10 ** 2
 timescale = timestep * dumpfreq
 
 stabilise = True
@@ -19,8 +19,6 @@ family = 'CR'
 dirname = path + "/u_timescale={}_timestep={}_stabilised5={}_family={}.pvd".format(timescale, timestep, stabilise,
                                                                                        family)
 title = "EVP Plot"
-diagnostic_dirname = "./output/evp2/evp.nc"
-plot_dirname = "./output/evp2/evp_energy.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
@@ -40,7 +38,7 @@ params = SeaIceParameters()
 evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
                             params=params, solver_params=solver, stabilised=stabilise, family=family,theta=1,steady_state=False)
 
-diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
+
 
 t = 0
 
@@ -59,7 +57,7 @@ while t < timescale - 0.5 * timestep:
     t += timestep
     evp.progress(t)
 
-#plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
-#                  timestepping=timestepping, title=title)
+    
 
-#plotter.plot()
+
+
