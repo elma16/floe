@@ -8,14 +8,20 @@ Path(path).mkdir(parents=True, exist_ok=True)
 
 # TEST 3 : BOX TEST
 
-if '--test' in sys.argv:
+if '--test 1' in sys.argv:
     timestep = 600
     number_of_triangles = 71
     day = 60 * 60 * 24
     month = 31 * day
+    timescale = month
+    dumpfreq = 144
+if '--test 2' in sys.argv:
+    timestep = 600
+    number_of_triangles = 71
+    day = 60 * 60 * 24
     week = 7 * day
     timescale = week
-    dumpfreq = 144
+    dumpfreq = 144    
 else:
     number_of_triangles = 30
     timestep = 1
