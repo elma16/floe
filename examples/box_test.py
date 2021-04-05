@@ -6,7 +6,11 @@ from pathlib import Path
 path = "./output/bt"
 Path(path).mkdir(parents=True, exist_ok=True)
 
-# TEST 3 : BOX TEST
+'''
+TEST 3 : BOX TEST
+--test 1 : one month of advection
+--test 2 : one week of advection
+'''
 
 if '--test 1' in sys.argv:
     timestep = 600
@@ -15,13 +19,15 @@ if '--test 1' in sys.argv:
     month = 31 * day
     timescale = month
     dumpfreq = 144
+
 if '--test 2' in sys.argv:
     timestep = 600
     number_of_triangles = 71
     day = 60 * 60 * 24
     week = 7 * day
     timescale = week
-    dumpfreq = 144    
+    dumpfreq = 144
+    
 else:
     number_of_triangles = 30
     timestep = 1
