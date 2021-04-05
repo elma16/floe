@@ -421,4 +421,4 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
 
-        self.u1, self.self.h1, self.a1 = self.w1.split()
+        self.u1, self.s0, self.h1, self.a1 = self.w1.split()
