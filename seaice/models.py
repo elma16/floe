@@ -3,6 +3,8 @@ from firedrake import *
 zero_vector = Constant(as_vector([0, 0]))
 zero = Constant(0)
 
+# TODO consider further refactoring to reduce the number of arguments passed into each of these functions and classes.
+# could merge params and solver params?
 
 def mom_equ(hh, u1, u0, p, sigma, rho, uh=zero_vector, ocean_curr=zero_vector, rho_a=zero, C_a=zero, rho_w=zero,
             C_w=zero,
@@ -32,7 +34,7 @@ def stabilisation_term(alpha, zeta, mesh, v, test):
 
 
 class SeaIceModel(object):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family='CR'):
+    def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
 
         self.timestepping = timestepping
         self.timestep = timestepping.timestep
@@ -47,11 +49,9 @@ class SeaIceModel(object):
         self.dump_freq = output.dumpfreq
         self.solver_params = solver_params
         self.mesh = mesh
-        self.length = length
         self.conditions = conditions
-        self.stabilised = stabilised
-        self.family = family
-
+        
+        family = conditions['family'] 
         self.x, self.y = SpatialCoordinate(mesh)
         self.n = FacetNormal(mesh)
         self.V = VectorFunctionSpace(mesh, family, 1)
@@ -106,9 +106,8 @@ class SeaIceModel(object):
 
 
 class ViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family, simple):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
-        self.simple = simple
+    def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
+        super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
@@ -120,7 +119,7 @@ class ViscousPlastic(SeaIceModel):
 
         ep_dot = self.strain(grad(self.u1))
 
-        if simple:
+        if conditions['simple']:
             zeta = self.zeta(h, a, params.Delta_min)
             sigma = zeta * ep_dot
             # TODO want to move this to example/
@@ -140,7 +139,7 @@ class ViscousPlastic(SeaIceModel):
         self.u0.interpolate(conditions['ic']['u'])
         self.u1.assign(self.u0)
 
-        if self.stabilised:
+        if conditions['stabilised']:
             eqn += stabilisation_term(alpha=5, zeta=zeta, mesh=mesh, v=self.u1, test=v)
         bcs = DirichletBC(self.V, self.conditions['ic']['u'], "on_boundary")
 
@@ -149,8 +148,8 @@ class ViscousPlastic(SeaIceModel):
 
 
 class ViscousPlasticHack(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
+    def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
+        super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
@@ -178,8 +177,8 @@ class ViscousPlasticHack(SeaIceModel):
 
 
 class ElasticViscousPlastic(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family, theta, steady_state, alpha):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
+    def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
+        super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
         self.w0 = Function(self.W1)
         self.w1 = Function(self.W1)
@@ -197,13 +196,14 @@ class ElasticViscousPlastic(SeaIceModel):
         u1, s1 = split(self.w1)
         u0, s0 = split(self.w0)
 
+        theta = conditions['theta']
         uh = (1-theta) * u0 + theta * u1
         sh = (1-theta) * s0 + theta * s1
 
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(h, a, self.delta(uh))
 
-        if steady_state:
+        if conditions['steady_state']:
             ind = 0
         else:
             ind = 1
@@ -214,9 +214,10 @@ class ElasticViscousPlastic(SeaIceModel):
         eqn += inner(q, ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
-        if self.stabilised:
+        if conditions['stabilised']:
+            alpha = conditions['stabilised']['alpha']
             fix_zeta = self.zeta(alpha, conditions['ic']['u'], params.Delta_min)
-            eqn += stabilisation_term(alpha=1, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
+            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
         bcs = DirichletBC(self.W1.sub(0), self.conditions['ic']['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
@@ -226,8 +227,8 @@ class ElasticViscousPlastic(SeaIceModel):
 
 
 class ElasticViscousPlasticStress(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
+    def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
+        super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
         self.u0 = Function(self.V, name="Velocity")
         self.u1 = Function(self.V, name="VelocityNext")
@@ -285,8 +286,8 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
-    def __init__(self, mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family):
-        super().__init__(mesh, conditions, length, timestepping, params, output, solver_params, stabilised, family)
+    def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
+        super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
         self.w0 = Function(self.W2)
         self.w1 = Function(self.W2)

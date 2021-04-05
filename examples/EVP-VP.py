@@ -12,9 +12,6 @@ timestep = 0.1
 dumpfreq = 1000
 timescale = timestep * dumpfreq
 
-stabilise = False
-family = 'CG'
-
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
                                                                                        family)
 title = "VP Plot"
@@ -27,16 +24,21 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
+
 conditions = {'bc': {'u': 0},
               'ic': {'u': 0, 'a' : x / length},
-              'ocean_curr': ocean_curr}
+              'ocean_curr': ocean_curr
+              'family' : 'CG'
+              'stabilised': {'state':False,'alpha':0}
+              }
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-vp = ViscousPlasticHack(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output, params=params, solver_params=solver, stabilised=stabilise, family=family)
+vp = ViscousPlasticHack(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                        solver_params=solver)
 
 diag = OutputDiagnostics(description="EVP-VP Test", dirname=diagnostic_dirname)
 

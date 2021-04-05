@@ -30,15 +30,19 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 conditions = {'bc': {'u': 0},
               'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
-              'ocean_curr': ocean_curr}
+              'ocean_curr': ocean_curr,
+              'family':'CR',
+              'stabilised': {'state': False , 'alpha': 0},
+              'steady_state': False
+              'theta': 1}
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                            params=params, solver_params=solver, stabilised=stabilise, family=family,theta=1,steady_state=False)
+evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                            solver_params=solver)
 
 diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 
