@@ -55,8 +55,8 @@ output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-bt = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
-                           params=params, solver_params=solver)
+bt = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                           solver_params=solver)
 
 t = 0
 while t < timescale - 0.5 * timestep:
