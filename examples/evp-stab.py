@@ -15,9 +15,6 @@ timestep = 0.1
 dumpfreq = 10 ** 4
 timescale = timestep * dumpfreq
 
-stabilise = True
-family = 'CR'
-
 for alpha in [1100,1200,1300,1400,1500,2000,2500,5000]:
     dirname = path + "/u_timescale={}_timestep={}_stabilised={}_value={}.pvd".format(timescale, timestep, stabilise, alpha)
                                                                             
@@ -33,7 +30,11 @@ for alpha in [1100,1200,1300,1400,1500,2000,2500,5000]:
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
     conditions = {'bc': {'u': 0},
                   'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
-                  'ocean_curr': ocean_curr}
+                  'ocean_curr': ocean_curr,
+                  'stabilised':{'state':True,'alpha':alpha},
+                  'family': 'CR',
+                  'theta': 1
+                  'steady_state':False}
 
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
@@ -41,7 +42,7 @@ for alpha in [1100,1200,1300,1400,1500,2000,2500,5000]:
     params = SeaIceParameters()
 
 
-    evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output, params=params, solver_params=solver, stabilised=stabilise, family=family,theta=1,steady_state=False, alpha = alpha)
+    evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params, solver_params=solver)
 
     diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 

@@ -22,9 +22,6 @@ timestep = 0.1
 dumpfreq = hour
 timescale = 24 * hour
 
-stabilise = False
-family = 'CR'
-
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
                                                                                        family)
 fig5a_title = "Figure 5 a)"
@@ -43,23 +40,24 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 conditions = {'bc': {'u': 0},
               'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
-              'ocean_curr': ocean_curr}
+              'ocean_curr': ocean_curr,
+              'stabilised': {'state':True,'alpha':10},
+              'family': 'CG'
+              'steady_state':False}
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                            params=params, solver_params=solver, stabilised=False, family=family, theta=1,
-                            steady_state=False,alpha=0)
-evp_stab = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                                 params=params, solver_params=solver, stabilised=True, family=family, theta=1,
-                                 steady_state=False, alpha=1000)
-vp = ViscousPlasticHack(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                        params=params, solver_params=solver, stabilised=False, family=family)
-vp_stab = ViscousPlasticHack(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                             params=params, solver_params=solver, stabilised=True, family=family)
+evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
+                            params=params, solver_params=solver)
+evp_stab = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
+                                 params=params, solver_params=solver)
+vp = ViscousPlasticHack(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
+                        params=params, solver_params=solver)
+vp_stab = ViscousPlasticHack(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
+                             params=params, solver_params=solver)
 
 
 

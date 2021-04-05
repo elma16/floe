@@ -13,9 +13,6 @@ timestep = 0.1
 dumpfreq = 10 ** 4
 timescale = timestep * dumpfreq
 
-stabilise = True
-family = 'CR'
-
 dirname = path + "/u_timescale={}_timestep={}_stabilised5={}_family={}.pvd".format(timescale, timestep, stabilise,
                                                                                        family)
 title = "EVP Plot"

@@ -11,10 +11,6 @@ timestep = 20
 dumpfreq = 10 ** 3
 timescale = timestep * dumpfreq
 
-stabilise = False
-
-family = 'CR'
-
 dirname = path + "/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, stabilise)
 title = "EVP Plot"
 diagnostic_dirname = path + "/evp.nc"
@@ -28,14 +24,17 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 conditions = {'bc': {'u' : 0},
               'ic': {'u' : 0,'a' :  x / length},
-              'ocean_curr': ocean_curr}
+              'ocean_curr': ocean_curr,
+              'stabilise' : {'state':True, 'alpha':10},
+              'family':'CR'}
+
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-evps = ElasticViscousPlasticStress(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
-                                   output=output, params=params, solver_params=solver, stabilised=stabilise, family=family)
+evps = ElasticViscousPlasticStress(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                                   solver_params=solver)
 
 diag = OutputDiagnostics(description="EVP Matrix Test", dirname=diagnostic_dirname)
 

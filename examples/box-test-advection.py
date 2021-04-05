@@ -26,8 +26,6 @@ else:
     dumpfreq = 1000
     timescale = timestep * dumpfreq
 
-family = 'CG'
-
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
 plot_dirname = path + "/box_test_energy.png"
