@@ -19,9 +19,14 @@ class Plotter(object):
         self.yaxis = dataset.variables[diagnostic][:]
         dataset.close()
 
-    def plot(self):
+    def plot(self,plot=plot):
+        
+        '''
+        plot :: choose what plot you want to make
+        '''
+        
         t = np.arange(0, self.timescale, self.timestep)
-        plt.semilogy(t, self.yaxis, label="timescale = {}".format(self.timescale))
+        plt.plot(t, self.yaxis, label="timescale = {}".format(self.timescale))
         plt.ylabel(r'{} of solution'.format(self.yaxis))
         plt.xlabel(r'Time [s]')
         plt.title(self.title)
