@@ -30,7 +30,7 @@ family = 'CG'
 
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
-plot_dirname = "./output/bt/box_test_energy.png"
+plot_dirname = path + "/box_test_energy.png"
 
 length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
@@ -43,7 +43,7 @@ geo_wind = as_vector(
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
 conditions = {'bc': {'u' : 0},
-              'ic': {'u' : 0, 'h' : 1,'a' : x / length},
+              'ic': {'u' : 0, 'h' : 1, 'a' : x / length},
               'ocean_curr': ocean_curr,
               'geo_wind': geo_wind}
 

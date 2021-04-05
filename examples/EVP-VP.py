@@ -2,7 +2,7 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-Path("./output/evp").mkdir(parents=True, exist_ok=True)
+Path("./output/evp_vp").mkdir(parents=True, exist_ok=True)
 
 '''
 Viscous plastic with ocean current forcing, and with zeta = zeta_max
@@ -15,11 +15,11 @@ timescale = timestep * dumpfreq
 stabilise = False
 family = 'CG'
 
-dirname = "./output/evp_vp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
+dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
                                                                                        family)
 title = "VP Plot"
-diagnostic_dirname = "./output/evp_vp/evp_vp.nc"
-plot_dirname = "./output/evp_vp/evp_vp_energy.png"
+diagnostic_dirname = path + "/evp_vp.nc"
+plot_dirname = path + "/evp_vp_energy.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5

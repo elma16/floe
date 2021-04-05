@@ -63,4 +63,4 @@ print(end - start, "[s]")
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
-plotter.plot()
+plotter.plot(plot=plot)

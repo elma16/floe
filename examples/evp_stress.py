@@ -17,8 +17,8 @@ family = 'CR'
 
 dirname = path + "/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, stabilise)
 title = "EVP Plot"
-diagnostic_dirname = "./output/evp_stress/evp.nc"
-plot_dirname = "./output/evp_stress/evp_energy.png"
+diagnostic_dirname = path + "/evp.nc"
+plot_dirname = path + "/evp_energy.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
