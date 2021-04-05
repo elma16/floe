@@ -47,7 +47,7 @@ conditions = {'bc': {'u' : 0},
               'family' : 'CG',
               'stabilised' : {'state' : False, 'alpha' : 0},
               'steady_state' : False,
-              'theta' : 1
+              'theta' : 0.5
               }
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
