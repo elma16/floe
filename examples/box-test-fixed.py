@@ -9,7 +9,7 @@ Path(path).mkdir(parents=True, exist_ok=True)
 '''
 TEST 3 : BOX TEST
 
---test : one month of no advection ( h and a are fixed)
+--test : one month of no advection ( h and a are fixed) f
 '''
 
 if '--test' in sys.argv:
