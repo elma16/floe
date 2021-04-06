@@ -106,7 +106,7 @@ class SeaIceModel(object):
         print(int(min(t / self.timescale * 100, 100)), "% complete")
 
 
-class ViscousPlastic(SeaIceModel):
+class SimpleViscousPlastic(SeaIceModel):
     def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
         super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
@@ -148,7 +148,7 @@ class ViscousPlastic(SeaIceModel):
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
 
 
-class ViscousPlasticHack(SeaIceModel):
+class ViscousPlastic(SeaIceModel):
     def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
         super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
@@ -156,7 +156,7 @@ class ViscousPlasticHack(SeaIceModel):
         self.u1 = Function(self.V, name="VelocityNext")
         a = Function(self.U)
 
-        v = TestFunction(self.V)
+        p = TestFunction(self.V)
 
         h = Constant(1)
         a.interpolate(conditions['ic']['a'])
@@ -166,7 +166,9 @@ class ViscousPlasticHack(SeaIceModel):
         zeta = self.zeta(h, a, params.Delta_min)
         eta = zeta * params.e ** -2
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,a) * Identity(2)
-        eqn = mom_equ(h, self.u1, self.u0, v, sigma, params.rho, self.u0, ocean_curr=conditions['ocean_curr'],rho_w=params.rho_w,rho_a=params.rho_a,C_a=params.C_a,C_w=params.C_w)
+        eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, uh=self.u0, ocean_curr=conditions['ocean_curr'],
+                      rho_a=params.rho_a, C_a=params.C_a, rho_w=params.rho_w, C_w=params.C_w,
+                      geo_wind=conditions['geo_wind'], cor=params.cor)
 
         self.u0.assign(conditions['ic']['u'])
         self.u1.assign(self.u0)
@@ -175,8 +177,6 @@ class ViscousPlasticHack(SeaIceModel):
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
-
-
 
 
 class ViscousPlasticTransport(SeaIceModel):
@@ -349,7 +349,7 @@ class ElasticViscousPlasticStress(SeaIceModel):
         sprob = NonlinearVariationalProblem(tensor_eqn, self.sigma1)
         self.ssolver = NonlinearVariationalSolver(sprob, solver_parameters=solver_params.srt_params)
 
-# TODO FIX
+
 class ElasticViscousPlasticTransport(SeaIceModel):
     def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
         super().__init__(mesh, conditions, timestepping, params, output, solver_params)
@@ -410,7 +410,6 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         eqn += inner(m, ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(m * zeta * self.timestep / params.T, ep_dot) * dx
 
-        # TODO add stabilisation
         if conditions['stabilised']['state']:
             alpha = conditions['stabilised']['alpha']
             fix_zeta = self.zeta(alpha, conditions['ic']['u'], params.Delta_min)
