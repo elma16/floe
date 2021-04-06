@@ -25,10 +25,11 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
 conditions = {'bc': {'u': 0},
-              'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
+              'ic': {'u': 0, 'a' : x / length, 'h' : 0.5},
               'ocean_curr': ocean_curr,
               'geo_wind' : Constant(as_vector([0, 0])),
               'family':'CG',
+              'simple': False,
               'stabilised': {'state': False , 'alpha': 0},
               'steady_state': False,
               'theta': 1}
