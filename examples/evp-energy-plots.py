@@ -19,11 +19,11 @@ Fig 5 c) Energy (log) vs. resolution (10km, 5km, 2.5km)
 
 hour = 60*60
 timestep = 0.1
-dumpfreq = hour
+dumpfreq = 30 * hour
 timescale = 24 * hour
 
-dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
-                                                                                       family)
+dirname = path + "/u.pvd"
+
 fig5a_title = "Figure 5 a)"
 fig5b_title = "Figure 5 b)"
 fig5c_title = "Figure 5 c)"
@@ -38,12 +38,24 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
+
 conditions = {'bc': {'u': 0},
               'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
               'ocean_curr': ocean_curr,
-              'stabilised': {'state':True,'alpha':10},
-              'family': 'CG'
-              'steady_state':False}
+              'geo_wind' : Constant(as_vector([0, 0])),
+              'family':'CG',
+              'stabilised': {'state': False , 'alpha': 10},
+              'steady_state': False,
+              'theta': 1}
+
+conditions2 = {'bc': {'u': 0},
+              'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
+              'ocean_curr': ocean_curr,
+              'geo_wind' : Constant(as_vector([0, 0])),
+              'family':'CG',
+              'stabilised': {'state': True , 'alpha': 10},
+              'steady_state': False,
+              'theta': 1}
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
@@ -52,12 +64,12 @@ params = SeaIceParameters()
 
 evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
                             params=params, solver_params=solver)
-evp_stab = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
+evp_stab = ElasticViscousPlastic(mesh=mesh, conditions=conditions2, timestepping=timestepping, output=output,
                                  params=params, solver_params=solver)
-vp = ViscousPlasticHack(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
-                        params=params, solver_params=solver)
-vp_stab = ViscousPlasticHack(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
-                             params=params, solver_params=solver)
+vp = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                    solver_params=solver)
+vp_stab = ViscousPlastic(mesh=mesh, conditions=conditions2, timestepping=timestepping, output=output, params=params,
+                         solver_params=solver)
 
 
 
@@ -67,7 +79,7 @@ t = 0
 
 while t < timescale - 0.5 * timestep:
     # solve first model
-    u0, s0 = evp_ustab.w0.split()
+    u0, s0 = evp.w0.split()
     evp.solve(evp.usolver)
     evp.update(evp.w0, evp.w1)
     diag.dump(evp.u1, t)
@@ -79,17 +91,15 @@ while t < timescale - 0.5 * timestep:
     diag.dump(evp_stab.u1, t)
     evp_stab.dump(evp_stab.u1, evp_stab.s1, t=t)
     # solve third model
-    u0, s0 = vp.w0.split()
-    vp.solve(evp_ustab.usolver)
-    vp.update(vp.w0, vp.w1)
+    vp.solve(vp.usolver)
+    vp.update(vp.u0, vp.u1)
     diag.dump(vp.u1, t)
-    vp.dump(vp.u1, vp.s1, t=t)
+    vp.dump(vp.u1, t=t)
     # solve fourth (and last) model
-    u0, s0 = evp_ustab.w0.split()
-    evp_ustab.solve(evp_ustab.usolver)
-    evp_ustab.update(evp_ustab.w0, evp_ustab.w1)
-    diag.dump(evp_ustab.u1, t)
-    evp_ustab.dump(evp_ustab.u1, evp_ustab.s1, t=t)
+    vp_stab.solve(vp_stab.usolver)
+    vp_stab.update(vp_stab.u0, vp_stab.u1)
+    diag.dump(vp_stab.u1, t)
+    vp_stab.dump(vp_stab.u1, t=t)
     # update time and progress
     t += timestep
     vp_stab.progress(t)

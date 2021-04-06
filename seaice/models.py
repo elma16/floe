@@ -120,22 +120,12 @@ class SimpleViscousPlastic(SeaIceModel):
 
         ep_dot = self.strain(grad(self.u1))
 
-        if conditions['simple']:
-            zeta = self.zeta(h, a, params.Delta_min)
-            sigma = zeta * ep_dot
-            # TODO want to move this to example/
-            sigma_exp = zeta * self.strain(grad(conditions['ic']['u']))
-            eqn = mom_equ(h, self.u1, self.u0, v, sigma, 1)
-            eqn -= inner(div(sigma_exp), v) * dx
-
-        else:
-            zeta = self.zeta(h, a, self.delta(self.u1))
-            eta = zeta * params.e ** -2
-            sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,
-                                                                                                         a) * Identity(
-                2)
-            eqn = mom_equ(h, self.u1, self.u0, v, sigma, params.rho, self.u1, conditions['ocean_curr'], params.rho_a,
-                          params.C_a, params.rho_w, params.C_w, conditions['geo_wind'], params.cor)
+        zeta = self.zeta(h, a, params.Delta_min)
+        sigma = zeta * ep_dot
+        # TODO want to move this to example/
+        sigma_exp = zeta * self.strain(grad(conditions['ic']['u']))
+        eqn = mom_equ(h, self.u1, self.u0, v, sigma, 1)
+        eqn -= inner(div(sigma_exp), v) * dx
 
         self.u0.interpolate(conditions['ic']['u'])
         self.u1.assign(self.u0)
@@ -163,7 +153,7 @@ class ViscousPlastic(SeaIceModel):
 
         ep_dot = self.strain(grad(self.u1))
 
-        zeta = self.zeta(h, a, params.Delta_min)
+        zeta = self.zeta(h, a, self.delta(self.u1))
         eta = zeta * params.e ** -2
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,a) * Identity(2)
         eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, uh=self.u0, ocean_curr=conditions['ocean_curr'],
@@ -305,8 +295,8 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
         a = Function(self.U)
 
-        v = TestFunction(self.V)
-        w = TestFunction(self.S)
+        p = TestFunction(self.V)
+        q = TestFunction(self.S)
 
         self.u0.assign(conditions['ic']['u'])
         h = Constant(1)
@@ -338,9 +328,11 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
         sh = (1-theta) * s + theta * self.sigma0
 
-        equ = mom_equ(h, self.u1, self.u0, v, sh, params.rho, uh=uh, ocean_curr=conditions['ocean_curr'],
-                      rho_a=params.rho_a, C_a=params.C_a, rho_w=params.rho_w, C_w=params.C_w, cor=params.cor)
-        tensor_eqn = inner(self.sigma1 - s, w) * dx
+        eqn = mom_equ(h, self.u1, self.u0, p, sh, params.rho, uh=uh, ocean_curr=conditions['ocean_curr'],
+                      rho_a=params.rho_a, C_a=params.C_a, rho_w=params.rho_w, C_w=params.C_w,
+                      geo_wind=conditions['geo_wind'], cor=params.cor)
+
+        tensor_eqn = inner(self.sigma1 - s, q) * dx
 
         bcs = DirichletBC(self.V,self.conditions['ic']['u'], "on_boundary")
 

@@ -36,16 +36,16 @@ v_exp = as_vector([-sin(pi_x * x), -sin(pi_x * x)])
 
 conditions = {'bc': {'u': 0},
               'ic': {'u': v_exp},
-              'stabilised':False,
-              'family':'CR',
-              'simple':True}
+              'stabilised':{'state':False,'alpha':0},
+              'family':'CR'
+              }
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+srt = SimpleViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                      solver_params=solver)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)

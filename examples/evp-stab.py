@@ -16,12 +16,7 @@ dumpfreq = 10 ** 4
 timescale = timestep * dumpfreq
 
 for alpha in [1100,1200,1300,1400,1500,2000,2500,5000]:
-    dirname = path + "/u_timescale={}_timestep={}_stabilised={}_value={}.pvd".format(timescale, timestep, stabilise, alpha)
                                                                             
-    title = "EVP Plot"
-    diagnostic_dirname = path + "evp.nc"
-    plot_dirname = path + "evp_energy.png"
-
     number_of_triangles = 35
     length = 5 * 10 ** 5
     mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
@@ -31,11 +26,14 @@ for alpha in [1100,1200,1300,1400,1500,2000,2500,5000]:
     conditions = {'bc': {'u': 0},
                   'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
                   'ocean_curr': ocean_curr,
+                  'geo_wind' : Constant(as_vector([0, 0])),
                   'stabilised':{'state':True,'alpha':alpha},
                   'family': 'CR',
-                  'theta': 1
+                  'theta': 1,
                   'steady_state':False}
 
+    dirname = path + "/u_timescale={}_timestep={}_stabilised={}_value={}.pvd".format(timescale, timestep, conditions['stabilised']['state'],conditions['stabilised']['alpha'])
+    
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     solver = SolverParameters()
@@ -43,8 +41,6 @@ for alpha in [1100,1200,1300,1400,1500,2000,2500,5000]:
 
 
     evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params, solver_params=solver)
-
-    diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 
     t = 0
 
