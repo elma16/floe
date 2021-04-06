@@ -153,9 +153,9 @@ class ViscousPlasticTransport(SeaIceModel):
 
         p, q, r = TestFunctions(self.W2)
 
-        u0.assign(conditions['ic']['u'])
-        h0.assign(conditions['ic']['h'])
-        a0.interpolate(conditions['ic']['a'])
+        self.initial_condition(u0, conditions['ic']['u'])
+        self.initial_condition(h0, conditions['ic']['h'])
+        self.initial_condition(a0, conditions['ic']['a'])
 
         self.w1.assign(self.w0)
 
@@ -208,13 +208,15 @@ class ElasticViscousPlastic(SeaIceModel):
         self.w0 = Function(self.W1)
         self.w1 = Function(self.W1)
         a = Function(self.U)
-        h = Constant(1)
+        h = Function(self.U)
 
         u0, s0 = self.w0.split()
         p, q = TestFunctions(self.W1)
 
+        self.initial_condition(a, conditions['ic']['a'])
+        self.initial_condition(h, conditions['ic']['h'])
+
         u0.assign(conditions['ic']['u'])
-        a.interpolate(conditions['ic']['a'])
         s0.assign(conditions['ic']['s'])
 
         self.w1.assign(self.w0)
@@ -265,14 +267,15 @@ class ElasticViscousPlasticStress(SeaIceModel):
         uh = (1-theta) * u0 + theta * u1
 
         a = Function(self.U)
-
+        h = Function(self.U)
+        
         p = TestFunction(self.V)
         q = TestFunction(self.S)
 
         self.u0.assign(conditions['ic']['u'])
-        h = Constant(1)
-        a.interpolate(conditions['ic']['a'])
-
+        self.initial_condition(a, conditions['ic']['a'])
+        self.initial_condition(h, conditions['ic']['h'])
+        
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(h, a, self.delta(uh))
         eta = zeta * params.e ** (-2)
@@ -325,8 +328,8 @@ class ElasticViscousPlasticTransport(SeaIceModel):
 
         u0.assign(conditions['ic']['u'])
         s0.assign(conditions['ic']['s'])
-        h0.assign(conditions['ic']['h'])
-        a0.interpolate(conditions['ic']['a'])
+        self.initial_condition(a0, conditions['ic']['a'])
+        self.initial_condition(h0, conditions['ic']['h'])
 
         self.w1.assign(self.w0)
 
