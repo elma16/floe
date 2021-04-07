@@ -20,9 +20,9 @@ evp unstabilised and stabilised applied to resolution (10km, 5km, 2.5km)
 Fig 5 c) Energy (log) vs. resolution (10km, 5km, 2.5km)
 '''
 
-timestep = 0.1
+timestep = 100
 dumpfreq = 10**10
-timescale = 1
+timescale = 24*60*60
 
 dirname = path + "/u.pvd"
 
@@ -50,7 +50,7 @@ conditions = {'bc': {'u': 0},
               'stabilised': {'state': False , 'alpha': 10},
               'simple' : False,
               'steady_state': False,
-              'theta': 1}
+              'theta': 0.5}
 
 conditions_stab = {'bc': {'u': 0},
               'ic': {'u': 0, 'a' : x / length, 'h' : 1, 's' : as_matrix([[0, 0], [0, 0]])},
@@ -60,7 +60,7 @@ conditions_stab = {'bc': {'u': 0},
               'stabilised': {'state': True , 'alpha': 10},
               'simple' : False,
               'steady_state': False,
-              'theta': 1}
+                   'theta': 0.5}
         
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)

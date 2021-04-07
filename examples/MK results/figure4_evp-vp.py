@@ -33,7 +33,7 @@ for state in [True,False]:
                   'simple': False,
                   'stabilised': {'state': state , 'alpha':1000},
                   'steady_state': False,
-                  'theta': 1}
+                  'theta': 0.5}
     dirname_evp = path + "/evp_u_timescale={}_timestep={}_stabilised={}.pvd".format(timescale, timestep, state)
     dirname_vp = path + "/vp_u_timescale={}_timestep={}_stabilised={}.pvd".format(timescale, timestep, state)
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
