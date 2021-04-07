@@ -2,7 +2,7 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-path = "./output/figure4"
+path = "./output/mk/figure4"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''

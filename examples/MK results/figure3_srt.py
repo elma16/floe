@@ -4,7 +4,7 @@ from firedrake import *
 from time import time
 from pathlib import Path
 
-path = "./output/figure3"
+path = "./output/mk/figure3"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 # TEST 1 : STRAIN RATE TENSOR

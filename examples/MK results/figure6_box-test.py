@@ -3,13 +3,11 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-path = "./output/bt-fixed"
+path = "./output/mk/bt-fixed"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
 TEST 3 : BOX TEST
-
---test : one month of no advection ( h and a are fixed) f
 '''
 
 if '--test' in sys.argv:
@@ -19,7 +17,10 @@ if '--test' in sys.argv:
     month = 31 * day
     timescale = month
     dumpfreq = 144
-   
+
+    week = 7 * day
+    timescale2 = week
+    
 else:
     number_of_triangles = 30
     timestep = 1
@@ -51,15 +52,16 @@ conditions = {'bc': {'u' : 0},
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 dirname_transport = path + "/u-trans_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
-timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
+timestepping_fixed = TimesteppingParameters(timescale=timescale, timestep=timestep)
+timestepping_trans = TimesteppingParameters(timescale=timescale2, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 output_transport = OutputParameters(dirname=dirname_transport, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-bt = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params, solver_params=solver)
+bt = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping_fixed, output=output, params=params, solver_params=solver)
 
-bt_transport = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output_transport, params=params, solver_params=solver)
+bt_transport = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping_trans, output=output_transport, params=params, solver_params=solver)
 
 
 t = 0
