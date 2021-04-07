@@ -30,7 +30,7 @@ conditions = {'bc': {'u': 0},
               'geo_wind' : Constant(as_vector([0, 0])),
               'family':'CG',
               'simple': False,
-              'stabilised': {'state': False , 'alpha': 0},
+              'stabilised': {'state': True , 'alpha': 1},
               'steady_state': False,
               'theta': 1}
 

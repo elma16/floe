@@ -134,8 +134,9 @@ class ViscousPlastic(SeaIceModel):
         self.u1.assign(self.u0)
 
         if conditions['stabilised']['state']:
-            eqn += stabilisation_term(alpha=conditions['stabilised']['alpha'], zeta=zeta, mesh=mesh, v=self.u1, test=p)
-
+            alpha = conditions['stabilised']['alpha']
+            fix_zeta = self.zeta(alpha, conditions['ic']['u'], params.Delta_min)
+            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=self.u1, test=p)
         bcs = DirichletBC(self.V, self.conditions['ic']['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)

@@ -55,7 +55,7 @@ class Velocity(Diagnostic):
     def korn_ineq(self):
         return norm(grad(self.v)) > sqrt(norm(grad(self.v) + transpose(grad(self.v))))
 
-
+# currently only works for the diagnostics of one model in one file
 class OutputDiagnostics(object):
     """
     creates a netCDF file with all the diagnostic data
