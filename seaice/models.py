@@ -263,7 +263,7 @@ class ElasticViscousPlasticStress(SeaIceModel):
         self.sigma1 = Function(self.S, name="StressTensorNext")
 
         theta = conditions.theta
-        uh = (1-theta) * u0 + theta * u1
+        uh = (1-theta) * self.u0 + theta * self.u1
 
         a = Function(self.U)
         h = Function(self.U)

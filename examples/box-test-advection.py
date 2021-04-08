@@ -40,15 +40,6 @@ geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-conditions = {'bc': {'u' : 0},
-
-              'ocean_curr': ocean_curr,
-              'geo_wind': geo_wind,
-              'family' : 'CG',
-              'stabilised' : {'state' : False, 'alpha' : 0},
-              'steady_state' : False,
-              'theta' : 0.5
-              }
 ic  = {'u' : 0, 'h' : 1, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
 conditions = Conditions(theta=0.5,family='CG',geo_wind=geo_wind,ocean_curr=ocean_curr,ic=ic)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
