@@ -25,7 +25,11 @@ plot_dirname = path + "/strain_rate_error_T={}_t={}.png".format(timescale, times
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
-mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, length)
+mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, length, "y")
+Vc = mesh.coordinates.function_space()
+x, y = SpatialCoordinate(mesh)
+f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
+mesh.coordinates.assign(f)
 
 x, y = SpatialCoordinate(mesh)
 

@@ -40,27 +40,10 @@ for triangles in [10,20,30]:
 
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
-
-    conditions = {'bc': {'u': 0},
-                  'ic': {'u': 0, 'a' : x / length, 'h' : 1, 's' : as_matrix([[0, 0], [0, 0]])},
-                  'ocean_curr': ocean_curr,
-                  'geo_wind' : Constant(as_vector([0, 0])),
-                  'family':'CR',
-                  'stabilised': {'state': False , 'alpha': 10},
-                  'simple' : False,
-                  'steady_state': False,
-                  'theta': 0.5}
-
-    conditions_stab = {'bc': {'u': 0},
-                       'ic': {'u': 0, 'a' : x / length, 'h' : 1, 's' : as_matrix([[0, 0], [0, 0]])},
-                       'ocean_curr': ocean_curr,
-                       'geo_wind' : Constant(as_vector([0, 0])),
-                       'family':'CR',
-                       'stabilised': {'state': True , 'alpha': 10},
-                       'simple' : False,
-                       'steady_state': False,
-                       'theta': 0.5}
-        
+    ic =  {'u': 0, 'a' : x / length, 'h' : 1, 's' : as_matrix([[0, 0], [0, 0]])}
+    conditions = Conditions(theta=0.5,ocean_curr=ocean_curr,ic=ic)
+    stabilised =  {'state': True , 'alpha': 10}
+    conditions_stab = Conditions(theta=0.5,ocean_curr=ocean_curr,stabilised=stabilised,ic=ic)
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     solver = SolverParameters()

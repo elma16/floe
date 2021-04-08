@@ -152,7 +152,7 @@ class ViscousPlasticTransport(SeaIceModel):
 
         p, q, r = TestFunctions(self.W2)
 
-        self.initial_condition(u0, conditions.ic['u'])
+        u0.assign(conditions.ic['u'])
         self.initial_condition(h0, conditions.ic['h'])
         self.initial_condition(a0, conditions.ic['a'])
 
@@ -308,7 +308,7 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
         bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
 
-        uprob = NonlinearVariationalProblem(equ, self.u1, bcs)
+        uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
         sprob = NonlinearVariationalProblem(tensor_eqn, self.sigma1)
         self.ssolver = NonlinearVariationalSolver(sprob, solver_parameters=solver_params.srt_params)
