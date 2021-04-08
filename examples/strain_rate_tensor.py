@@ -34,14 +34,22 @@ mesh.coordinates.assign(f)
 pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x), -sin(pi_x * x)])
 
-conditions = {'bc': {'u': 0}, 'ic': {'u': v_exp}}
+conditions = {'bc': {'u': 0},
+              'ic': {'u': v_exp, 'a' : 1, 'h' : 1},
+              'ocean_curr': Constant(as_vector([0, 0])),
+              'geo_wind' : Constant(as_vector([0, 0])),
+              'family':'CR',
+              'simple': True,
+              'stabilised': {'state': False , 'alpha': 0}
+              }
+
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-srt = ViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                     params=params, solver_params=solver, stabilised=True, simple=True, family='CR')
+srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                     solver_params=solver)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
@@ -63,4 +71,4 @@ print(end - start, "[s]")
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
-plotter.plot()
+plotter.plot('semilogy')

@@ -12,13 +12,9 @@ timestep = 0.1
 dumpfreq = 10 ** 300
 timescale = timestep * dumpfreq
 
-stabilise = False
-
 for name in ['CG','CR']:
     print('family =',name)
-    family = name
-    dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
-                                                                                           family)
+
     title = "EVP Plot"
     diagnostic_dirname = "./output/evp/evp.nc"
     plot_dirname = "./output/evp/evp_energy.png"
@@ -29,17 +25,26 @@ for name in ['CG','CR']:
     x, y = SpatialCoordinate(mesh)
 
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-    conditions = {'bc': {'u': 0},
-                  'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
-                  'ocean_curr': ocean_curr}
+    conditions = {'bc' : {'u': 0},
+                  'ic' : {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
+                  'ocean_curr' : ocean_curr,
+                  'geo_wind' : Constant(as_vector([0, 0])),
+                  'stabilised' : {'state': False, 'alpha': 0},
+                  'family' : name,
+                  'theta' : 1,
+                  'steady_state' : False,
+                  }
 
+    dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep,
+                                                                                    conditions['stabilised']['state'],
+                                                                                    conditions['family'])
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     solver = SolverParameters()
     params = SeaIceParameters()
 
-    evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output,
-                                params=params, solver_params=solver, stabilised=stabilise, family=family,theta=1,steady_state=False)
+    evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                                solver_params=solver)
 
     diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 

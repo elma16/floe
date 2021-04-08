@@ -2,7 +2,8 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-Path("./output/evp").mkdir(parents=True, exist_ok=True)
+path = "./output/evp-vp"
+Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
 Viscous plastic with ocean current forcing, and with zeta = zeta_max
@@ -12,14 +13,9 @@ timestep = 0.1
 dumpfreq = 1000
 timescale = timestep * dumpfreq
 
-stabilise = False
-family = 'CG'
-
-dirname = "./output/evp_vp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, stabilise,
-                                                                                       family)
 title = "VP Plot"
-diagnostic_dirname = "./output/evp_vp/evp_vp.nc"
-plot_dirname = "./output/evp_vp/evp_vp_energy.png"
+diagnostic_dirname = path + "/evp_vp.nc"
+plot_dirname = path + "/evp_vp_energy.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
@@ -27,16 +23,26 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
+
 conditions = {'bc': {'u': 0},
-              'ic': {'u': 0, 'a' : x / length},
-              'ocean_curr': ocean_curr}
+              'ic': {'u': 0, 'a' : x / length, 'h' : 0.5},
+              'ocean_curr': ocean_curr,
+              'geo_wind' : Constant(as_vector([0, 0])),
+              'family':'CG',
+              'simple': False,
+              'stabilised': {'state': True , 'alpha': 1},
+              'steady_state': False,
+              'theta': 1}
+
+dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions['stabilised']['state'],conditions['family'])
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-vp = ViscousPlasticHack(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping, output=output, params=params, solver_params=solver, stabilised=stabilise, family=family)
+vp = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                        solver_params=solver)
 
 diag = OutputDiagnostics(description="EVP-VP Test", dirname=diagnostic_dirname)
 

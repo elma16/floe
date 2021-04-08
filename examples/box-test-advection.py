@@ -3,29 +3,32 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-Path("./output/bt").mkdir(parents=True, exist_ok=True)
+path = "./output/bt-adv"
+Path(path).mkdir(parents=True, exist_ok=True)
 
-# TEST 3 : BOX TEST
+'''
+TEST 3 : BOX TEST
+
+--test : one week of advection
+'''
 
 if '--test' in sys.argv:
     timestep = 600
     number_of_triangles = 71
     day = 60 * 60 * 24
-    month = 31 * day
     week = 7 * day
     timescale = week
     dumpfreq = 144
+    
 else:
     number_of_triangles = 30
     timestep = 1
     dumpfreq = 1000
     timescale = timestep * dumpfreq
 
-family = 'CR'
+dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
-dirname = "./output/bt/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
-
-plot_dirname = "./output/bt/box_test_energy.png"
+plot_dirname = path + "/box_test_energy.png"
 
 length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
@@ -37,25 +40,29 @@ geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-conditions = {'bc': {'u' : 0,'h' : 1,'a' : 1},
-              'ic': {'u' : 0, 'h' : 1,'a' : x / length},
+conditions = {'bc': {'u' : 0},
+              'ic': {'u' : 0, 'h' : 1, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
               'ocean_curr': ocean_curr,
-              'geo_wind': geo_wind}
+              'geo_wind': geo_wind,
+              'family' : 'CG',
+              'stabilised' : {'state' : False, 'alpha' : 0},
+              'steady_state' : False,
+              'theta' : 0.5
+              }
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-# TODO fix the divergence of the solution
-bt = ElasticViscousPlasticTransport(mesh=mesh, length=length, conditions=conditions, timestepping=timestepping,
-                                    output=output, params=params, solver_params=solver, stabilised=False,family=family)
+bt = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                                    solver_params=solver)
 
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
-    bt.dump(bt.u1, t=t)
+    bt.dump(bt.u1, bt.a1, bt.h1, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)
