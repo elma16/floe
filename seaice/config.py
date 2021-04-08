@@ -1,6 +1,6 @@
-from firedrake import Constant
+from firedrake import *
 
-__all__ = ["OutputParameters", "TimesteppingParameters", "SeaIceParameters", "SolverParameters"]
+__all__ = ["OutputParameters", "TimesteppingParameters", "SeaIceParameters", "SolverParameters","Conditions"]
 
 
 class Configuration(object):
@@ -68,3 +68,15 @@ class SolverParameters(Configuration):
     srt_params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
     bt_params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
 
+class Conditions(Configuration):
+    """
+    Conditions for the models.
+    """
+    bc = {'u': 0, 'a': 0, 'h': 0, 's': as_matrix([[0, 0], [0, 0]])} # boundary conditions 
+    ic = {'u': 0, 'a': 0, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])} # initial conditions
+    ocean_curr = Constant(as_vector([0, 0])) # ocean current
+    geo_wind = Constant(as_vector([0, 0])) # geostrophic wind
+    family = 'CR' # finite element
+    stabilised = {'state': False , 'alpha': 0} #stabilisation
+    steady_state =  False # steady state
+    theta = 1 # theta for use in theta method (0 = Euler's method, 1/2 = Implicit Midpoint, 1 = Backward Euler)

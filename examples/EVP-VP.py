@@ -10,7 +10,7 @@ Viscous plastic with ocean current forcing, and with zeta = zeta_max
 '''
 
 timestep = 0.1
-dumpfreq = 1000
+dumpfreq = 10
 timescale = timestep * dumpfreq
 
 title = "VP Plot"
@@ -24,18 +24,10 @@ x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
-conditions = {'bc': {'u': 0},
-              'ic': {'u': 0, 'a' : x / length, 'h' : 0.5},
-              'ocean_curr': ocean_curr,
-              'geo_wind' : Constant(as_vector([0, 0])),
-              'family':'CG',
-              'simple': False,
-              'stabilised': {'state': True , 'alpha': 1},
-              'steady_state': False,
-              'theta': 1}
-
-dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions['stabilised']['state'],conditions['family'])
-
+ic = {'u': 0, 'a' : x / length, 'h' : 0.5}
+stabilised =  {'state': True , 'alpha': 1}
+conditions = Conditions(family='CG',ocean_curr=ocean_curr,ic=ic,stabilised=stabilised)
+dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'],conditions.family)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

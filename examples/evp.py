@@ -23,17 +23,12 @@ mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-conditions = {'bc': {'u': 0},
-              'ic': {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
-              'ocean_curr': ocean_curr,
-              'geo_wind' : Constant(as_vector([0, 0])),
-              'family':'CR',
-              'stabilised': {'state': False , 'alpha': 0},
-              'steady_state': False,
-              'theta': 1}
 
-dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions['stabilised']['state'], conditions['family'])
-                                   
+ic =  {'u': 0, 'a': x/length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
+
+conditions = Conditions(ic = ic, ocean_curr=ocean_curr)
+
+dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'], conditions.family)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

@@ -34,15 +34,8 @@ mesh.coordinates.assign(f)
 pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x), -sin(pi_x * x)])
 
-conditions = {'bc': {'u': 0},
-              'ic': {'u': v_exp, 'a' : 1, 'h' : 1},
-              'ocean_curr': Constant(as_vector([0, 0])),
-              'geo_wind' : Constant(as_vector([0, 0])),
-              'family':'CR',
-              'simple': True,
-              'stabilised': {'state': False , 'alpha': 0}
-              }
-
+ic = {'u': v_exp, 'a' : 1, 'h' : 1},
+conditions = Conditions(ic=ic, steady_state=True)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
