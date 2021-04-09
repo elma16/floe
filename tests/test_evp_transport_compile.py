@@ -5,7 +5,7 @@ timestep = 1
 dumpfreq = 10**3
 timescale = 10
 
-dirname = "u.pvd"
+dirname = "./output/test-output/u.pvd"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5

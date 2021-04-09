@@ -6,7 +6,7 @@ timestep = 1
 dumpfreq = 10 ** 6
 timescale = 10
 
-dirname = "test.pvd"
+dirname = "./output/test-output/test.pvd"
 number_of_triangles = [5, 10, 20, 40, 100]
 
 error_values = []
