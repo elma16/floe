@@ -9,8 +9,8 @@ Path(path).mkdir(parents=True, exist_ok=True)
 TEST 2 : EVP
 '''
 
-timestep = 0.1
-dumpfreq = 10 ** 4
+timestep = 600
+dumpfreq = 10**3 
 timescale = timestep * dumpfreq
 
 title = "EVP Plot"
@@ -25,15 +25,15 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
 ic =  {'u': 0, 'a': x/length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
+stabilised = {'state':False,'alpha':1}
 
-conditions = Conditions(ic = ic, ocean_curr=ocean_curr)
+conditions = Conditions(ic = ic, ocean_curr=ocean_curr,stabilised=stabilised,family='CR')
 
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'], conditions.family)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
-print(conditions.ic)
 evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                             solver_params=solver)
 
@@ -46,6 +46,10 @@ while t < timescale - 0.5 * timestep:
     evp.dump(evp.u1, evp.s1, t=t)
     t += timestep
     evp.progress(t)
+
+# print(Velocity.x_component(evp.U1,evp.u1))
+
+    
 
 
 

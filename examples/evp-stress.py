@@ -7,7 +7,7 @@ Path(path).mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
 
-timestep = 20
+timestep = 100
 dumpfreq = 10 ** 3
 timescale = timestep * dumpfreq
 

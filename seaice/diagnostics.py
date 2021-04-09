@@ -3,8 +3,6 @@ from netCDF4 import Dataset
 import time
 import numpy as np
 
-# TODO : get component of UFL velocity
-
 
 __all__ = ["Error", "Energy", "Velocity", "OutputDiagnostics"]
 
@@ -39,22 +37,20 @@ class Velocity(Diagnostic):
         super().__init__(v)
         self.mesh = mesh
 
-    def X_component(self):
-        return self.v[0]
-
-    def Y_component(self):
-        return self.v[1]
+    def x_component(fs,v):
+        vh =  v[0]
+        return interpolate(vh,fs)
 
     @staticmethod
-    # TODO i don't know what this output means
-    def Max_component(v, mesh):
+    def y_component(v):
+        return v[1]
+
+    @staticmethod
+    def max_component(v,mesh):
         W = VectorFunctionSpace(mesh, "DG", 1)
         p = project(v, W).dat.data
         return p
-
-    def korn_ineq(self):
-        return norm(grad(self.v)) > sqrt(norm(grad(self.v) + transpose(grad(self.v))))
-
+    
 # currently only works for the diagnostics of one model in one file
 class OutputDiagnostics(object):
     """

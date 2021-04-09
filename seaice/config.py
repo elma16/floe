@@ -65,8 +65,23 @@ class SolverParameters(Configuration):
     Solver Parameters
     """
     
-    srt_params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu"}
-    bt_params = {"ksp_monitor": None, "snes_monitor": None, "ksp_type": "preonly", "pc_type": "lu", 'mat_type': 'aij'}
+    srt_params = {"ksp_monitor": None,
+                  "snes_monitor": None,
+                  "ksp_type": "preonly",
+                  "pc_type": "lu"}
+
+    bt_params = {"ksp_monitor": None,
+                 "snes_monitor": None,
+                 "ksp_type": "preonly",
+                 "pc_type": "lu",
+                 "mat_type": "aij"}
+
+    fs_params = {"ksp_type" : "GMRES",
+       	      "pc_type" :" fieldsplit",
+	      "fieldsplit_0_ksp_type" : "preonly",
+	      "fieldsplit_0_pc_type" : "lu",
+	      "fieldsplit_1_ksp_type" : "preonly",
+	      "fieldsplit_1_pc_type" : "lu"}
 
 class Conditions(Configuration):
     """
