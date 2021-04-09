@@ -22,14 +22,12 @@ for values in number_of_triangles:
     mesh = SquareMesh(values, values, length)
     x, y = SpatialCoordinate(mesh)
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-    forcing = [ocean_curr]
-    conditions = {'bc': [0, 1, 1], 'ic': [0, x / length, as_matrix([[0, 0], [0, 0]])], 'ocean_curr': ocean_curr}
-    evp = ElasticViscousPlastic(mesh=mesh, length=length, conditions=conditions,
-                                timestepping=timestepping, output=output, params=params, solver_params=solver,
-                                stabilised=False)
-    evps = ElasticViscousPlasticStress(mesh=mesh, length=length, conditions=conditions,
-                                       timestepping=timestepping, output=output, params=params, solver_params=solver,
-                                       stabilised=False)
+    ic = {'u': 0,'a': x/length,'h' : 1 , 's' : as_matrix([[0,0],[0,0]])}
+    conditions = Conditions(ic=ic,ocean_curr=ocean_curr)
+    evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
+                                params=params, solver_params=solver)
+    evps = ElasticViscousPlasticStress(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output,
+                                       params=params, solver_params=solver)
 
     t = 0
 

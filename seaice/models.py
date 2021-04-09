@@ -115,12 +115,12 @@ class ViscousPlastic(SeaIceModel):
 
         if conditions.steady_state:
             zero_vector = Constant(as_vector([0, 0]))
-            zero = Constant(0)
+
             zeta = self.zeta(h, a, params.Delta_min)
             sigma = zeta * ep_dot
             sigma_exp = zeta * self.strain(grad(conditions.ic['u']))
-            eqn = mom_equ(h, self.u1, self.u0, p, sigma, 1, zero_vector, conditions.ocean_curr,
-                          zero, zero, zero, zero, conditions.geo_wind, zero)
+            eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+                          params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
             eqn -= inner(div(sigma_exp), p) * dx
 
         else:    
@@ -187,8 +187,7 @@ class ViscousPlasticTransport(SeaIceModel):
 
         eqn = mom_equ(hh, u1, u0, p, sigma, params.rho, uh, conditions.ocean_curr, params.rho_a,
                       params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
-        trans_eqn = trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
-        eqn += trans_eqn
+        eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
 
         bcs = DirichletBC(self.W2.sub(0), conditions.bc['u'], "on_boundary")
 
@@ -358,8 +357,8 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         eqn = mom_equ(hh, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
                       params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=ind)
         rheology = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(2)
-        trans_eqn = trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
-        eqn += trans_eqn
+        eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
+        
         eqn += inner(m, ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(m * zeta * self.timestep / params.T, ep_dot) * dx
 
