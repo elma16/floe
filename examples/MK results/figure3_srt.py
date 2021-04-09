@@ -31,13 +31,11 @@ solver = SolverParameters()
 params = SeaIceParameters()
 
 for stab in [True,False]:
-    conditions = {'bc': {'u': 0},
-                  'ic': {'u': v_exp},
-                  'stabilised':{'state':stab,'alpha':1},
-                  'family':'CR',
-                  'simple':True}
-
-    dirname = path + "/u_timescale={}_timestep={}_family={}_stabilised={}.pvd".format(timescale, timestep, conditions['family'],conditions['stabilised']['state'])
+    ic = {'u':v_exp, 'a':1, 'h':1}
+    stabilised = {'state':stab,'alpha':1}
+    conditions = Conditions(steady_state=True,ic=ic)
+    
+    dirname = path + "/u_timescale={}_timestep={}_family={}_stabilised={}.pvd".format(timescale, timestep, conditions.family,conditions.stabilised['state'])
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                          solver_params=solver)

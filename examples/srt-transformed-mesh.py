@@ -25,24 +25,19 @@ plot_dirname = path + "/strain_rate_error_T={}_t={}.png".format(timescale, times
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
-mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, length, "x")
+mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, length, "y")
 Vc = mesh.coordinates.function_space()
 x, y = SpatialCoordinate(mesh)
 f = Function(Vc).interpolate(as_vector([x + 0.5 * y, y]))
 mesh.coordinates.assign(f)
 
+x, y = SpatialCoordinate(mesh)
+
 pi_x = pi / length
-v_exp = as_vector([-sin(pi_x * x), -sin(pi_x * x)])
+v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
-conditions = {'bc': {'u': 0},
-              'ic': {'u': v_exp, 'a' : 1, 'h' : 1},
-              'ocean_curr': Constant(as_vector([0, 0])),
-              'geo_wind' : Constant(as_vector([0, 0])),
-              'family':'CR',
-              'simple': True,
-              'stabilised': {'state': False , 'alpha': 0}
-              }
-
+ic = {'u': v_exp, 'a' : 1, 'h' : 1}
+conditions = Conditions(ic=ic, steady_state=True)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

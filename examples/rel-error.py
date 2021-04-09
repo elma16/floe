@@ -25,20 +25,12 @@ for name in ['CG','CR']:
     x, y = SpatialCoordinate(mesh)
 
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-    conditions = {'bc' : {'u': 0},
-                  'ic' : {'u': 0, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])},
-                  'ocean_curr' : ocean_curr,
-                  'geo_wind' : Constant(as_vector([0, 0])),
-                  'stabilised' : {'state': False, 'alpha': 0},
-                  'family' : name,
-                  'theta' : 1,
-                  'steady_state' : False,
-                  }
 
-    dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep,
-                                                                                    conditions['stabilised']['state'],
-                                                                                    conditions['family'])
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
+    ic =  {'u': 0, 'a' : x / length,'h':1, 's' : as_matrix([[0, 0], [0, 0]])}
+    conditions = Conditions(family=name,ocean_curr=ocean_curr,ic=ic)
+    dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'], conditions.family)
+
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     solver = SolverParameters()
     params = SeaIceParameters()

@@ -3,23 +3,23 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-path = "./output/bt-adv"
+path = "./output/vp-bt-fixed"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
 TEST 3 : BOX TEST
 
---test : one week of advection
+--test : one month of advection
 '''
 
 if '--test' in sys.argv:
     timestep = 600
     number_of_triangles = 71
     day = 60 * 60 * 24
-    week = 7 * day
-    timescale = week
+    month = 31 * day
+    timescale = month
     dumpfreq = 144
-    
+   
 else:
     number_of_triangles = 30
     timestep = 1
@@ -40,21 +40,21 @@ geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-ic  = {'u' : 0, 'h' : 1, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])}
-conditions = Conditions(theta=0.5,family='CG',geo_wind=geo_wind,ocean_curr=ocean_curr,ic=ic)
+ic = {'u' : 0, 'h' : 1, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])}
+conditions = Conditions(ic=ic,family='CG',geo_wind=geo_wind,ocean_curr=ocean_curr)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-bt = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
-                                    solver_params=solver)
+bt = ViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                           solver_params=solver)
 
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
-    bt.dump(bt.u1, bt.a1, bt.h1, t=t)
+    bt.dump(bt.u1, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)
