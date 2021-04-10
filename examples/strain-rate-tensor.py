@@ -18,7 +18,7 @@ else:
     dumpfreq = 1
     timescale = 10
 
-dirname = path + "/u_timescale={}_timestep={}_CR_mesh_new.pvd".format(timescale, timestep)
+dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 title = "Test Plot"
 diagnostic_dirname = path + "/strain_rate_T={}_t={}.nc".format(timescale, timestep)
 plot_dirname = path + "/strain_rate_error_T={}_t={}.png".format(timescale, timestep)

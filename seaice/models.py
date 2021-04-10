@@ -108,8 +108,6 @@ class ViscousPlastic(SeaIceModel):
         h = Function(self.U)
         
         p = TestFunction(self.V)
-
-        self.u1.assign(self.u0)
         
         ep_dot = self.strain(grad(self.u1))
 
@@ -130,7 +128,7 @@ class ViscousPlastic(SeaIceModel):
             eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, self.u0, conditions.ocean_curr,
                           params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
 
-        self.initial_condition((self.u0, conditions.ic['u']),(a, conditions.ic['a']),(h, conditions.ic['h']))
+        self.initial_condition((self.u0, conditions.ic['u']),(self.u1, self.u0),(a, conditions.ic['a']),(h, conditions.ic['h']))
         
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
