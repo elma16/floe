@@ -1,6 +1,6 @@
 from firedrake import *
 
-def mom_equ(hh, u1, u0, p, sigma, rho, uh, ocean_curr, rho_a, C_a, rho_w, C_w, geo_wind, cor, ind=1):
+def momentum_equation(hh, u1, u0, p, sigma, rho, uh, ocean_curr, rho_a, C_a, rho_w, C_w, geo_wind, cor, ind=1):
     def momentum_term():
         return inner(rho * hh * (u1 - u0), p) * dx
 
@@ -19,7 +19,7 @@ def mom_equ(hh, u1, u0, p, sigma, rho, uh, ocean_curr, rho_a, C_a, rho_w, C_w, g
     return ind * momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a,
                                                                                                      geo_wind) + rheology_term()
 
-def trans_equ(h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep):
+def transport_equation(h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep):
     def in_term(var1, var2, test):
         trial = var2 - var1
         return test * trial * dx
@@ -87,8 +87,8 @@ class SeaIceModel(object):
                                                                                    dev(self.strain(grad(u)))) + tr(
             self.strain(grad(u))) ** 2)
 
-    def bcs(self, space):
-        return [DirichletBC(space, values, "on_boundary") for values in self.conditions.bc]
+    def bcs(self, space, location="on_boundary"):
+        return [DirichletBC(space, values, location) for values in self.conditions.bc]
 
     def solve(self, *args):
         for solvers in args:
@@ -136,16 +136,19 @@ class ViscousPlastic(SeaIceModel):
 
         theta = conditions.theta
         uh = (1-theta) * self.u0 + theta * self.u1
-        
+
         ep_dot = self.strain(grad(uh))
+
+        self.initial_condition((self.u0, conditions.ic['u']),(self.u1, self.u0),
+                               (a, conditions.ic['a']),(h, conditions.ic['h']))
 
         if conditions.steady_state:
             zero_vector = Constant(as_vector([0, 0]))
-
             zeta = self.zeta(h, a, params.Delta_min)
             sigma = zeta * ep_dot
             sigma_exp = zeta * self.strain(grad(conditions.ic['u']))
-            eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+            
+            eqn = momentum_equation(h, self.u1, self.u0, p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                           params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
             eqn -= inner(div(sigma_exp), p) * dx
 
@@ -153,11 +156,10 @@ class ViscousPlastic(SeaIceModel):
             zeta = self.zeta(h, a, self.delta(self.u1))
             eta = zeta * params.e ** -2
             sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,a) * Identity(2)
-            eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, uh, conditions.ocean_curr,
+
+            eqn = momentum_equation(h, self.u1, self.u0, p, sigma, params.rho, uh, conditions.ocean_curr,
                           params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
             
-        self.initial_condition((self.u0, conditions.ic['u']),(self.u1, self.u0),(a, conditions.ic['a']),(h, conditions.ic['h']))
-
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
             fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
@@ -180,10 +182,10 @@ class ViscousPlasticTransport(SeaIceModel):
 
         p, q, r = TestFunctions(self.W2)
 
-        self.initial_condition((u0, conditions.ic['u']), (h0, conditions.ic['h']), (a0, conditions.ic['a']))
+        self.initial_condition((u0, conditions.ic['u']), (h0, conditions.ic['h']),
+                               (a0, conditions.ic['a']))
 
         self.w1.assign(self.w0)
-
         u1, h1, a1 = split(self.w1)
         u0, h0, a0 = split(self.w0)
 
@@ -198,9 +200,9 @@ class ViscousPlasticTransport(SeaIceModel):
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(
             2)
 
-        eqn = mom_equ(hh, u1, u0, p, sigma, params.rho, uh, conditions.ocean_curr, params.rho_a,
+        eqn = momentum_equation(hh, u1, u0, p, sigma, params.rho, uh, conditions.ocean_curr, params.rho_a,
                       params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
-        eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n, self.timestep)
+        eqn += transport_equation(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n, self.timestep)
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
@@ -228,7 +230,8 @@ class ElasticViscousPlastic(SeaIceModel):
         u0, s0 = self.w0.split()
         p, q = TestFunctions(self.W1)
 
-        self.initial_condition((u0, conditions.ic['u']), (s0, conditions.ic['s']), (a, conditions.ic['a']), (h, conditions.ic['h']))
+        self.initial_condition((u0, conditions.ic['u']), (s0, conditions.ic['s']),
+                               (a, conditions.ic['a']), (h, conditions.ic['h']))
 
         self.w1.assign(self.w0)
         u1, s1 = split(self.w1)
@@ -240,10 +243,10 @@ class ElasticViscousPlastic(SeaIceModel):
 
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(h, a, self.delta(uh))
-        
-        eqn = mom_equ(h, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
-                      params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=self.ind)
         rheology = params.e ** 2 * sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sh) + self.Ice_Strength(h, a))
+        
+        eqn = momentum_equation(h, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
+                      params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=self.ind)
         eqn += inner(q, self.ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
@@ -307,7 +310,7 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
         sh = (1-theta) * s + theta * self.sigma0
 
-        eqn = mom_equ(h, self.u1, self.u0, p, sh, params.rho, uh, conditions.ocean_curr,
+        eqn = momentum_equation(h, self.u1, self.u0, p, sh, params.rho, uh, conditions.ocean_curr,
                       params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor,ind=self.ind)
 
         tensor_eqn = inner(self.sigma1 - s, q) * dx
@@ -320,9 +323,9 @@ class ElasticViscousPlasticStress(SeaIceModel):
         bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
-        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
+        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
         sprob = NonlinearVariationalProblem(tensor_eqn, self.sigma1)
-        self.ssolver = NonlinearVariationalSolver(sprob, solver_parameters=solver_params.srt_params)
+        self.ssolver = NonlinearVariationalSolver(sprob, solver_parameters=solver_params.bt_params)
 
 
 class ElasticViscousPlasticTransport(SeaIceModel):
@@ -353,12 +356,11 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(hh, ah, self.delta(uh))
         eta = zeta * params.e ** (-2)
-            
-        eqn = mom_equ(hh, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
-                      params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=self.ind)
         rheology = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(2)
-        eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n, self.timestep)
         
+        eqn = momentum_equation(hh, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
+                                params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=self.ind)
+        eqn += transport_equation(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n, self.timestep)
         eqn += inner(m, self.ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(m * zeta * self.timestep / params.T, ep_dot) * dx
 
