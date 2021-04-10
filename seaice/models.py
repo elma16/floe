@@ -19,6 +19,20 @@ def mom_equ(hh, u1, u0, p, sigma, rho, uh, ocean_curr, rho_a, C_a, rho_w, C_w, g
     return ind * momentum_term() - forcing_term() - stress_term(rho_w, C_w, ocean_curr - uh) - stress_term(rho_a, C_a,
                                                                                                      geo_wind) + rheology_term()
 
+def trans_equ(h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep):
+    def in_term(var1, var2, test):
+        trial = var2 - var1
+        return test * trial * dx
+
+    def upwind_term(var1, bc_in, test):
+        un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
+        return timestep * (var1 * div(test * uh) * dx
+                                - conditional(dot(uh, n) < 0, test * dot(uh, n) * bc_in, 0.0) * ds
+                                - conditional(dot(uh, n) > 0, test * dot(uh, n) * var1, 0.0) * ds
+                                - (test('+') - test('-')) * (un('+') * ah('+') - un('-') * var1('-')) * dS)
+
+    return in_term(h0, h1, q) + in_term(a0, a1, r) + upwind_term(hh, h_in, q) + upwind_term(ah, a_in, r)
+        
 
 def stabilisation_term(alpha, zeta, mesh, v, test):
     e = avg(CellVolume(mesh)) / FacetArea(mesh)
@@ -43,7 +57,7 @@ class SeaIceModel(object):
         self.mesh = mesh
         self.conditions = conditions
         
-        family = conditions.family 
+        family = conditions.family
         self.x, self.y = SpatialCoordinate(mesh)
         self.n = FacetNormal(mesh)
         self.V = VectorFunctionSpace(mesh, family, 1)
@@ -53,6 +67,11 @@ class SeaIceModel(object):
         self.W1 = MixedFunctionSpace([self.V, self.S])
         self.W2 = MixedFunctionSpace([self.V, self.U1, self.U1])
         self.W3 = MixedFunctionSpace([self.V, self.S, self.U1, self.U1])
+
+        if self.conditions.steady_state:
+            self.ind = 0
+        else:
+            self.ind = 1
 
     def Ice_Strength(self, h, a):
         return self.params.P_star * h * exp(-self.params.C * (1 - a))
@@ -69,7 +88,7 @@ class SeaIceModel(object):
             self.strain(grad(u))) ** 2)
 
     def bcs(self, space):
-        return [DirichletBC(space, values, "on_boundary") for values in conditions.bc]
+        return [DirichletBC(space, values, "on_boundary") for values in self.conditions.bc]
 
     def solve(self, *args):
         for solvers in args:
@@ -94,6 +113,12 @@ class SeaIceModel(object):
             else:
                 vars.interpolate(ics)
 
+    def stabilise(self, v, test):
+        if self.conditions.stabilised['state']:
+            alpha = self.conditions.stabilised['alpha']
+            fix_zeta = self.zeta(alpha, self.conditions.ic['u'], self.params.Delta_min)
+            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=v, test=test)
+        
     def progress(self, t):
         print("Time:", t, "[s]")
         print(int(min(t / self.timescale * 100, 100)), "% complete")
@@ -108,8 +133,11 @@ class ViscousPlastic(SeaIceModel):
         h = Function(self.U)
         
         p = TestFunction(self.V)
+
+        theta = conditions.theta
+        uh = (1-theta) * self.u0 + theta * self.u1
         
-        ep_dot = self.strain(grad(self.u1))
+        ep_dot = self.strain(grad(uh))
 
         if conditions.steady_state:
             zero_vector = Constant(as_vector([0, 0]))
@@ -125,15 +153,16 @@ class ViscousPlastic(SeaIceModel):
             zeta = self.zeta(h, a, self.delta(self.u1))
             eta = zeta * params.e ** -2
             sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,a) * Identity(2)
-            eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, self.u0, conditions.ocean_curr,
+            eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, uh, conditions.ocean_curr,
                           params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
-
+            
         self.initial_condition((self.u0, conditions.ic['u']),(self.u1, self.u0),(a, conditions.ic['a']),(h, conditions.ic['h']))
-        
+
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
             fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
-            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=self.u1, test=p)
+            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
+            
         bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
@@ -169,23 +198,14 @@ class ViscousPlasticTransport(SeaIceModel):
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(
             2)
 
-        def trans_equ(h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n):
-            def in_term(var1, var2, test):
-                trial = var2 - var1
-                return test * trial * dx
-
-            def upwind_term(var1, bc_in, test):
-                un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
-                return self.timestep * (var1 * div(test * uh) * dx
-                                        - conditional(dot(uh, n) < 0, test * dot(uh, n) * bc_in, 0.0) * ds
-                                        - conditional(dot(uh, n) > 0, test * dot(uh, n) * var1, 0.0) * ds
-                                        - (test('+') - test('-')) * (un('+') * ah('+') - un('-') * var1('-')) * dS)
-
-            return in_term(h0, h1, q) + in_term(a0, a1, r) + upwind_term(hh, h_in, q) + upwind_term(ah, a_in, r)
-
         eqn = mom_equ(hh, u1, u0, p, sigma, params.rho, uh, conditions.ocean_curr, params.rho_a,
                       params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
-        eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
+        eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n, self.timestep)
+
+        if conditions.stabilised['state']:
+            alpha = conditions.stabilised['alpha']
+            fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
+            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
 
         bcs = DirichletBC(self.W2.sub(0), conditions.bc['u'], "on_boundary")
 
@@ -220,22 +240,18 @@ class ElasticViscousPlastic(SeaIceModel):
 
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(h, a, self.delta(uh))
-
-        if conditions.steady_state:
-            ind = 0
-        else:
-            ind = 1
         
         eqn = mom_equ(h, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
-                      params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=ind)
+                      params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=self.ind)
         rheology = params.e ** 2 * sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sh) + self.Ice_Strength(h, a))
-        eqn += inner(q, ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
+        eqn += inner(q, self.ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
             fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
             eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
+            
         bcs = DirichletBC(self.W1.sub(0), conditions.bc['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
@@ -292,9 +308,14 @@ class ElasticViscousPlasticStress(SeaIceModel):
         sh = (1-theta) * s + theta * self.sigma0
 
         eqn = mom_equ(h, self.u1, self.u0, p, sh, params.rho, uh, conditions.ocean_curr,
-                      params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
+                      params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor,ind=self.ind)
 
         tensor_eqn = inner(self.sigma1 - s, q) * dx
+
+        if conditions.stabilised['state']:
+            alpha = conditions.stabilised['alpha']
+            fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
+            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
 
         bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
 
@@ -315,7 +336,8 @@ class ElasticViscousPlasticTransport(SeaIceModel):
 
         p, m, q, r = TestFunctions(self.W3)
 
-        self.initial_condition((u0, conditions.ic['u']),(s0, conditions.ic['s']), (a0, conditions.ic['a']), (h0, conditions.ic['h']))
+        self.initial_condition((u0, conditions.ic['u']),(s0, conditions.ic['s']),
+                               (a0, conditions.ic['a']), (h0, conditions.ic['h']))
 
         self.w1.assign(self.w0)
 
@@ -331,33 +353,13 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(hh, ah, self.delta(uh))
         eta = zeta * params.e ** (-2)
-
-        if  conditions.steady_state:
-            ind = 0
-        else:
-            ind = 1
             
-        def trans_equ(h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n):
-            def in_term(var1, var2, test):
-                trial = var2 - var1
-                return test * trial * dx
-
-            def upwind_term(var1, bc_in, test):
-                un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
-                return self.timestep * (var1 * div(test * uh) * dx
-                                        - conditional(dot(uh, n) < 0, test * dot(uh, n) * bc_in, 0.0) * ds
-                                        - conditional(dot(uh, n) > 0, test * dot(uh, n) * var1, 0.0) * ds
-                                        - (test('+') - test('-')) * (un('+') * ah('+') - un('-') * var1('-')) * dS)
-
-            return in_term(h0, h1, q) + in_term(a0, a1, r) + upwind_term(hh, h_in, q) + upwind_term(ah, a_in, r)
-
-
         eqn = mom_equ(hh, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
-                      params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=ind)
+                      params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, ind=self.ind)
         rheology = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(2)
-        eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
+        eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n, self.timestep)
         
-        eqn += inner(m, ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
+        eqn += inner(m, self.ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T) * dx
         eqn -= inner(m * zeta * self.timestep / params.T, ep_dot) * dx
 
         if conditions.stabilised['state']:
