@@ -102,14 +102,24 @@ class ViscousPlastic(SeaIceModel):
     def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
         super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
-        self.u0 = Function(self.V)
-        self.u1 = Function(self.V)
-        a = Function(self.U)
-        h = Function(self.U)
-        
-        p = TestFunction(self.V)
-        
-        ep_dot = self.strain(grad(self.u1))
+        self.w0 = Function(self.W2)
+        self.w1 = Function(self.W2)
+
+        u0, h0, a0 = self.w0.split()
+
+        p, q, r = TestFunctions(self.W2)
+
+        self.initial_condition((u0, conditions.ic['u']), (h0, conditions.ic['h']), (a0, conditions.ic['a']))
+
+        self.w1.assign(self.w0)
+
+        u1, h1, a1 = split(self.w1)
+        u0, h0, a0 = split(self.w0)
+
+        theta = conditions.theta
+        uh = (1-theta) * u0 + theta * u1
+        ah = (1-theta) * a0 + theta * a1
+        hh = (1-theta) * h0 + theta * h1
 
         if conditions.steady_state:
             zero_vector = Constant(as_vector([0, 0]))
@@ -117,15 +127,15 @@ class ViscousPlastic(SeaIceModel):
             zeta = self.zeta(h, a, params.Delta_min)
             sigma = zeta * ep_dot
             sigma_exp = zeta * self.strain(grad(conditions.ic['u']))
-            eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+            eqn = mom_equ(hh, u1, u0, p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                           params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
             eqn -= inner(div(sigma_exp), p) * dx
 
         else:    
-            zeta = self.zeta(h, a, self.delta(self.u1))
+            zeta = self.zeta(h, a, self.delta(self.uh))
             eta = zeta * params.e ** -2
             sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,a) * Identity(2)
-            eqn = mom_equ(h, self.u1, self.u0, p, sigma, params.rho, self.u0, conditions.ocean_curr,
+            eqn = mom_equ(hh, u1, u0, p, sigma, params.rho, uh, conditions.ocean_curr,
                           params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
 
         self.initial_condition((self.u0, conditions.ic['u']),(self.u1, self.u0),(a, conditions.ic['a']),(h, conditions.ic['h']))
@@ -133,13 +143,16 @@ class ViscousPlastic(SeaIceModel):
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
             fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
-            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=self.u1, test=p)
-        bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
+            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
 
-        uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
-        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
+        bcs = DirichletBC(self.W2.sub(0), conditions.bc['u'], "on_boundary")
 
+        uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
+        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
 
+        self.u1, self.h1, self.a1 = self.w1.split()
+
+        
 class ViscousPlasticTransport(SeaIceModel):
     def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
         super().__init__(mesh, conditions, timestepping, params, output, solver_params)
@@ -187,13 +200,17 @@ class ViscousPlasticTransport(SeaIceModel):
                       params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor)
         eqn += trans_equ(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n)
 
+        if conditions.stabilised['state']:
+            alpha = conditions.stabilised['alpha']
+            fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
+            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
+
         bcs = DirichletBC(self.W2.sub(0), conditions.bc['u'], "on_boundary")
 
         uprob = NonlinearVariationalProblem(eqn, self.w1, bcs)
         self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.bt_params)
 
         self.u1, self.h1, self.a1 = self.w1.split()
-        
         
 
 class ElasticViscousPlastic(SeaIceModel):
