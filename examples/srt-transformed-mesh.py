@@ -4,11 +4,14 @@ from firedrake import *
 from time import time
 from pathlib import Path
 
-path = "./output/srt"
+path = "./output/srt-mesh"
 Path(path).mkdir(parents=True, exist_ok=True)
 
-# TEST 1 : STRAIN RATE TENSOR
+'''
+TEST 1 : STRAIN RATE TENSOR
 
+Sheared square mesh
+'''
 if '--test' in sys.argv:
     timestep = 10 ** (-6)
     dumpfreq = 10 ** 5

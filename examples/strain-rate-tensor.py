@@ -33,7 +33,7 @@ pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
 ic = {'u': v_exp, 'a' : 1, 'h' : 1}
-stabilised = {'state':True,'alpha':10}
+stabilised = {'state':False,'alpha':10}
 conditions = Conditions(ic=ic, steady_state=True, theta=1, stabilised=stabilised)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)

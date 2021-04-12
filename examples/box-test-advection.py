@@ -27,8 +27,9 @@ else:
     timescale = timestep * dumpfreq
 
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
-
-plot_dirname = path + "/box_test_energy.png"
+title = "EVP Fixed Energy Plot"
+diagnostic_dirname = path + "/box_test_energy_T={}_t={}.nc".format(timescale, timestep)
+plot_dirname = path + "/EVP_box_test_energy_T={}_t={}.png".format(timescale, timestep)
 
 length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
