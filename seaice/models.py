@@ -113,12 +113,6 @@ class SeaIceModel(object):
             else:
                 vars.interpolate(ics)
 
-    def stabilise(self, v, test):
-        if self.conditions.stabilised['state']:
-            alpha = self.conditions.stabilised['alpha']
-            fix_zeta = self.zeta(alpha, self.conditions.ic['u'], self.params.Delta_min)
-            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=v, test=test)
-        
     def progress(self, t):
         print("Time:", t, "[s]")
         print(int(min(t / self.timescale * 100, 100)), "% complete")
@@ -287,16 +281,15 @@ class ElasticViscousPlasticStress(SeaIceModel):
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(h, a, self.delta(uh))
         eta = zeta * params.e ** (-2)
+        rheology = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h, a) * Identity(2)
 
-        self.sigma0.interpolate(
-            2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h, a) * Identity(2))
-        self.sigma1.assign(self.sigma0)
+        self.initial_condition((self.sigma0, rheology),(self.sigma1, self.sigma0))
 
-        def sigma_next(timestep, e, zeta, T, ep_dot, sigma, P):
-            A = 1 + 0.25 * (timestep * e ** 2) / T
-            B = timestep * 0.125 * (1 - e ** 2) / T
-            rhs = (1 - (timestep * e ** 2) / (4 * T)) * sigma - timestep / T * (
-                    0.125 * (1 - e ** 2) * tr(sigma) * Identity(2) - 0.25 * P * Identity(2) + zeta * ep_dot)
+        def sigma_next(timestep, zeta, ep_dot, sigma, P):
+            A = 1 + 0.25 * (timestep * params.e ** 2) / params.T
+            B = timestep * 0.125 * (1 - params.e ** 2) / params.T
+            rhs = (1 - (timestep * params.e ** 2) / (4 * params.T)) * sigma - timestep / params.T * (
+                    0.125 * (1 - params.e ** 2) * tr(sigma) * Identity(2) - 0.25 * P * Identity(2) + zeta * ep_dot)
             C = (rhs[0, 0] - rhs[1, 1]) / A
             D = (rhs[0, 0] + rhs[1, 1]) / (A + 2 * B)
             sigma00 = 0.5 * (C + D)
@@ -306,14 +299,14 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
             return sigma
 
-        s = sigma_next(self.timestep, params.e, zeta, params.T, ep_dot, self.sigma0, self.Ice_Strength(h, a))
+        s = sigma_next(self.timestep, zeta, ep_dot, self.sigma0, self.Ice_Strength(h, a))
 
         sh = (1-theta) * s + theta * self.sigma0
 
         eqn = momentum_equation(h, self.u1, self.u0, p, sh, params.rho, uh, conditions.ocean_curr,
                       params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor,ind=self.ind)
 
-        tensor_eqn = inner(self.sigma1 - s, q) * dx
+        tensor_eqn = inner(self.sigma1-s, q) * dx
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
@@ -339,7 +332,7 @@ class ElasticViscousPlasticTransport(SeaIceModel):
 
         p, m, q, r = TestFunctions(self.W3)
 
-        self.initial_condition((u0, conditions.ic['u']),(s0, conditions.ic['s']),
+        self.initial_condition((u0, conditions.ic['u']), (s0, conditions.ic['s']),
                                (a0, conditions.ic['a']), (h0, conditions.ic['h']))
 
         self.w1.assign(self.w0)

@@ -7,9 +7,9 @@ Path(path).mkdir(parents=True, exist_ok=True)
 
 # TEST 2 : EVP
 
-timestep = 100
-dumpfreq = 10 ** 3
-timescale = timestep * dumpfreq
+timestep = 1
+dumpfreq = 1
+timescale = 10
 
 title = "EVP Plot"
 diagnostic_dirname = path + "/evp.nc"
@@ -23,11 +23,11 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
 ic =  {'u' : 0,'a' :  x / length, 'h':1}
-stabilised = {'state':True, 'alpha':10}
+stabilised = {'state':False, 'alpha':10}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 conditions = Conditions(stabilised=stabilised,ocean_curr=ocean_curr,ic=ic)
 
-dirname = path + "/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, conditions.stabilised)
+dirname = path + "/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, stabilised)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()

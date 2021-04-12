@@ -25,7 +25,7 @@ for values in number_of_triangles:
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
     ic = {'u': v_exp, 'a' : 1, 'h' : 1}
-    conditions = Conditions(ic=ic, steady_state=True, theta=1/2)
+    conditions = Conditions(ic=ic, steady_state=True, theta=1)
     srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                          solver_params=solver)
 
