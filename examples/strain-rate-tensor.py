@@ -65,3 +65,4 @@ plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_d
                   timestepping=timestepping, title=title)
 
 plotter.plot('semilogy')
+

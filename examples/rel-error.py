@@ -8,8 +8,8 @@ Path("./output/evp").mkdir(parents=True, exist_ok=True)
 TEST 2 : EVP
 '''
 
-timestep = 0.1
-dumpfreq = 10 ** 300
+timestep = 1
+dumpfreq = 10 
 timescale = timestep * dumpfreq
 
 for name in ['CG','CR']:
@@ -55,6 +55,14 @@ for name in ['CG','CR']:
         evp.dump(evp.u1, evp.s1, t=t)
         t += timestep
         evp.progress(t)
+
+    
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
+                  timestepping=timestepping, title=title)
+
+plotter.plot()
+
+
 
 
 

@@ -2,15 +2,15 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-path = "./output/evp2"
+path = "./output/evp"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
 TEST 2 : EVP
 '''
 
-timestep = 600
-dumpfreq = 10**3 
+timestep = 1
+dumpfreq =  10
 timescale = timestep * dumpfreq
 
 title = "EVP Plot"
@@ -37,12 +37,15 @@ params = SeaIceParameters()
 evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                             solver_params=solver)
 
+diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
+
 t = 0
 
 while t < timescale - 0.5 * timestep:
     u0, s0 = evp.w0.split()
     evp.solve(evp.usolver)
     evp.update(evp.w0, evp.w1)
+    diag.dump(evp.w1,t=t)
     evp.dump(evp.u1, evp.s1, t=t)
     t += timestep
     evp.progress(t)
@@ -50,6 +53,12 @@ while t < timescale - 0.5 * timestep:
 # print(Velocity.x_component(evp.U1,evp.u1))
 
     
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
+                  timestepping=timestepping, title=title)
+
+plotter.plot()
+
+
 
 
 

@@ -34,7 +34,7 @@ class Plotter(object):
             plt.semilogy(t, self.yaxis, label="timescale = {}".format(self.timescale))
         elif plot_option == 'semilogx':
             plt.semilogx(t, self.yaxis, label="timescale = {}".format(self.timescale))
-        plt.ylabel(r'{} of solution'.format(self.yaxis))
+        plt.ylabel(r'{} of solution'.format(self.diagnostic))
         plt.xlabel(r'Time [s]')
         plt.title(self.title)
         plt.legend(loc='best')
