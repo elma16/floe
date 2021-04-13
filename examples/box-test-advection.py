@@ -14,11 +14,11 @@ TEST 3 : BOX TEST
 
 if '--test' in sys.argv:
     timestep = 600
-    number_of_triangles = 71
+    number_of_triangles = 30
     day = 60 * 60 * 24
     week = 7 * day
     timescale = week
-    dumpfreq = 144
+    dumpfreq = 3000
     
 else:
     number_of_triangles = 30
@@ -52,11 +52,20 @@ params = SeaIceParameters()
 bt = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                                     solver_params=solver)
 
+diag = OutputDiagnostics(description="test 3", dirname=diagnostic_dirname)
+
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
+    diag.dump(bt.w1, t=t)
     bt.dump(bt.u1, bt.a1, bt.h1, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)
+
+    
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
+                  timestepping=timestepping, title=title)
+
+plotter.plot('semilogy')
