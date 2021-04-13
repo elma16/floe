@@ -31,8 +31,18 @@ def transport_equation(h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep
                                 - conditional(dot(uh, n) < 0, test * dot(uh, n) * bc_in, 0.0) * ds
                                 - conditional(dot(uh, n) > 0, test * dot(uh, n) * var1, 0.0) * ds
                                 - (test('+') - test('-')) * (un('+') * ah('+') - un('-') * var1('-')) * dS)
+<<<<<<< HEAD
 
     return in_term(h0, h1, q) + upwind_term(hh, h_in, q) + in_term(a0, a1, r) + upwind_term(ah, a_in, r)
+=======
+    
+    if h_advect == False:
+        return in_term(a0,a1,q) + upwind_term(ah,a_in,q)
+    elif a_advect == False:
+        return in_term(h0,h1,q) + upwind_term(hh,h_in,q)
+    else:
+        return in_term(h0, h1, q) + upwind_term(hh, h_in, q) + in_term(a0, a1, r) + upwind_term(ah, a_in, r)
+>>>>>>> f0c292005707b2818a5d555abc7b53145dab8279
         
 
 def stabilisation_term(alpha, zeta, mesh, v, test):

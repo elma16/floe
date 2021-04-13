@@ -26,9 +26,9 @@ else:
     dumpfreq = 1000
     timescale = timestep * dumpfreq
 
-dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = path + "/u_timescale={}_timestep={}_h_fixed.pvd".format(timescale, timestep)
 title = "EVP Fixed Energy Plot"
-diagnostic_dirname = path + "/box_test_energy_T={}_t={}.nc".format(timescale, timestep)
+diagnostic_dirname = path + "/box_test_energy_T={}_t={}_h_fixed.nc".format(timescale, timestep)
 plot_dirname = path + "/EVP_box_test_energy_T={}_t={}.png".format(timescale, timestep)
 
 length = 10 ** 6

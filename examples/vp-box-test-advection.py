@@ -27,7 +27,8 @@ else:
     timescale = timestep * dumpfreq
 
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
-
+title = "Test Plot"
+diagnostic_dirname = path + "/bt-advect_T={}_t={}.nc".format(timescale, timestep)
 plot_dirname = path + "/box_test_energy.png"
 
 length = 10 ** 6
@@ -51,11 +52,20 @@ params = SeaIceParameters()
 bt = ViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                            solver_params=solver)
 
+diag = OutputDiagnostics(description="vp-box-test-advect", dirname=diagnostic_dirname)
+
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
+    diag.dump(bt.w1, t=t)
     bt.dump(bt.u1, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)
+
+plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
+                  timestepping=timestepping, title=title)
+ 
+plotter.plot('semilogy')
+
