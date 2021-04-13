@@ -98,3 +98,4 @@ class Conditions(Configuration):
     stabilised = {'state': False , 'alpha': 0} #stabilisation
     steady_state = False # steady state
     theta = 1 # theta for use in theta method (0 = Euler's method, 1/2 = Implicit Midpoint, 1 = Backward Euler)
+    advect = {'h': False, 'a': False} # what variable do you want to advect?

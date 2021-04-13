@@ -19,7 +19,8 @@ ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x)
 
 ic = {'u': 0, 'a' : x / length, 'h' : 0.5, 's':as_vector([[0,0],[0,0]])}
 stabilised =  {'state': True , 'alpha': 1}
-conditions = Conditions(family='CG',ocean_curr=ocean_curr,ic=ic,stabilised=stabilised)
+advect = {'h': True,'a': True}
+conditions = Conditions(family='CG',ocean_curr=ocean_curr,ic=ic,stabilised=stabilised,advect=advect)
 
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
