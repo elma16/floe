@@ -15,7 +15,7 @@ path = "./output/bt-adv-exp"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 timescale = 604800
-timestep = 278
+timestep = 1
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 
 title = "EVP Box Test Advected (timestep = 1 week)"
