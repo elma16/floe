@@ -6,6 +6,9 @@ timestep = 1
 dumpfreq = 10 ** 6
 timescale = 10
 
+zero = Constant(0)
+zero_vector = Constant(as_vector([0, 0]))
+
 dirname = "./output/test-output/test.pvd"
 number_of_triangles = [5, 10, 20, 40, 100]
 
@@ -28,6 +31,16 @@ for values in number_of_triangles:
     conditions = Conditions(ic=ic, steady_state=True, theta=1)
     srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                          solver_params=solver)
+
+    zeta = srt.zeta(srt.h, srt.a, params.Delta_min)
+    sigma = zeta * srt.strain(grad(srt.uh))
+    sigma_exp = zeta * srt.strain(grad(conditions.ic['u']))
+
+    eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+                            params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
+    eqn -= inner(div(sigma_exp), srt.p) * dx
+
+    srt.assemble(eqn,srt.u1,srt.bcs,solver.srt_params)
 
     t = 0
 

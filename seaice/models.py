@@ -117,6 +117,10 @@ class SeaIceModel(object):
             else:
                 vars.interpolate(ics)
 
+    def assemble(self, eqn, func, bcs, params):
+        uprob = NonlinearVariationalProblem(eqn, func, bcs)
+        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=params)
+
     def progress(self, t):
         print("Time:", t, "[s]")
         print(int(min(t / self.timescale * 100, 100)), "% complete")
@@ -127,46 +131,32 @@ class ViscousPlastic(SeaIceModel):
 
         self.u0 = Function(self.V)
         self.u1 = Function(self.V)
-        a = Function(self.U)
-        h = Function(self.U)
+        self.a = Function(self.U)
+        self.h = Function(self.U)
         
-        p = TestFunction(self.V)
+        self.p = TestFunction(self.V)
 
         theta = conditions.theta
-        uh = (1-theta) * self.u0 + theta * self.u1
+        self.uh = (1-theta) * self.u0 + theta * self.u1
 
-        ep_dot = self.strain(grad(uh))
+        ep_dot = self.strain(grad(self.uh))
 
         self.initial_condition((self.u0, conditions.ic['u']),(self.u1, self.u0),
-                               (a, conditions.ic['a']),(h, conditions.ic['h']))
+                               (self.a, conditions.ic['a']),(self.h, conditions.ic['h']))
 
-        if conditions.steady_state:
-            zero_vector = Constant(as_vector([0, 0]))
-            zeta = self.zeta(h, a, params.Delta_min)
-            sigma = zeta * ep_dot
-            sigma_exp = zeta * self.strain(grad(conditions.ic['u']))
-            
-            eqn = momentum_equation(h, self.u1, self.u0, p, sigma, params.rho, zero_vector, conditions.ocean_curr,
-                                    params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep)
-            eqn -= inner(div(sigma_exp), p) * dx
-
-        else:    
-            zeta = self.zeta(h, a, self.delta(self.u1))
-            eta = zeta * params.e ** -2
-            sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(h,a) * Identity(2)
-
-            eqn = momentum_equation(h, self.u1, self.u0, p, sigma, params.rho, uh, conditions.ocean_curr,
-                                    params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep)
+        zeta = self.zeta(self.h, self.a, self.delta(self.u1))
+        eta = zeta * params.e ** -2
+        sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(self.h,self.a) * Identity(2)
+        
+        self.eqn = momentum_equation(self.h, self.u1, self.u0, self.p, sigma, params.rho, self.uh, conditions.ocean_curr,
+                                     params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep)
             
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
             fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
-            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
+            self.eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=self.uh, test=self.p)
             
-        bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
-
-        uprob = NonlinearVariationalProblem(eqn, self.u1, bcs)
-        self.usolver = NonlinearVariationalSolver(uprob, solver_parameters=solver_params.srt_params)
+        self.bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
 
 
 class ViscousPlasticTransport(SeaIceModel):
