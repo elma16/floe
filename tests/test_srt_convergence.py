@@ -1,6 +1,13 @@
+import sys
 from seaice import *
 from firedrake import *
 import numpy as np
+from time import time
+import matplotlib.pyplot as plt
+from pathlib import Path
+
+path = "./output/test-output"
+Path(path).mkdir(parents=True, exist_ok=True)
 
 timestep = 1
 dumpfreq = 10 ** 6
@@ -9,7 +16,9 @@ timescale = 10
 zero = Constant(0)
 zero_vector = Constant(as_vector([0, 0]))
 
-dirname = "./output/test-output/test.pvd"
+dirname = path + "/test.pvd"
+plot_dirname = path + "/srt-conv.png"
+
 number_of_triangles = [5, 10, 20, 40, 100]
 
 error_values = []
@@ -33,7 +42,7 @@ for values in number_of_triangles:
 
     zeta = srt.zeta(srt.h, srt.a, params.Delta_min)
     sigma = zeta * srt.strain(grad(srt.uh))
-    sigma_exp = zeta * srt.strain(grad(conditions.ic['u']))
+    sigma_exp = zeta * srt.strain(grad(v_exp))
 
     eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                             params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
@@ -51,7 +60,13 @@ for values in number_of_triangles:
     error_values.append(Error.compute(srt.u1, v_exp))
 
 error_slope = float(format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f'))
+
 print(error_slope)
 
 def test_srt_initial_value():
     assert error_slope + 2 < 0.01
+
+plt.loglog(number_of_triangles, error_values, '.', label='Gradient = {}'.format(error_slope))
+plt.savefig(plot_dirname)
+
+
