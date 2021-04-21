@@ -33,7 +33,7 @@ plot_dirname = path + "/strain_rate_error_T={}_t={}.png".format(timescale, times
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
-mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, length)
+mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 
 x, y = SpatialCoordinate(mesh)
 
@@ -41,26 +41,26 @@ pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
 ic = {'u': v_exp, 'a' : 1, 'h' : 1}
-stabilised = {'state':False, 'alpha':10}
-conditions = Conditions(ic=ic, theta=1, stabilised=stabilised)
+
+conditions = Conditions(ic=ic)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 
-params = SeaIceParameters(rho=1,rho_a=zero,C_a=zero,rho_w=zero,C_w=zero,cor=zero)
+params = SeaIceParameters(rho=1, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero, cor=zero)
 
 srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                      solver_params=solver)
 
 zeta = srt.zeta(srt.h, srt.a, params.Delta_min)
-sigma = zeta * srt.strain(grad(srt.uh))
+sigma = zeta * srt.strain(grad(srt.u1))
 sigma_exp = zeta * srt.strain(grad(v_exp))
 
 eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                         params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
 eqn += timestep * inner(div(sigma_exp), srt.p) * dx
 
-srt.assemble(eqn,srt.u1,srt.bcs,solver.srt_params)
+srt.assemble(eqn, srt.u1, srt.bcs, solver.srt_params)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
