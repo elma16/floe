@@ -128,6 +128,37 @@ class SeaIceModel(object):
 class ViscousPlastic(SeaIceModel):
     def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
         super().__init__(mesh, conditions, timestepping, params, output, solver_params)
+    
+        self.u0 = Function(self.V)
+        self.u1 = Function(self.V)
+        self.h = Function(self.U)
+        self.a = Function(self.U)
+        
+        self.p = TestFunction(self.V)
+
+        ep_dot = self.strain(grad(self.u1))
+
+        self.initial_condition((self.u0, conditions.ic['u']),(self.u1, self.u0),
+                               (self.a, conditions.ic['a']),(self.h, conditions.ic['h']))
+
+        zeta = self.zeta(self.h, self.a, self.delta(self.u1))
+        eta = zeta * params.e ** -2
+        sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(self.h,self.a) * Identity(2)
+
+        self.eqn = momentum_equation(self.h, self.u1, self.u0, self.p, sigma, params.rho, self.u1, conditions.ocean_curr,
+                           params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep)
+
+        if conditions.stabilised['state']:
+            alpha = conditions.stabilised['alpha']
+            fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
+            self.eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=self.uh, test=self.p)
+            
+        self.bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
+
+        
+class ViscousPlastic2(SeaIceModel):
+    def __init__(self, mesh, conditions, timestepping, params, output, solver_params):
+        super().__init__(mesh, conditions, timestepping, params, output, solver_params)
 
         self.u0 = Function(self.V)
         self.u1 = Function(self.V)
