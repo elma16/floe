@@ -25,7 +25,7 @@ ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x)
 ic =  {'u' : 0,'a' :  x / length, 'h':1}
 stabilised = {'state':False, 'alpha':10}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
-conditions = Conditions(stabilised=stabilised,ocean_curr=ocean_curr,ic=ic)
+conditions = Conditions(stabilised=stabilised, ocean_curr=ocean_curr, ic=ic)
 
 dirname = path + "/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, stabilised)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)

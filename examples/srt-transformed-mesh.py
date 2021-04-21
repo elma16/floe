@@ -40,7 +40,7 @@ pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
 ic = {'u': v_exp, 'a' : 1, 'h' : 1}
-conditions = Conditions(ic=ic, steady_state=True)
+conditions = Conditions(ic=ic)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

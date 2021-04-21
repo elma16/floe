@@ -26,7 +26,7 @@ for alpha in [1100,1200,1300,1400,1500,2000,2500,5000]:
 
     ic = {'u': 0, 'a' : x / length,'h':1, 's' : as_matrix([[0, 0], [0, 0]])}
     stabilised = {'state':True,'alpha':alpha}
-    conditions = Conditions(ocean_curr=ocean_curr,ic=ic,stabilised=stabilised)
+    conditions = Conditions(ocean_curr=ocean_curr, ic=ic, stabilised=stabilised)
 
     dirname = path + "/u_timescale={}_timestep={}_stabilised={}_value={}.pvd".format(timescale, timestep, conditions.stabilised['state'],conditions.stabilised['alpha'])
     

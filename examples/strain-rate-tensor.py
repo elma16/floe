@@ -7,7 +7,12 @@ from pathlib import Path
 path = "./output/srt"
 Path(path).mkdir(parents=True, exist_ok=True)
 
-# TEST 1 : STRAIN RATE TENSOR
+'''
+TEST 1 : STRAIN RATE TENSOR
+
+
+
+'''
 
 if '--test' in sys.argv:
     timestep = 10 ** (-6)
@@ -36,8 +41,8 @@ pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
 ic = {'u': v_exp, 'a' : 1, 'h' : 1}
-stabilised = {'state':False,'alpha':10}
-conditions = Conditions(ic=ic, steady_state=True, theta=1, stabilised=stabilised)
+stabilised = {'state':False, 'alpha':10}
+conditions = Conditions(ic=ic, theta=1, stabilised=stabilised)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
@@ -77,5 +82,5 @@ print(end - start, "[s]")
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
-plotter.plot('semilogy')
+plotter.plot('loglog')
 
