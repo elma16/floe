@@ -2,7 +2,7 @@ from seaice import *
 from firedrake import *
 
 timestep = 1
-dumpfreq = 1
+dumpfreq = 10**6
 timescale = 10
 
 zero = Constant(0)
@@ -20,18 +20,18 @@ pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
 ic = {'u': v_exp, 'a' : 1, 'h' : 1}
-conditions = Conditions(ic=ic, steady_state=True,theta=1)
+conditions = Conditions(ic=ic)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 zero = Constant(0)
-params = SeaIceParameters(rho=1,rho_a=zero,C_a=zero,rho_w=zero,C_w=zero,cor=zero)
+params = SeaIceParameters(rho=1, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero,cor=zero)
 
 srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                      solver_params=solver)
 
 zeta = srt.zeta(srt.h, srt.a, params.Delta_min)
-sigma = zeta * srt.strain(grad(srt.uh))
+sigma = zeta * srt.strain(grad(srt.u1))
 sigma_exp = zeta * srt.strain(grad(conditions.ic['u']))
 
 eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,

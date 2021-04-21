@@ -151,7 +151,7 @@ class ViscousPlastic(SeaIceModel):
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
             fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
-            self.eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=self.uh, test=self.p)
+            self.eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=self.u1, test=self.p)
             
         self.bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
 

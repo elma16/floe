@@ -28,10 +28,10 @@ pi_x = pi / length
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
-params = SeaIceParameters(rho=1,rho_a=zero,C_a=zero,rho_w=zero,C_w=zero,cor=zero)
+params = SeaIceParameters(rho=1, rho_a=zero, C_a=zero, rho_w=zero, C_w=zero, cor=zero)
 
 for values in number_of_triangles:
-    mesh = PeriodicSquareMesh(values, values, length)
+    mesh = SquareMesh(values, values, length)
     x, y = SpatialCoordinate(mesh)
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
