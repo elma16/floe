@@ -14,15 +14,14 @@ number_of_triangles = [5, 10, 20, 40, 100]
 
 error_values = []
 
-for values in number_of_triangles:
-    length = 5 * 10 ** 5
-    pi_x = pi / length
-    timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
-    output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
-    solver = SolverParameters()
-    zero = Constant(0)
-    params = SeaIceParameters(rho=1,rho_a=zero,C_a=zero,rho_w=zero,C_w=zero,cor=zero)
+length = 5 * 10 ** 5
+pi_x = pi / length
+timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
+output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
+solver = SolverParameters()
+params = SeaIceParameters(rho=1,rho_a=zero,C_a=zero,rho_w=zero,C_w=zero,cor=zero)
 
+for values in number_of_triangles:
     mesh = PeriodicSquareMesh(values, values, length)
     x, y = SpatialCoordinate(mesh)
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
@@ -38,7 +37,7 @@ for values in number_of_triangles:
 
     eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                             params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
-    eqn -= inner(div(sigma_exp), srt.p) * dx
+    eqn += inner(div(sigma_exp), srt.p) * dx
 
     srt.assemble(eqn,srt.u1,srt.bcs,solver.srt_params)
 
