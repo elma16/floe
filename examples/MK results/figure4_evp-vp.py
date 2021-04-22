@@ -40,6 +40,8 @@ for state in [True,False]:
 
     vp = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output_vp, params=params, solver_params=solver)
 
+    vp.assemble(vp.eqn, vp.u1, vp.bcs, solver.srt_params)
+
     t = 0
 
     while t < timescale - 0.5 * timestep:

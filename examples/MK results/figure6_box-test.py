@@ -11,7 +11,7 @@ TEST 3 : BOX TEST
 '''
 
 if '--test' in sys.argv:
-    timestep = 600
+    timestep = 1
     number_of_triangles = 71
     day = 60 * 60 * 24
     month = 31 * day

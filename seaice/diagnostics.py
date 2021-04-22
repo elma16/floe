@@ -47,9 +47,12 @@ class Velocity(Diagnostic):
 
     @staticmethod
     def max_component(v,mesh):
-        W = VectorFunctionSpace(mesh, "DG", 1)
-        p = project(v, W).dat.data
-        return p
+
+        p = v.dat.data
+        p1 = np.max(abs(p[:,0]))
+        p2 = np.max(abs(p[:,1]))
+
+        print(p1,p2)
     
 # currently only works for the diagnostics of one model in one file
 class OutputDiagnostics(object):

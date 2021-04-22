@@ -30,12 +30,18 @@ length = 5 * 10 ** 5
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
+pi_x = pi / length
+v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
+sigma = as_matrix([[-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)],
+                   [-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)]])
+
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
 ic =  {'u': 0, 'a': x/length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
-stabilised = {'state':True,'alpha':1}
 
-conditions = Conditions(ic = ic, ocean_curr=ocean_curr, stabilised=stabilised, family='CR')
+stabilised = {'state':False, 'alpha':1}
+
+conditions = Conditions(ic=ic, ocean_curr=ocean_curr, stabilised=stabilised, family='CR')
 
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'], conditions.family)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)

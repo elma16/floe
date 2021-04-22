@@ -70,21 +70,28 @@ diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
 t = 0
 
+delta_space = FunctionSpace(mesh, 'DG', 0)
 w = Function(srt.V).interpolate(v_exp)
+d = Function(delta_space)
+
 start = time()
 while t < timescale - 0.5 * timestep:
     srt.solve(srt.usolver)
     srt.update(srt.u0, srt.u1)
     diag.dump(srt.u1, t, v_exp)
-    srt.dump(srt.u1, w, t=t)
+    d.interpolate(srt.delta(srt.u1))
+    srt.dump(srt.u1, w, d, t=t)
     t += timestep
     srt.progress(t)
     print(Error.compute(srt.u1, w))
 end = time()
 print(end - start, "[s]")
 
+Velocity.max_component(srt.u1,mesh)
+
+'''
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
 plotter.plot('loglog')
-
+'''

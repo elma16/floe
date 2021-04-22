@@ -28,7 +28,7 @@ if '--test' in sys.argv:
 else:
     number_of_triangles = 30
     timestep = 1
-    dumpfreq = 1000
+    dumpfreq = 100
     timescale = timestep * dumpfreq
 
 dirname = path + "/u_timescale={}_timestep={}_h_fixed.pvd".format(timescale, timestep)
@@ -59,12 +59,17 @@ bt = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timesteppi
 
 diag = OutputDiagnostics(description="test 3", dirname=diagnostic_dirname)
 
+
+delta_space = FunctionSpace(mesh, 'DG', 0)
+d = Function(delta_space)
+
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
     diag.dump(bt.w1, t=t)
-    bt.dump(bt.u1, bt.a1, bt.h1, t=t)
+    d.interpolate(bt.delta(bt.u1))
+    bt.dump(bt.u1, bt.a1, bt.h1, d, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)

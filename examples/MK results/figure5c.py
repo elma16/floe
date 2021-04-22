@@ -20,7 +20,7 @@ evp unstabilised and stabilised applied to resolution (10km, 5km, 2.5km)
 Fig 5 c) Energy (log) vs. resolution (10km, 5km, 2.5km)
 '''
 
-timestep = 100
+timestep = 1
 dumpfreq = 10**10
 timescale = 24*60*60
 
