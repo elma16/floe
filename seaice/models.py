@@ -237,8 +237,7 @@ class ElasticViscousPlastic(SeaIceModel):
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
-            fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
-            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
+            eqn += stabilisation_term(alpha=alpha, zeta=avg(zeta), mesh=mesh, v=uh, test=p)
             
         bcs = DirichletBC(self.W1.sub(0), conditions.bc['u'], "on_boundary")
 
@@ -301,8 +300,7 @@ class ElasticViscousPlasticStress(SeaIceModel):
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
-            fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
-            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
+            eqn += stabilisation_term(alpha=alpha, zeta=avg(zeta), mesh=mesh, v=uh, test=p)
 
         bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
 
@@ -350,8 +348,7 @@ class ElasticViscousPlasticTransport(SeaIceModel):
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
-            fix_zeta = self.zeta(alpha, conditions.ic['u'], params.Delta_min)
-            eqn += stabilisation_term(alpha=alpha, zeta=fix_zeta, mesh=mesh, v=uh, test=p)
+            eqn += stabilisation_term(alpha=alpha, zeta=avg(zeta), mesh=mesh, v=uh, test=p)
 
         bcs = DirichletBC(self.W3.sub(0), conditions.bc['u'], "on_boundary")
 
