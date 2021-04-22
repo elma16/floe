@@ -10,8 +10,12 @@ Path(path).mkdir(parents=True, exist_ok=True)
 '''
 TEST 1 : STRAIN RATE TENSOR
 
-
-
+Simplified version of the momentum equation.
+Viscous plastic rheology used, no advection.
+Coriolis force neglected, no forcing due to ocean or wind is present, density of ice simplified to 1.
+Boundary conditions : u = 0
+Initial conditions : u = 0, h = 1, A = 1
+Domain is a 500km x 500km square.
 '''
 
 if '--test' in sys.argv:

@@ -9,6 +9,11 @@ Path(path).mkdir(parents=True, exist_ok=True)
 '''
 TEST 3 : BOX TEST
 
+Full momentum equation used, wind and ocean forcings present.
+Advection is switched on.
+Initial conditions : u = 0, h = 1, A = x / L
+Boundary conditions : u = 0 
+
 --test : one week of advection
 '''
 

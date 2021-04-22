@@ -12,6 +12,11 @@ TEST 1 : STRAIN RATE TENSOR
 
 Sheared square mesh
 '''
+
+zero = Constant(0)
+zero_vector = Constant(as_vector([0, 0]))
+
+
 if '--test' in sys.argv:
     timestep = 10 ** (-6)
     dumpfreq = 10 ** 5
@@ -48,6 +53,16 @@ params = SeaIceParameters()
 
 srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                      solver_params=solver)
+
+zeta = srt.zeta(srt.h, srt.a, params.Delta_min)
+sigma = zeta * srt.strain(grad(srt.u1))
+sigma_exp = zeta * srt.strain(grad(v_exp))
+
+eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+                        params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
+eqn += timestep * inner(div(sigma_exp), srt.p) * dx
+
+srt.assemble(eqn, srt.u1, srt.bcs, solver.srt_params)
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
