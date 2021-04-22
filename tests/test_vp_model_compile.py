@@ -26,14 +26,16 @@ output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+vp = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                      solver_params=solver)
+
+vp.assemble(vp.eqn ,vp.u1, vp.bcs, solver.srt_params)
 
 t = 0
 
 while t < timescale - 0.5 * timestep:
-    srt.solve(srt.usolver)
-    srt.update(srt.u0, srt.u1)
+    vp.solve(vp.usolver)
+    vp.update(vp.u0, vp.u1)
     t += timestep
     
 def test_vp_model_compile():

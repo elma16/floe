@@ -9,6 +9,11 @@ Path(path).mkdir(parents=True, exist_ok=True)
 '''
 TEST 3 : BOX TEST
 
+Full momentum equation used, wind and ocean forcings present.
+Advection is switched off.
+Initial conditions : u = 0, h = 1, A = x / L
+Boundary conditions : u = 0 
+
 --test : one month of no advection ( h and a are fixed) f
 '''
 
@@ -41,7 +46,7 @@ geo_wind = as_vector(
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
 ic = {'u' : 0, 'h' : 1, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])}
-conditions = Conditions(ic=ic,family='CG',geo_wind=geo_wind,ocean_curr=ocean_curr)
+conditions = Conditions(ic=ic, family='CG', geo_wind=geo_wind, ocean_curr=ocean_curr)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

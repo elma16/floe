@@ -38,6 +38,8 @@ vp = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping,
 
 diag = OutputDiagnostics(description="EVP-VP Test", dirname=diagnostic_dirname)
 
+vp.assemble(vp.eqn ,vp.u1, vp.bcs, solver.srt_params)
+
 t = 0
 
 while t < timescale - 0.5 * timestep:

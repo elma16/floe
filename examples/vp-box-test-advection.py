@@ -3,7 +3,7 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-path = "./output/vp-bt-fixed"
+path = "./output/vp-bt-advected"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
@@ -43,7 +43,7 @@ geo_wind = as_vector(
 
 ic = {'u' : 0, 'h' : 1, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])}
 advect = {'h': True, 'a' : True}
-conditions = Conditions(ic=ic,family='CG',geo_wind=geo_wind,ocean_curr=ocean_curr, advect=advect)
+conditions = Conditions(ic=ic, family='CG', geo_wind=geo_wind, ocean_curr=ocean_curr, advect=advect)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()

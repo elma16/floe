@@ -7,6 +7,14 @@ Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
 TEST 2 : EVP
+
+Manufactured solutions.
+Coriolis force neglected, no forcing due to wind. 
+Forcing due to ocean is present.
+Advection turned off.
+Boundary conditions : u = 0
+Initial conditions : h = 1, A = x / L
+Domain is a 500km x 500km square.
 '''
 
 timestep = 1
@@ -27,7 +35,7 @@ ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x)
 ic =  {'u': 0, 'a': x/length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
 stabilised = {'state':True,'alpha':1}
 
-conditions = Conditions(ic = ic, ocean_curr=ocean_curr,stabilised=stabilised,family='CR')
+conditions = Conditions(ic = ic, ocean_curr=ocean_curr, stabilised=stabilised, family='CR')
 
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'], conditions.family)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
@@ -49,8 +57,6 @@ while t < timescale - 0.5 * timestep:
     evp.dump(evp.u1, evp.s1, t=t)
     t += timestep
     evp.progress(t)
-
-# print(Velocity.x_component(evp.U1,evp.u1))
 
     
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
