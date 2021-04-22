@@ -3,7 +3,7 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-path = "./output/vp-bt-fixed"
+path = "./output/vp-bt-advected"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
