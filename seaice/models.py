@@ -72,6 +72,7 @@ class SeaIceModel(object):
         self.U = FunctionSpace(mesh, family, 1)
         self.U1 = FunctionSpace(mesh, 'DG' ,1)
         self.S = TensorFunctionSpace(mesh, 'DG', 0)
+        self.D = FunctionSpace(mesh, 'DG', 0)
         self.W1 = MixedFunctionSpace([self.V, self.S])
         self.W2 = MixedFunctionSpace([self.V, self.U1, self.U1])
         self.W3 = MixedFunctionSpace([self.V, self.S, self.U1, self.U1])

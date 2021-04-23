@@ -55,11 +55,14 @@ params = SeaIceParameters()
 bt = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                            solver_params=solver)
 
+
+d = Function(bt.D)
 t = 0
 while t < timescale - 0.5 * timestep:
     bt.solve(bt.usolver)
     bt.update(bt.w0, bt.w1)
-    bt.dump(bt.u1, bt.s1, t=t)
+    d.interpolate(bt.delta(bt.u1))
+    bt.dump(bt.u1, bt.s1, d, t=t)
     t += timestep
     t0.assign(t)
     bt.progress(t)

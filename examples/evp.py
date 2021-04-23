@@ -39,7 +39,7 @@ ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x)
 
 ic =  {'u': 0, 'a': x/length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
 
-stabilised = {'state':True, 'alpha':1}
+stabilised = {'state':False, 'alpha':1}
 
 conditions = Conditions(ic=ic, ocean_curr=ocean_curr, stabilised=stabilised, family='CR')
 
@@ -55,12 +55,15 @@ diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
 t = 0
 
+d = Function(evp.D)
+
 while t < timescale - 0.5 * timestep:
     u0, s0 = evp.w0.split()
     evp.solve(evp.usolver)
     evp.update(evp.w0, evp.w1)
     diag.dump(evp.w1,t=t)
-    evp.dump(evp.u1, evp.s1, t=t)
+    d.interpolate(evp.delta(evp.u1))
+    evp.dump(evp.u1, evp.s1, d, t=t)
     t += timestep
     evp.progress(t)
 

@@ -60,8 +60,7 @@ bt = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timesteppi
 diag = OutputDiagnostics(description="test 3", dirname=diagnostic_dirname)
 
 
-delta_space = FunctionSpace(mesh, 'DG', 0)
-d = Function(delta_space)
+d = Function(bt.D)
 
 t = 0
 while t < timescale - 0.5 * timestep:
