@@ -41,7 +41,7 @@ x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
-stabilised = {'state': True , 'alpha': 10}
+stabilised = {'state': True , 'alpha': 1}
 ic = {'u': 0, 'a' : x / length, 'h' : 1, 's' : as_matrix([[0, 0], [0, 0]])}
 conditions = Conditions(theta=0.5, ocean_curr=ocean_curr, ic=ic)
 

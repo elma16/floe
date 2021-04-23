@@ -42,7 +42,7 @@ for triangles in [10,20,30]:
 
     ic =  {'u': 0, 'a' : x / length, 'h' : 1, 's' : as_matrix([[0, 0], [0, 0]])}
     conditions = Conditions(theta=0.5,ocean_curr=ocean_curr,ic=ic)
-    stabilised =  {'state': True , 'alpha': 10}
+    stabilised =  {'state': True , 'alpha': 1}
     conditions_stab = Conditions(theta=0.5,ocean_curr=ocean_curr,stabilised=stabilised,ic=ic)
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
