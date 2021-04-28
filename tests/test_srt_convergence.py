@@ -2,8 +2,6 @@ import sys
 from seaice import *
 from firedrake import *
 import numpy as np
-from time import time
-import matplotlib.pyplot as plt
 from pathlib import Path
 
 path = "./output/test-output"
@@ -61,12 +59,13 @@ for values in number_of_triangles:
 
 error_slope = float(format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f'))
 
-print(error_slope)
-
 def test_srt_initial_value():
     assert error_slope + 2 < 0.01
 
-plt.loglog(number_of_triangles, error_values, '.', label='Gradient = {}'.format(error_slope))
-plt.savefig(plot_dirname)
+
+
+
+
+
 
 

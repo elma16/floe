@@ -24,8 +24,8 @@ if '--test' in sys.argv:
     timescale = 10
 else:
     timestep = 1
-    dumpfreq = 1
-    timescale = 10
+    dumpfreq = 10
+    timescale = timestep * dumpfreq
 
 zero = Constant(0)
 zero_vector = Constant(as_vector([0, 0]))
@@ -89,9 +89,8 @@ print(end - start, "[s]")
 
 Velocity.max_component(srt.u1,mesh)
 
-'''
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
 plotter.plot('loglog')
-'''
+

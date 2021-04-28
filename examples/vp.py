@@ -2,15 +2,15 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-path = "./output/evp-vp"
+path = "./output/vp"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
 Viscous plastic with ocean current forcing, and with zeta = zeta_max
 '''
 
-timestep = 0.1
-dumpfreq = 10
+timestep = 1
+dumpfreq = 100
 timescale = timestep * dumpfreq
 
 title = "VP Plot"
@@ -24,9 +24,9 @@ x, y = SpatialCoordinate(mesh)
 
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
-ic = {'u': 0, 'a' : x / length, 'h' : 0.5}
-stabilised =  {'state': True , 'alpha': 1}
-conditions = Conditions(family='CG',ocean_curr=ocean_curr,ic=ic,stabilised=stabilised)
+ic = {'u': 0, 'a' : x / length, 'h' : 1}
+stabilised =  {'state': True, 'alpha': 1}
+conditions = Conditions(family='CR',ocean_curr=ocean_curr,ic=ic,stabilised=stabilised)
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'],conditions.family)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
