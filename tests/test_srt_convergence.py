@@ -63,7 +63,7 @@ def test_srt_initial_value(state, theta):
     error_slope = float(format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f'))
 
 
-    assert error_slope + 2 < 0.01
+    assert round(error_slope + 2, 2) == 0
 
     
 if __name__ == '__main__':
