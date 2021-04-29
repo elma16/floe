@@ -2,9 +2,11 @@ import sys
 from seaice import *
 from firedrake import *
 import numpy as np
+from time import time
+import matplotlib.pyplot as plt
 from pathlib import Path
 
-path = "./output/test-output"
+path = "./output/srt-error-conv"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 timestep = 1
@@ -14,7 +16,7 @@ timescale = 10
 zero = Constant(0)
 zero_vector = Constant(as_vector([0, 0]))
 
-dirname = path + "/test.pvd"
+dirname = path + "/u.pvd"
 plot_dirname = path + "/srt-conv.png"
 
 number_of_triangles = [5, 10, 20, 40, 100]
@@ -42,7 +44,7 @@ for values in number_of_triangles:
     sigma = zeta * srt.strain(grad(srt.u1))
     sigma_exp = zeta * srt.strain(grad(v_exp))
 
-    eqn = srt.momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+    eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                             params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
     eqn += timestep * inner(div(sigma_exp), srt.p) * dx
 
@@ -59,13 +61,12 @@ for values in number_of_triangles:
 
 error_slope = float(format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f'))
 
-def test_srt_initial_value():
-    assert error_slope + 2 < 0.01
+print(error_slope)
 
-
-
-
-
-
+plt.title('Strain Rate Tensor Error Convergence')
+plt.xlabel(r'Number of Triangles')
+plt.ylabel(r'Error')
+plt.loglog(number_of_triangles, error_values, '.', label='Gradient = {}'.format(error_slope))
+plt.savefig(plot_dirname)
 
 

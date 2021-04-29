@@ -41,7 +41,7 @@ ic =  {'u': 0, 'a': x/length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
 
 stabilised = {'state':False, 'alpha':1}
 
-conditions = Conditions(ic=ic, ocean_curr=ocean_curr, stabilised=stabilised, family='CR')
+conditions = Conditions(ic=ic, ocean_curr=ocean_curr, stabilised=stabilised, family='CG')
 
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'], conditions.family)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)

@@ -44,7 +44,7 @@ def test_srt_model_compile(state, family, theta):
     sigma = zeta * srt.strain(grad(srt.u1))
     sigma_exp = zeta * srt.strain(grad(conditions.ic['u']))
 
-    eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+    eqn = srt.momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                             params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
     eqn -= inner(div(sigma_exp), srt.p) * dx
 
