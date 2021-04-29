@@ -1,42 +1,51 @@
+import pytest
 from seaice import *
 from firedrake import *
 
-timestep = 1
-dumpfreq = 10**3
-timescale = 10
+# this one takes a while to run - could take out some of these options?
 
-dirname = "./output/test-output/u.pvd"
+@pytest.mark.parametrize('family, theta',
+                         [(b,c)
+                          for b in ['CR', 'CG']
+                          for c in [0,1/2,1]])
 
-number_of_triangles = 35
-length = 5 * 10 ** 5
-mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, length)
 
-x, y = SpatialCoordinate(mesh)
+def test_evp_transport_model_compile(family, theta):
+    timestep = 1
+    dumpfreq = 10**3
+    timescale = 10
 
-pi_x = pi / length
+    dirname = "./output/test-output/u.pvd"
 
-ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
+    number_of_triangles = 35
+    length = 5 * 10 ** 5
+    mesh = PeriodicSquareMesh(number_of_triangles, number_of_triangles, length)
 
-ic = {'u': 0, 'a' : x / length, 'h' : 0.5, 's':as_vector([[0,0],[0,0]])}
-stabilised =  {'state': True , 'alpha': 1}
-advect = {'h': True,'a': True}
-conditions = Conditions(family='CG',ocean_curr=ocean_curr,ic=ic,stabilised=stabilised,advect=advect)
+    x, y = SpatialCoordinate(mesh)
 
-timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
-output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
-solver = SolverParameters()
-params = SeaIceParameters()
+    pi_x = pi / length
 
-evp_transport = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
-                     solver_params=solver)
+    ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
-t = 0
+    ic = {'u': 0, 'a' : x / length, 'h' : 1, 's':as_vector([[0,0],[0,0]])}
+    stabilised =  {'state': False , 'alpha': 1}
+    advect = {'h': True,'a': True}
+    conditions = Conditions(family=family,ocean_curr=ocean_curr,ic=ic,stabilised=stabilised,advect=advect,theta=theta)
 
-while t < timescale - 0.5 * timestep:
-    evp_transport.solve(evp_transport.usolver)
-    evp_transport.update(evp_transport.w0, evp_transport.w1)
-    t += timestep
+    timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
+    output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
+    solver = SolverParameters()
+    params = SeaIceParameters()
+
+    evp_transport = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
+                                                   solver_params=solver)
+
+    t = 0
     
+    while t < timescale - 0.5 * timestep:
+        evp_transport.solve(evp_transport.usolver)
+        evp_transport.update(evp_transport.w0, evp_transport.w1)
+        t += timestep
 
-def test_evp_transport_model_compile():
+        
     assert t > 0

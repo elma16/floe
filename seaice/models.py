@@ -22,7 +22,7 @@ def momentum_equation(hh, u1, u0, p, sigma, rho, uh, ocean_curr, rho_a, C_a, rho
                                          - stress_term(rho_w, C_w, ocean_curr - uh)
                                          - stress_term(rho_a, C_a,geo_wind))
 
-def transport_equation(h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep):
+def transport_equation(uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep):
    
     def in_term(var1, var2, test):
         trial = var2 - var1

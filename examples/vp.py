@@ -14,8 +14,8 @@ dumpfreq = 100
 timescale = timestep * dumpfreq
 
 title = "VP Plot"
-diagnostic_dirname = path + "/evp_vp.nc"
-plot_dirname = path + "/evp_vp_energy.png"
+diagnostic_dirname = path + "/vp.nc"
+plot_dirname = path + "/vp_energy.png"
 
 number_of_triangles = 35
 length = 5 * 10 ** 5
@@ -36,7 +36,7 @@ params = SeaIceParameters()
 vp = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                         solver_params=solver)
 
-diag = OutputDiagnostics(description="EVP-VP Test", dirname=diagnostic_dirname)
+diag = OutputDiagnostics(description="VP Test", dirname=diagnostic_dirname)
 
 vp.assemble(vp.eqn ,vp.u1, vp.bcs, solver.srt_params)
 
