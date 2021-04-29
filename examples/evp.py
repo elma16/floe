@@ -17,7 +17,7 @@ Initial conditions : h = 1, A = x / L
 Domain is a 500km x 500km square.
 '''
 
-timestep = 5
+timestep = 4
 dumpfreq =  10
 timescale = timestep * dumpfreq
 

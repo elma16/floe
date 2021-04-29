@@ -44,7 +44,7 @@ for values in number_of_triangles:
     sigma = zeta * srt.strain(grad(srt.u1))
     sigma_exp = zeta * srt.strain(grad(v_exp))
 
-    eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+    eqn = srtmomentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                             params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
     eqn += timestep * inner(div(sigma_exp), srt.p) * dx
 

@@ -18,7 +18,7 @@ Boundary conditions : u = 0
 '''
 
 if '--test' in sys.argv:
-    timestep = 15
+    timestep = 10
     number_of_triangles = 30
     day = 60 * 60 * 24
     week = 7 * day
