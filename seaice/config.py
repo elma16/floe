@@ -97,5 +97,5 @@ class Conditions(Configuration):
     family = 'CR' # finite element
     stabilised = {'state': False , 'alpha': 0} #stabilisation
     steady_state = False # steady state
-    theta = 1 # theta for use in theta method (0 = Euler's method, 1/2 = Implicit Midpoint, 1 = Backward Euler)
+    theta = 1/2 # theta for use in theta method (0 = Euler's method, 1/2 = Implicit Midpoint, 1 = Backward Euler)
     advect = None  # what variable do you want to advect?

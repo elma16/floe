@@ -9,7 +9,7 @@ Path(path).mkdir(parents=True, exist_ok=True)
 Viscous plastic with ocean current forcing, and with zeta = zeta_max
 '''
 
-timestep = 1
+timestep = 5
 dumpfreq = 100
 timescale = timestep * dumpfreq
 
@@ -25,8 +25,8 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
 ic = {'u': 0, 'a' : x / length, 'h' : 1}
-stabilised =  {'state': True, 'alpha': 1}
-conditions = Conditions(family='CR',ocean_curr=ocean_curr,ic=ic,stabilised=stabilised)
+stabilised =  {'state': False, 'alpha': 1}
+conditions = Conditions(family='CR',ocean_curr=ocean_curr,ic=ic,stabilised=stabilised,theta=1/2)
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'],conditions.family)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)

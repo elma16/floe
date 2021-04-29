@@ -23,19 +23,17 @@ def momentum_equation(hh, u1, u0, p, sigma, rho, uh, ocean_curr, rho_a, C_a, rho
                                          - stress_term(rho_a, C_a,geo_wind))
 
 def transport_equation(h_in, a_in, uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep):
-    
+   
     def in_term(var1, var2, test):
         trial = var2 - var1
         return test * trial * dx
 
-    def upwind_term(var1, bc_in, test):
+    def upwind_term(var1, test):
         un = 0.5 * (dot(uh, n) + abs(dot(uh, n)))
         return timestep * (var1 * div(test * uh) * dx
-                           - conditional(dot(uh, n) < 0, test * dot(uh, n) * bc_in, 0.0) * ds
-                           - conditional(dot(uh, n) > 0, test * dot(uh, n) * var1, 0.0) * ds
                            - (test('+') - test('-')) * (un('+') * ah('+') - un('-') * var1('-')) * dS)
     
-    return in_term(h0, h1, q) - upwind_term(hh, h_in, q) + in_term(a0, a1, r) - upwind_term(ah, a_in, r)
+    return in_term(h0, h1, q) - upwind_term(hh, q) + in_term(a0, a1, r) - upwind_term(ah, r)
 
 
 def stabilisation_term(alpha, zeta, mesh, v, test):
@@ -70,7 +68,7 @@ class SeaIceModel(object):
         self.n = FacetNormal(mesh)
         self.V = VectorFunctionSpace(mesh, family, 1)
         self.U = FunctionSpace(mesh, family, 1)
-        self.U1 = FunctionSpace(mesh, 'DG' ,1)
+        self.U1 = FunctionSpace(mesh, 'DG' ,0)
         self.S = TensorFunctionSpace(mesh, 'DG', 0)
         self.D = FunctionSpace(mesh, 'DG', 0)
         self.W1 = MixedFunctionSpace([self.V, self.S])
@@ -147,7 +145,7 @@ class ViscousPlastic(SeaIceModel):
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(self.h,self.a) * Identity(2)
 
         self.eqn = momentum_equation(self.h, self.u1, self.u0, self.p, sigma, params.rho, self.u1, conditions.ocean_curr,
-                           params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep)
+                                     params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep)
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
@@ -187,7 +185,7 @@ class ViscousPlasticTransport(SeaIceModel):
 
         eqn = momentum_equation(hh, u1, u0, p, sigma, params.rho, uh, conditions.ocean_curr, params.rho_a,
                                 params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep)
-        eqn += transport_equation(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, q, r, self.n, self.timestep)
+        eqn += transport_equation(uh, hh, ah, h1, h0, a1, a0, q, r, self.n, self.timestep)
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
@@ -341,7 +339,7 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         
         eqn = momentum_equation(hh, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
                                 params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep, ind=self.ind)
-        eqn += transport_equation(0.5, 0.5, uh, hh, ah, h1, h0, a1, a0, r, m, self.n, self.timestep)
+        eqn += transport_equation(uh, hh, ah, h1, h0, a1, a0, r, m, self.n, self.timestep)
         eqn += inner(self.ind * (s1 - s0) + 0.5 * self.timestep * rheology / params.T, q) * dx
         eqn -= inner(q * zeta * self.timestep / params.T, ep_dot) * dx
 
