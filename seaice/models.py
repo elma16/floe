@@ -133,21 +133,25 @@ class ViscousPlastic(SeaIceModel):
         
         self.p = TestFunction(self.V)
 
-        ep_dot = self.strain(grad(self.u1))
+        theta = conditions.theta
+        self.uh = (1-theta) * self.u0 + theta * self.u1
 
+        ep_dot = self.strain(grad(self.uh))
+        
         self.initial_condition((self.u0, conditions.ic['u']),(self.u1, self.u0),
                                (self.a, conditions.ic['a']),(self.h, conditions.ic['h']))
 
-        zeta = self.zeta(self.h, self.a, self.delta(self.u1))
+        zeta = self.zeta(self.h, self.a, self.delta(self.uh))
         eta = zeta * params.e ** -2
         sigma = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - 0.5 * self.Ice_Strength(self.h,self.a) * Identity(2)
 
-        self.eqn = self.momentum_equation(self.h, self.u1, self.u0, self.p, sigma, params.rho, self.u1, conditions.ocean_curr,
-                                     params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep)
+        self.eqn = self.momentum_equation(self.h, self.u1, self.u0, self.p, sigma, params.rho, self.uh,
+                                          conditions.ocean_curr, params.rho_a, params.C_a, params.rho_w,
+                                          params.C_w, conditions.geo_wind, params.cor, self.timestep)
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
-            self.eqn += self.stabilisation_term(alpha=alpha, zeta=avg(zeta), mesh=mesh, v=self.u1, test=self.p)
+            self.eqn += self.stabilisation_term(alpha=alpha, zeta=avg(zeta), mesh=mesh, v=self.uh, test=self.p)
             
         self.bcs = DirichletBC(self.V, conditions.bc['u'], "on_boundary")
 
