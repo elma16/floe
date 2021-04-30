@@ -337,7 +337,8 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         ep_dot = self.strain(grad(uh))
         zeta = self.zeta(hh, ah, self.delta(uh))
         eta = zeta * params.e ** (-2)
-        rheology = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(2)
+        rheology = params.e ** 2 * sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sh) + self.Ice_Strength(hh, ah))
+        #rheology = 2 * eta * ep_dot + (zeta - eta) * tr(ep_dot) * Identity(2) - self.Ice_Strength(hh, ah) * 0.5 * Identity(2)
         
         eqn = self.momentum_equation(hh, u1, u0, p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
                                 params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep, ind=self.ind)
