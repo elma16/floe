@@ -99,3 +99,4 @@ class Conditions(Configuration):
     steady_state = False # steady state
     theta = 1/2 # theta for use in theta method (0 = Euler's method, 1/2 = Implicit Midpoint, 1 = Backward Euler)
     advect = None  # what variable do you want to advect?
+    order = 0 # order of the spaces
