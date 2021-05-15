@@ -71,7 +71,7 @@ class SeaIceModel(object):
         '''
         arguments should be put in order (variable1, ic1), (variable2, ic2), etc.
         '''
-        for vars,ics in args:
+        for vars, ics in args:
             if isinstance(ics, (int, float)) or type(ics) == 'ufl.tensors.ListTensor':
                 vars.assign(ics)
             else:

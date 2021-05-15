@@ -62,16 +62,16 @@ t = 0
 
 d = Function(evp.D)
 
-while t < timescale - 0.5 * timestep:
+while t < timescale - 0.5 * float(timestepc):
     u0, s0 = evp.w0.split()
     evp.solve(evp.usolver)
     evp.update(evp.w0, evp.w1)
     diag.dump(evp.w1,t=t)
     d.interpolate(evp.delta(evp.u1))
     evp.dump(evp.u1, evp.s1, d, t=t)
-    t += timestepc
-    timestepc.assign(timestepc+0.1)
-    #evp.progress(t)
+    t += float(timestepc)
+    timestepc.assign(timestepc+0.01)
+    evp.progress(t)
 
     
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
