@@ -39,6 +39,9 @@ def test_evp_model_compile(state, family, theta):
     evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                                 solver_params=solver)
 
+    evp.assemble(evp.eqn, evp.w1, evp.bcs, solver.srt_params)
+    evp.u1, evp.s1 = evp.w1.split()
+    
     t = 0
 
     while t < timescale - 0.5 * timestep:

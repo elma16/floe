@@ -17,7 +17,7 @@ Initial conditions : h = 1, A = x / L
 Domain is a 500km x 500km square.
 '''
 
-timestep = 5
+timestep = 1
 dumpfreq =  10
 timescale = timestep * dumpfreq
 
@@ -50,6 +50,10 @@ solver = SolverParameters()
 params = SeaIceParameters()
 evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                             solver_params=solver)
+
+evp.assemble(evp.eqn, evp.w1, evp.bcs, solver.srt_params)
+
+evp.u1, evp.s1 = evp.w1.split()
 
 diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 

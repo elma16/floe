@@ -70,9 +70,9 @@ diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
 t = 0
 
-delta_space = FunctionSpace(mesh, 'DG', 0)
+
 w = Function(srt.V).interpolate(v_exp)
-d = Function(delta_space)
+d = Function(srt.D)
 
 start = time()
 while t < timescale - 0.5 * timestep:

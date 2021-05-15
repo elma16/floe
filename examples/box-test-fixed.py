@@ -27,8 +27,8 @@ if '--test' in sys.argv:
    
 else:
     number_of_triangles = 30
-    timestep = 1
-    dumpfreq = 1000
+    timestep = 20
+    dumpfreq = 100
     timescale = timestep * dumpfreq
 
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
