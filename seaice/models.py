@@ -225,14 +225,14 @@ class ElasticViscousPlastic(SeaIceModel):
         self.uh = (1-theta) * self.u0 + theta * self.u1
         self.sh = (1-theta) * self.s0 + theta * self.s1
 
-        ep_dot = self.strain(grad(self.uh))
+        self.ep_dot = self.strain(grad(self.uh))
         zeta = self.zeta(self.h, self.a, self.delta(self.uh))
         self.rheology = params.e ** 2 * self.sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(self.sh) + self.Ice_Strength(self.h, self.a))
         
         self.eqn = self.momentum_equation(self.h, self.u1, self.u0, self.p, self.sh, params.rho, self.uh, conditions.ocean_curr, params.rho_a,
                                           params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep, ind=self.ind)
         self.eqn += inner(self.ind * (self.s1 - self.s0) + 0.5 * self.timestep * self.rheology / params.T, self.q) * dx
-        self.eqn -= inner(self.q * zeta * self.timestep / params.T, ep_dot) * dx
+        self.eqn -= inner(self.q * zeta * self.timestep / params.T, self.ep_dot) * dx
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']

@@ -60,6 +60,7 @@ while t < timescale - 0.5 * timestep:
     evp.dump(evp.u1, evp.s1, d, t=t)
     t += timestep
     c.assign(min_value(1,c+ timestep**(-3)))
+    #c.assign(conditional(lt(t,timescale/10),0.1,1))
     evp.progress(t)
 
     

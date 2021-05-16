@@ -19,20 +19,21 @@ Domain is a 500km x 500km square.
 '''
 
 timestep = 1
-dumpfreq =  10 ** 6
+dumpfreq =  1
 timescale = 10
 
 zero = Constant(0)
 
 title = "EVP Plot"
 diagnostic_dirname = path + "/evp.nc"
-plot_dirname = path + "/evp_error.png"
+plot_dirname = path + "/evp_error_timescale={}_timestep={}.png".format(timescale, timestep)
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 
 length = 5 * 10 ** 5
 pi_x = pi / length
 
-number_of_triangles = [5, 10, 20, 40, 100]
+#number_of_triangles = [5, 10, 20, 40, 80]
+number_of_triangles = [40]
 
 error_values = []
 
@@ -50,6 +51,11 @@ for values in number_of_triangles:
     sigma_exp = as_matrix([[-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)],
                            [-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)]])
 
+    #sigma_exp = as_matrix([[1, 1],
+    #                       [1, 1]])
+
+
+
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
     ic =  {'u': v_exp, 'a': 1, 'h': 1, 's': sigma_exp}
@@ -58,22 +64,25 @@ for values in number_of_triangles:
 
     evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                                 solver_params=solver)
+    
+    eqn = evp.momentum_equation(evp.h, evp.u1, evp.u0, evp.p, evp.sh, params.rho, evp.uh, conditions.ocean_curr, params.rho_a,
+                                params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, evp.timestep, ind=evp.ind)
+
+    # source terms due to sigma_exp and v_exp
+    eqn += timestep * inner(sigma_exp, grad(evp.p)) * dx
+    eqn -= timestep * inner(params.rho_w * params.C_w * sqrt(dot(v_exp - ocean_curr, v_exp - ocean_curr)) * v_exp - ocean_curr, evp.p) * dx
 
     zeta2 = evp.zeta(evp.h, evp.a, evp.delta(v_exp))
     ep_dot2 = evp.strain(grad(v_exp))
-
-    eqn = evp.momentum_equation(evp.h, evp.u1, evp.u0, evp.p, evp.sh, params.rho, evp.uh, conditions.ocean_curr, params.rho_a,
-                                params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, evp.timestep, ind=evp.ind)
-    eqn -= inner(sigma_exp, grad(evp.p)) * dx
-    eqn += inner(params.rho_w * params.C_w * sqrt(dot(v_exp - ocean_curr, v_exp - ocean_curr)) * v_exp - ocean_curr, evp.p) * dx(degree=3)
+    rheology2 = params.e ** 2 * sigma_exp + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sigma_exp) + evp.Ice_Strength(evp.h, evp.a))
+    zeta = evp.zeta(evp.h, evp.a, evp.delta(evp.uh))
     
-    eqn += inner(evp.s1 - evp.s0 + 0.5 * evp.timestep * evp.rheology / params.T, evp.q) * dx
-    eqn -= inner(evp.q * zeta2 * evp.timestep / params.T, ep_dot2) * dx
+    eqn += inner(evp.s1 - evp.s0 + 0.5 * timestep * evp.rheology / params.T, evp.q) * dx
+    eqn -= inner(evp.q * zeta * timestep / params.T, evp.ep_dot) * dx
 
-    rheology = params.e ** 2 * sigma_exp + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sigma_exp) + evp.Ice_Strength(evp.h, evp.a))
-
-    eqn -= inner(0.5 * evp.timestep * rheology / params.T, evp.q) * dx
-    eqn += inner(evp.q * zeta2 * evp.timestep / params.T, ep_dot2) * dx
+    # source terms in rheology 
+    eqn += inner(0.5 * timestep * rheology2 / params.T, evp.q) * dx
+    eqn -= inner(evp.q * zeta2 * timestep / params.T, ep_dot2) * dx
 
     evp.assemble(eqn, evp.w1, evp.bcs, solver.srt_params)
     evp.u1, evp.s1 = evp.w1.split()
@@ -82,16 +91,15 @@ for values in number_of_triangles:
 
     t = 0
 
-    w = Function(evp.V).interpolate(v_exp)
-    d = Function(evp.D)
+    w = Function(evp.V, name="Exact Solution Vector").interpolate(v_exp)
+    x = Function(evp.S, name="Exact Solution Tensor").interpolate(sigma_exp)
 
     while t < timescale - 0.5 * timestep:
         u0, s0 = evp.w0.split()
         evp.solve(evp.usolver)
         evp.update(evp.w0, evp.w1)
         diag.dump(evp.w1, t=t)
-        d.interpolate(evp.delta(evp.u1))
-        evp.dump(evp.u1, evp.s1, d, w, t=t)
+        evp.dump(evp.u1, evp.s1, w, x, t=t)
         t += timestep
         evp.progress(t)
         print(Error.compute(evp.u1, w))

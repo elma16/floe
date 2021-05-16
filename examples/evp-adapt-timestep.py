@@ -19,8 +19,8 @@ Domain is a 500km x 500km square.
 
 timestep = 1
 timestepc = Constant(timestep)
-dumpfreq =  10
-timescale = timestep * dumpfreq
+dumpfreq =  10 ** 6
+timescale = 10 ** 4
 
 title = "EVP Plot"
 diagnostic_dirname = path + "/evp.nc"
@@ -70,8 +70,11 @@ while t < timescale - 0.5 * float(timestepc):
     d.interpolate(evp.delta(evp.u1))
     evp.dump(evp.u1, evp.s1, d, t=t)
     t += float(timestepc)
-    timestepc.assign(timestepc+0.01)
+    timestepc.assign(timestepc+0.02)
+    #timestepc.assign(conditional(lt(t,2000),1,timestepc+0.5))
+    #timestepc.assign(conditional(lt(t,timescale/5),1,20))
     evp.progress(t)
+
 
     
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
