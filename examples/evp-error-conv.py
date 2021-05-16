@@ -19,8 +19,8 @@ Domain is a 500km x 500km square.
 '''
 
 timestep = 1
-dumpfreq =  1
-timescale = 10
+dumpfreq =  10
+timescale = 100
 
 zero = Constant(0)
 
@@ -51,9 +51,8 @@ for values in number_of_triangles:
     sigma_exp = as_matrix([[-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)],
                            [-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)]])
 
-    #sigma_exp = as_matrix([[1, 1],
-    #                       [1, 1]])
-
+    #sigma_exp = as_matrix([[1, 0],
+    #                       [0, 1]])
 
 
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
