@@ -89,9 +89,6 @@ class SeaIceModel(object):
         def momentum_term():
             return inner(rho * hh * (u1 - u0), p) * dx
 
-        def perp(u):
-            return as_vector([-u[1], u[0]])
-
         def forcing_term():
             return inner(rho * hh * cor * perp(ocean_curr - uh), p) * dx
 
