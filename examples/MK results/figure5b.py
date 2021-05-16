@@ -52,7 +52,15 @@ for triangles in [50,100,200]:
 
     evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params, solver_params=solver)
 
+    evp.assemble(evp.eqn, evp.w1, evp.bcs, solver.srt_params)
+
+    evp.u1, evp.s1 = evp.w1.split()
+
     evp_stab = ElasticViscousPlastic(mesh=mesh, conditions=conditions_stab, timestepping=timestepping, output=output, params=params, solver_params=solver)
+
+    evp_stab.assemble(evp_stab.eqn, evp_stab.w1, evp_stab.bcs, solver.srt_params)
+
+    evp_stab.u1, evp_stab.s1 = evp_stab.w1.split()
     
     t = 0
 
