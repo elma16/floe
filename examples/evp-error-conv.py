@@ -67,29 +67,34 @@ for values in number_of_triangles:
     #eqn = evp.momentum_equation(evp.h, evp.u1, evp.u0, evp.p, evp.sh, params.rho, evp.uh, conditions.ocean_curr, params.rho_a,
     #                            params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, evp.timestep, ind=evp.ind)
 
-    
-    eqn = inner(params.rho * evp.h * (evp.u1 - evp.u0), evp.p) * dx
-    eqn += timestep * inner(evp.sh, grad(evp.p)) * dx
-    eqn -= timestep * inner(params.rho_w * params.C_w * sqrt(dot(ocean_curr - evp.uh, ocean_curr - evp.uh)) * (ocean_curr - evp.uh), evp.p) * dx
+    u1, s1 = split(evp.w1)
+    u0, s0 = split(evp.w0)
+
+    theta = 1/2
+    uh = (1-theta) * u0 + theta * u1
+    sh = (1-theta) * s0 + theta * s1
+
+    eqn = inner(params.rho * evp.h * (u1 - u0), evp.p) * dx
+    eqn += timestep * inner(sh, grad(evp.p)) * dx
+    eqn -= timestep * inner(params.rho_w * params.C_w * sqrt(dot(ocean_curr - uh, ocean_curr - uh)) * (ocean_curr - uh), evp.p) * dx
 
     # source terms due to sigma_exp and v_exp
-    eqn += timestep * inner(sigma_exp, grad(evp.p)) * dx
-    eqn -= timestep * inner(params.rho_w * params.C_w * sqrt(dot(ocean_curr - v_exp, ocean_curr - v_exp)) * (ocean_curr - v_exp), evp.p) * dx
+    eqn += timestep * inner(div(sigma_exp), evp.p) * dx
+    eqn += timestep * inner(params.rho_w * params.C_w * sqrt(dot(ocean_curr - v_exp, ocean_curr - v_exp)) * (ocean_curr - v_exp), evp.p) * dx
 
     zeta_exp = evp.zeta(evp.h, evp.a, evp.delta(v_exp))
     ep_dot_exp = evp.strain(grad(v_exp))
     rheology_exp = params.e ** 2 * sigma_exp + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sigma_exp) + evp.Ice_Strength(evp.h, evp.a))
-    zeta = evp.zeta(evp.h, evp.a, evp.delta(evp.uh))
+    zeta = evp.zeta(evp.h, evp.a, evp.delta(uh))
     
-    eqn += inner(evp.s1 - evp.s0 + 0.5 * timestep * evp.rheology / params.T, evp.q) * dx
+    eqn += inner(s1 - s0 + 0.5 * timestep * evp.rheology / params.T, evp.q) * dx
     eqn -= inner(evp.q * zeta * timestep / params.T, evp.ep_dot) * dx
 
     # source terms in rheology 
-    eqn += inner(0.5 * timestep * rheology_exp / params.T, evp.q) * dx
+    eqn -= inner(0.5 * timestep * rheology_exp / params.T, evp.q) * dx
     eqn += inner(evp.q * zeta_exp * timestep / params.T, ep_dot_exp) * dx
 
     evp.assemble(eqn, evp.w1, evp.bcs, solver.srt_params)
-    evp.u1, evp.s1 = evp.w1.split()
 
     diag = OutputDiagnostics(description="test 1", dirname=diagnostic_dirname)
 
@@ -98,18 +103,22 @@ for values in number_of_triangles:
     w = Function(evp.V, name="Exact Solution Vector").interpolate(v_exp)
     x = Function(evp.S, name="Exact Solution Tensor").interpolate(sigma_exp)
 
+    u1, s1 = evp.w1.split()
+    
+    evp.dump(u1, s1, w, x, t=0)
+
     while t < timescale - 0.5 * timestep:
         u0, s0 = evp.w0.split()
         evp.solve(evp.usolver)
         evp.update(evp.w0, evp.w1)
         diag.dump(evp.w1, t=t)
-        evp.dump(evp.u1, evp.s1, w, x, t=t)
         t += timestep
+        evp.dump(u1, s1, w, x, t=t)
         evp.progress(t)
-        print(Error.compute(evp.u1, w))
+        print(Error.compute(u1, w))
         #print(Error.compute(evp.s1, x))
 
-    error_values.append(Error.compute(evp.u1, v_exp))
+    error_values.append(Error.compute(u1, v_exp))
 
 error_slope = float(format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f'))
 

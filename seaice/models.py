@@ -72,10 +72,12 @@ class SeaIceModel(object):
         arguments should be put in order (variable1, ic1), (variable2, ic2), etc.
         '''
         for vars, ics in args:
+            print(vars, ics)
             if isinstance(ics, (int, float)) or type(ics) == 'ufl.tensors.ListTensor':
                 vars.assign(ics)
             else:
                 vars.interpolate(ics)
+
 
     def assemble(self, eqn, func, bcs, params):
         uprob = NonlinearVariationalProblem(eqn, func, bcs)
@@ -213,31 +215,32 @@ class ElasticViscousPlastic(SeaIceModel):
 
         self.initial_condition((self.u0, conditions.ic['u']), (self.s0, conditions.ic['s']),
                                (self.a, conditions.ic['a']), (self.h, conditions.ic['h']))
-
+        print(norm(self.s0))
         self.w1.assign(self.w0)
-        self.u1, self.s1 = split(self.w1)
-        self.u0, self.s0 = split(self.w0)
+        u1, s1 = split(self.w1)
+        u0, s0 = split(self.w0)
 
         theta = conditions.theta
-        self.uh = (1-theta) * self.u0 + theta * self.u1
-        self.sh = (1-theta) * self.s0 + theta * self.s1
+        uh = (1-theta) * u0 + theta * u1
+        sh = (1-theta) * s0 + theta * s1
 
-        self.ep_dot = self.strain(grad(self.uh))
-        zeta = self.zeta(self.h, self.a, self.delta(self.uh))
-        self.rheology = params.e ** 2 * self.sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(self.sh) + self.Ice_Strength(self.h, self.a))
+        self.ep_dot = self.strain(grad(uh))
+        zeta = self.zeta(self.h, self.a, self.delta(uh))
+        self.rheology = params.e ** 2 * sh + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sh) + self.Ice_Strength(self.h, self.a))
         
-        self.eqn = self.momentum_equation(self.h, self.u1, self.u0, self.p, self.sh, params.rho, self.uh, conditions.ocean_curr, params.rho_a,
+        self.eqn = self.momentum_equation(self.h, u1, u0, self.p, sh, params.rho, uh, conditions.ocean_curr, params.rho_a,
                                           params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, self.timestep, ind=self.ind)
-        self.eqn += inner(self.ind * (self.s1 - self.s0) + 0.5 * self.timestep * self.rheology / params.T, self.q) * dx
+        self.eqn += inner(self.ind * (s1 - s0) + 0.5 * self.timestep * self.rheology / params.T, self.q) * dx
         self.eqn -= inner(self.q * zeta * self.timestep / params.T, self.ep_dot) * dx
 
         if conditions.stabilised['state']:
             alpha = conditions.stabilised['alpha']
-            self.eqn += self.stabilisation_term(alpha=alpha, zeta=avg(zeta), mesh=mesh, v=self.uh, test=self.p)
+            self.eqn += self.stabilisation_term(alpha=alpha, zeta=avg(zeta), mesh=mesh, v=uh, test=self.p)
             
         self.bcs = DirichletBC(self.W1.sub(0), conditions.bc['u'], "on_boundary")
 
-        #self.u1, self.s1 = self.w1.split()
+
+        #u1, s1 = self.w1.split()
 
 
 class ElasticViscousPlasticStress(SeaIceModel):
