@@ -100,7 +100,7 @@ class SeaIceModel(object):
 
         return ind * momentum_term() + timestep * (rheology_term() - forcing_term()
                                                    - stress_term(rho_w, C_w, ocean_curr - uh)
-                                                   - stress_term(rho_a, C_a,geo_wind))
+                                                   - stress_term(rho_a, C_a, geo_wind))
 
     def transport_equation(self, uh, hh, ah, h1, h0, a1, a0, q, r, n, timestep):
    

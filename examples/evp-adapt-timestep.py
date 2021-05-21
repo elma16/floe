@@ -1,6 +1,7 @@
 from seaice import *
 from firedrake import *
 from pathlib import Path
+from time import time
 
 path = "./output/evp-adaptive-timestepping"
 Path(path).mkdir(parents=True, exist_ok=True)
@@ -62,6 +63,8 @@ t = 0
 
 d = Function(evp.D)
 
+begin = time()
+
 while t < timescale - 0.5 * float(timestepc):
     u0, s0 = evp.w0.split()
     evp.solve(evp.usolver)
@@ -70,11 +73,14 @@ while t < timescale - 0.5 * float(timestepc):
     d.interpolate(evp.delta(evp.u1))
     evp.dump(evp.u1, evp.s1, d, t=t)
     t += float(timestepc)
-    timestepc.assign(timestepc+0.02)
+    #timestepc.assign(timestepc+0.02)
     #timestepc.assign(conditional(lt(t,2000),1,timestepc+0.5))
-    #timestepc.assign(conditional(lt(t,timescale/5),1,20))
+    timestepc.assign(conditional(lt(t,2000),1,20))
     evp.progress(t)
 
+end = time()
+
+print(end - begin)
 
     
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,

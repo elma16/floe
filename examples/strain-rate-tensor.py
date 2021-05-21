@@ -87,7 +87,7 @@ while t < timescale - 0.5 * timestep:
 end = time()
 print(end - start, "[s]")
 
-Velocity.max_component(srt.u1,mesh)
+Velocity.max_component(srt.u1, mesh)
 
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='error', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
