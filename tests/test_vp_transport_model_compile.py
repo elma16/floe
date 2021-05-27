@@ -6,7 +6,7 @@ from firedrake import *
 @pytest.mark.parametrize('family, theta',
                          [(b,c)
                           for b in ['CR', 'CG']
-                          for c in [0,1/2,1]])
+                          for c in [0, 1/2, 1]])
 
 
 def test_vp_transport_model_compile(family, theta):

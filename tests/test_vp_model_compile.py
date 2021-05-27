@@ -2,11 +2,12 @@ import pytest
 from seaice import *
 from firedrake import *
 
+
 @pytest.mark.parametrize('state, family, theta',
-                         [(a,b,c)
+                         [(a, b, c)
                           for a in [True, False]
                           for b in ['CR', 'CG']
-                          for c in [0,1/2,1]])
+                          for c in [0, 1/2, 1]])
 
 
 def test_vp_model_compile(state, family, theta):
@@ -52,10 +53,10 @@ def test_vp_model_compile(state, family, theta):
 
 
 @pytest.mark.parametrize('state, theta, order',
-                         [(a,b,c)
+                         [(a, b, c)
                           for a in [True, False]
-                          for b in [0,1/2,1]]
-                          for c in [0,1])
+                          for b in [0, 1/2, 1]
+                          for c in [0, 1]])
 
 
 def test_vp_model_compile(state, theta, order):

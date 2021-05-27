@@ -83,6 +83,7 @@ for values in number_of_triangles:
     eqn += timestep * inner(params.rho_w * params.C_w * sqrt(dot(ocean_curr - v_exp, ocean_curr - v_exp)) * (ocean_curr - v_exp), evp.p) * dx
 
     zeta_exp = evp.zeta(evp.h, evp.a, evp.delta(v_exp))
+    #here? grad to div
     ep_dot_exp = evp.strain(grad(v_exp))
     rheology_exp = params.e ** 2 * sigma_exp + Identity(2) * 0.5 * ((1 - params.e ** 2) * tr(sigma_exp) + evp.Ice_Strength(evp.h, evp.a))
     zeta = evp.zeta(evp.h, evp.a, evp.delta(uh))
