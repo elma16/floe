@@ -19,8 +19,8 @@ class Error(Diagnostic):
         self.solution = solution
 
     @staticmethod
-    def compute(v, solution):
-        return norm(solution - v)
+    def compute(v, solution, norm_type='L2'):
+        return norm(solution - v, norm_type)
 
 
 class Energy(Diagnostic):

@@ -14,10 +14,12 @@ timescale = 10
 zero = Constant(0)
 zero_vector = Constant(as_vector([0, 0]))
 
-dirname = path + "/u.pvd"
-plot_dirname = path + "/srt-conv.png"
+norm_type = 'L2'
 
-number_of_triangles = [5, 10, 20, 40, 100]
+dirname = path + "/u.pvd"
+plot_dirname = path + "/srt-conv_{}.png".format(norm_type)
+
+number_of_triangles = [5, 10, 20, 40, 80]
 
 error_values = []
 
@@ -55,16 +57,17 @@ for values in number_of_triangles:
         srt.update(srt.u0, srt.u1)
         t += timestep
 
-    error_values.append(Error.compute(srt.u1, v_exp))
+    error_values.append(Error.compute(srt.u1, v_exp, norm_type))
 
-error_slope = float(format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f'))
+h = [sqrt(2)*length/x for x in number_of_triangles]
+error_slope = float(format(np.polyfit(np.log(h), np.log(error_values), 1)[0], '.3f'))
 
 print(error_slope)
 
 plt.title('Strain Rate Tensor Error Convergence')
-plt.xlabel(r'Number of Triangles')
-plt.ylabel(r'Error')
-plt.loglog(number_of_triangles, error_values, '.', label='Gradient = {}'.format(error_slope))
+plt.xlabel(r'h')
+plt.ylabel(r'{} Error'.format(norm_type))
+plt.loglog(h, error_values, '.', label='Gradient = {}'.format(error_slope))
 plt.savefig(plot_dirname)
 
 
