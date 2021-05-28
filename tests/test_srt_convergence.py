@@ -1,5 +1,6 @@
 from seaice import *
-from firedrake import *
+from firedrake import (PeriodicSquareMesh, SpatialCoordinate, as_vector, pi, SquareMesh,
+                       sin)
 import numpy as np
 import pytest
 
@@ -8,10 +9,15 @@ import pytest
                           for a in [True, False]
                           for c in [0,1/2,1]])
 
+
+
 def test_srt_initial_value(state, theta):
     timestep = 1
     dumpfreq = 10 ** 6
-    timescale = 10
+    timescale = 2
+    number_of_triangles = [5, 10, 20, 40, 80]
+    length = 5 * 10 ** 5
+    pi_x = pi / length
 
     zero = Constant(0)
     zero_vector = Constant(as_vector([0, 0]))
@@ -19,12 +25,8 @@ def test_srt_initial_value(state, theta):
     dirname = "./output/test-output/test.pvd"
     plot_dirname = "./output/test-output/srt-conv.png"
 
-    number_of_triangles = [5, 10, 20, 40, 100]
-
     error_values = []
 
-    length = 5 * 10 ** 5
-    pi_x = pi / length
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     solver = SolverParameters()
@@ -60,10 +62,12 @@ def test_srt_initial_value(state, theta):
             
         error_values.append(Error.compute(srt.u1, v_exp))
 
-    error_slope = float(format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f'))
+        
+    h = [sqrt(2)*length/x for x in number_of_triangles]
+    error_slope = float(format(np.polyfit(np.log(h), np.log(error_values), 1)[0], '.3f'))
 
 
-    assert round(error_slope + 2, 2) == 0
+    assert round(error_slope - 2, 2) == 0
 
 @pytest.mark.parametrize('order, theta',
                          [(a,b)
@@ -73,7 +77,10 @@ def test_srt_initial_value(state, theta):
 def test_srt_cg_convergence(order, theta):
     timestep = 1
     dumpfreq = 10 ** 6
-    timescale = 10
+    timescale = 2
+    number_of_triangles = [5, 10, 20, 40, 80]
+    length = 5 * 10 ** 5
+    pi_x = pi / length
 
     zero = Constant(0)
     zero_vector = Constant(as_vector([0, 0]))
@@ -81,12 +88,8 @@ def test_srt_cg_convergence(order, theta):
     dirname = "./output/test-output/test.pvd"
     plot_dirname = "./output/test-output/srt-conv.png"
 
-    number_of_triangles = [5, 10, 20, 40, 100]
-
     error_values = []
 
-    length = 5 * 10 ** 5
-    pi_x = pi / length
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     solver = SolverParameters()
@@ -122,10 +125,11 @@ def test_srt_cg_convergence(order, theta):
             
         error_values.append(Error.compute(srt.u1, v_exp))
 
-    error_slope = float(format(np.polyfit(np.log(number_of_triangles), np.log(error_values), 1)[0], '.3f'))
+    h = [sqrt(2)*length/x for x in number_of_triangles]
+    error_slope = float(format(np.polyfit(np.log(h), np.log(error_values), 1)[0], '.3f'))
 
 
-    assert round(error_slope + order, 1) == -2
+    assert round(error_slope - order - 2, 1) == 0
 
     
 if __name__ == '__main__':

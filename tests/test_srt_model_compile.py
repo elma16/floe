@@ -1,7 +1,7 @@
 import pytest
 from seaice import *
-from firedrake import *
-
+from firedrake import (PeriodicSquareMesh, SpatialCoordinate, as_vector, pi,
+                       sin)
 
 @pytest.mark.parametrize('state, family, theta',
                          [(a,b,c)
@@ -13,7 +13,7 @@ from firedrake import *
 def test_srt_model_compile(state, family, theta):
     timestep = 1
     dumpfreq = 10**6
-    timescale = 10
+    timescale = 1
 
     zero = Constant(0)
     zero_vector = Constant(as_vector([0, 0]))

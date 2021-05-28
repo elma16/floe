@@ -1,6 +1,6 @@
 import pytest
 from seaice import *
-from firedrake import *
+from firedrake import (PeriodicSquareMesh, SpatialCoordinate, as_vector, pi)
 
 # this one takes a while to run - could take out some of these options?
 
@@ -13,7 +13,7 @@ from firedrake import *
 def test_evp_transport_model_compile(family, theta):
     timestep = 1
     dumpfreq = 10**3
-    timescale = 10
+    timescale = 1
 
     dirname = "./output/test-output/u.pvd"
 

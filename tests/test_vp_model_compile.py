@@ -1,6 +1,6 @@
 import pytest
 from seaice import *
-from firedrake import *
+from firedrake import (PeriodicSquareMesh, SpatialCoordinate, as_vector)
 
 
 @pytest.mark.parametrize('state, family, theta',
@@ -13,7 +13,7 @@ from firedrake import *
 def test_vp_model_compile(state, family, theta):
     timestep = 1
     dumpfreq = 10**3
-    timescale = 10
+    timescale = 1
 
     dirname = "./output/test-output/u.pvd"
 
@@ -23,8 +23,6 @@ def test_vp_model_compile(state, family, theta):
 
     x, y = SpatialCoordinate(mesh)
     
-    pi_x = pi / length
-
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
     ic = {'u': 0, 'a' : x / length, 'h' : 0.5}
@@ -62,7 +60,7 @@ def test_vp_model_compile(state, family, theta):
 def test_vp_model_compile(state, theta, order):
     timestep = 1
     dumpfreq = 10**3
-    timescale = 10
+    timescale = 1
 
     dirname = "./output/test-output/u.pvd"
 
@@ -72,8 +70,6 @@ def test_vp_model_compile(state, theta, order):
 
     x, y = SpatialCoordinate(mesh)
     
-    pi_x = pi / length
-
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
     ic = {'u': 0, 'a' : x / length, 'h' : 0.5}

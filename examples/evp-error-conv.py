@@ -52,10 +52,6 @@ for values in number_of_triangles:
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
     sigma_exp = as_matrix([[-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)],
                            [-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)]])
-    #v_exp = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
-    #sigma_exp = as_matrix([[1, 1],
-    #                       [1, 1]])
-
 
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 

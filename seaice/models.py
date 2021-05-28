@@ -1,4 +1,8 @@
-from firedrake import *
+from firedrake import (FacetNormal, SpatialCoordinate, VectorFunctionSpace, FunctionSpace, TensorFunctionSpace,
+                       MixedFunctionSpace, DirichletBC, inner, interpolate, Constant, Function, TestFunctions,
+                       TestFunction, NonlinearVariationalProblem, NonlinearVariationalSolver, File, FILE_CREATE,
+                       FILE_READ, div, grad, transpose, sqrt, dev, tr, exp, Identity, dx, dS, perp, dot, avg,
+                       CellVolume, FacetArea, jump, norm, split)
 
 
 class SeaIceModel(object):
