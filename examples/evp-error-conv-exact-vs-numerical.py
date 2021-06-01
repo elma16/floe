@@ -9,7 +9,7 @@ path = "./output/evp-error-conv"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 """
-TEST 2 : EVP Error Convergence
+TEST 2 : EVP Error Convergence - exact vs. numerical
 
 Manufactured solutions.
 Coriolis force neglected, no forcing due to wind. 
@@ -18,6 +18,11 @@ Advection turned off.
 Boundary conditions : u = 0
 Initial conditions : h = 1, A = x / L
 Domain is a 500km x 500km square.
+
+Exact : project initial condition 
+Numerical : interpolate intitial condtion
+
+Compute the error between these two.
 """
 
 timestep = 1
