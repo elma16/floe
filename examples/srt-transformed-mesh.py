@@ -44,7 +44,7 @@ x, y = SpatialCoordinate(mesh)
 pi_x = pi / length
 v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
-ic = {'u': v_exp, 'a' : 1, 'h' : 1}
+ic = {'u': v_exp, 'a': 1, 'h': 1}
 conditions = Conditions(ic=ic)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
@@ -58,7 +58,7 @@ zeta = srt.zeta(srt.h, srt.a, params.Delta_min)
 sigma = zeta * srt.strain(grad(srt.u1))
 sigma_exp = zeta * srt.strain(grad(v_exp))
 
-eqn = momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
+eqn = srt.momentum_equation(srt.h, srt.u1, srt.u0, srt.p, sigma, params.rho, zero_vector, conditions.ocean_curr,
                         params.rho_a, params.C_a, params.rho_w, params.C_w, conditions.geo_wind, params.cor, timestep)
 eqn += timestep * inner(div(sigma_exp), srt.p) * dx
 
@@ -77,7 +77,7 @@ while t < timescale - 0.5 * timestep:
     srt.dump(srt.u1, w, t=t)
     t += timestep
     srt.progress(t)
-    print(Error.compute(srt.u1, w))
+    print('Error:' , Error.compute(srt.u1, w))
 end = time()
 print(end - start, "[s]")
 

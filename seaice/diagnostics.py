@@ -19,8 +19,8 @@ class Error(Diagnostic):
         self.solution = solution
 
     @staticmethod
-    def compute(v, solution):
-        return norm(solution - v)
+    def compute(v, solution, norm_type='L2'):
+        return norm(solution - v, norm_type)
 
 
 class Energy(Diagnostic):
@@ -47,9 +47,12 @@ class Velocity(Diagnostic):
 
     @staticmethod
     def max_component(v,mesh):
-        W = VectorFunctionSpace(mesh, "DG", 1)
-        p = project(v, W).dat.data
-        return p
+
+        p = v.dat.data
+        p1 = np.max(abs(p[:,0]))
+        p2 = np.max(abs(p[:,1]))
+
+        print(p1,p2)
     
 # currently only works for the diagnostics of one model in one file
 class OutputDiagnostics(object):

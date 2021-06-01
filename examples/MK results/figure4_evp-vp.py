@@ -23,10 +23,10 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
 
-for state in [True,False]:
+for state in [True, False]:
         
-    ic = {'u': 0, 'a' : x / length, 'h' : 1,  's' : as_matrix([[0, 0], [0, 0]])}
-    stabilised = {'state': state , 'alpha':1000}
+    ic = {'u': 0, 'a': x / length, 'h': 1,  's': as_matrix([[0, 0], [0, 0]])}
+    stabilised = {'state': state , 'alpha': 1}
     conditions = Conditions(theta=0.5, ocean_curr=ocean_curr,ic=ic)
     dirname_evp = path + "/evp_u_timescale={}_timestep={}_stabilised={}.pvd".format(timescale, timestep, state)
     dirname_vp = path + "/vp_u_timescale={}_timestep={}_stabilised={}.pvd".format(timescale, timestep, state)
@@ -39,6 +39,8 @@ for state in [True,False]:
     evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output_evp, params=params, solver_params=solver)
 
     vp = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output_vp, params=params, solver_params=solver)
+
+    vp.assemble(vp.eqn, vp.u1, vp.bcs, solver.srt_params)
 
     t = 0
 

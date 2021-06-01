@@ -20,7 +20,7 @@ evp unstabilised and stabilised applied to resolution (10km, 5km, 2.5km)
 Fig 5 c) Energy (log) vs. resolution (10km, 5km, 2.5km)
 '''
 
-timestep = 100
+timestep = 10
 dumpfreq = 10**10
 timescale = 24*60*60
 
@@ -32,18 +32,19 @@ d_dirname2 = path + "/evp_stab_energy2.nc"
 fig5b_dirname = path + "/fig5b.png"
 
 
-for triangles in [10,20,30]:
+for triangles in [50, 100, 200]:
+
     number_of_triangles = triangles
     length = 5 * 10 ** 5
     mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
     x, y = SpatialCoordinate(mesh)
-
+    
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
-    ic =  {'u': 0, 'a' : x / length, 'h' : 1, 's' : as_matrix([[0, 0], [0, 0]])}
-    conditions = Conditions(theta=0.5,ocean_curr=ocean_curr,ic=ic)
-    stabilised =  {'state': True , 'alpha': 10}
-    conditions_stab = Conditions(theta=0.5,ocean_curr=ocean_curr,stabilised=stabilised,ic=ic)
+    ic =  {'u': 0, 'a': x / length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
+    conditions = Conditions(theta=0.5, ocean_curr=ocean_curr, ic=ic)
+    stabilised =  {'state': True, 'alpha': 1}
+    conditions_stab = Conditions(theta=0.5, ocean_curr=ocean_curr, stabilised=stabilised, ic=ic)
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     solver = SolverParameters()
@@ -51,7 +52,15 @@ for triangles in [10,20,30]:
 
     evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params, solver_params=solver)
 
+    evp.assemble(evp.eqn, evp.w1, evp.bcs, solver.srt_params)
+
+    evp.u1, evp.s1 = evp.w1.split()
+
     evp_stab = ElasticViscousPlastic(mesh=mesh, conditions=conditions_stab, timestepping=timestepping, output=output, params=params, solver_params=solver)
+
+    evp_stab.assemble(evp_stab.eqn, evp_stab.w1, evp_stab.bcs, solver.srt_params)
+
+    evp_stab.u1, evp_stab.s1 = evp_stab.w1.split()
     
     t = 0
 

@@ -3,7 +3,7 @@ from seaice import *
 from firedrake import *
 from pathlib import Path
 
-path = "./output/bt-adv"
+path = "./output/FESIM-bt-adv"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
@@ -14,26 +14,18 @@ Advection is switched on.
 Initial conditions : u = 0, h = 1, A = x / L
 Boundary conditions : u = 0 
 
---test : one week of advection
 '''
 
-if '--test' in sys.argv:
-    timestep = 15
-    number_of_triangles = 30
-    day = 60 * 60 * 24
-    week = 7 * day
-    timescale = week
-    dumpfreq = 3000
-    
-else:
-    number_of_triangles = 30
-    timestep = 1
-    dumpfreq = 100
-    timescale = timestep * dumpfreq
+timestep = 600
+number_of_triangles = 30
+day = 60 * 60 * 24
+week = 7 * day
+timescale = week
+dumpfreq = 3000
 
-dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
+dirname = path + "/u_timescale={}_timestep={}_h_fixed.pvd".format(timescale, timestep)
 title = "EVP Fixed Energy Plot"
-diagnostic_dirname = path + "/box_test_energy_T={}_t={}.nc".format(timescale, timestep)
+diagnostic_dirname = path + "/box_test_energy_T={}_t={}_h_fixed.nc".format(timescale, timestep)
 plot_dirname = path + "/EVP_box_test_energy_T={}_t={}.png".format(timescale, timestep)
 
 length = 10 ** 6
@@ -43,16 +35,16 @@ x, y = SpatialCoordinate(mesh)
 ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 t0 = Constant(0)
 geo_wind = as_vector(
-    [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
-     5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
+    [5 + (sin(2 * pi * t0 / (4 * day)) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
+     5 + (sin(2 * pi * t0 / (4 * day)) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-ic  = {'u': 0, 'h': 1, 'a': x / length, 's': as_matrix([[0, 0], [0, 0]])}
-advect = {'h': True, 'a': True}
+ic  = {'u': 0, 'h': 2, 'a': x / length, 's': as_matrix([[0, 0], [0, 0]])}
+
 conditions = Conditions(theta=0.5, family='CG', geo_wind=geo_wind, ocean_curr=ocean_curr, ic=ic, advect=advect)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
-params = SeaIceParameters()
+params = SeaIceParameters(C_a = 0.00225)
 
 bt = ElasticViscousPlasticTransport(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                                     solver_params=solver)

@@ -1,8 +1,9 @@
 from seaice import *
 from firedrake import *
 from pathlib import Path
+from time import time
 
-path = "./output/evp"
+path = "./output/evp-adaptive-timestepping"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 '''
@@ -18,8 +19,9 @@ Domain is a 500km x 500km square.
 '''
 
 timestep = 1
-dumpfreq =  10
-timescale = timestep * dumpfreq
+timestepc = Constant(timestep)
+dumpfreq =  10 ** 6
+timescale = 10 ** 4
 
 title = "EVP Plot"
 diagnostic_dirname = path + "/evp.nc"
@@ -39,12 +41,12 @@ ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x)
 
 ic =  {'u': 0, 'a': x/length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
 
-stabilised = {'state':False, 'alpha':1}
+stabilised = {'state': False, 'alpha': 1}
 
 conditions = Conditions(ic=ic, ocean_curr=ocean_curr, stabilised=stabilised, family='CG')
 
 dirname = path + "/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'], conditions.family)
-timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
+timestepping = TimesteppingParameters(timescale=timescale, timestep=timestepc)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
@@ -61,25 +63,27 @@ t = 0
 
 d = Function(evp.D)
 
-while t < timescale - 0.5 * timestep:
+begin = time()
+
+while t < timescale - 0.5 * float(timestepc):
     u0, s0 = evp.w0.split()
     evp.solve(evp.usolver)
     evp.update(evp.w0, evp.w1)
     diag.dump(evp.w1,t=t)
     d.interpolate(evp.delta(evp.u1))
     evp.dump(evp.u1, evp.s1, d, t=t)
-    t += timestep
+    t += float(timestepc)
+    #timestepc.assign(timestepc+0.02)
+    #timestepc.assign(conditional(lt(t,2000),1,timestepc+0.5))
+    timestepc.assign(conditional(lt(t,2000),1,20))
     evp.progress(t)
+
+end = time()
+
+print(end - begin)
 
     
 plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
                   timestepping=timestepping, title=title)
 
 plotter.plot()
-
-
-
-
-
-
-
