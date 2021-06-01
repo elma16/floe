@@ -4,16 +4,16 @@ from pathlib import Path
 
 Path("./output/evp").mkdir(parents=True, exist_ok=True)
 
-'''
+"""
 TEST 2 : EVP
-'''
+"""
 
 timestep = 1
-dumpfreq = 10 
+dumpfreq = 10
 timescale = timestep * dumpfreq
 
-for name in ['CG','CR']:
-    print('family =',name)
+for name in ["CG", "CR"]:
+    print("family =", name)
 
     title = "EVP Plot"
     diagnostic_dirname = "./output/evp/evp.nc"
@@ -24,41 +24,46 @@ for name in ['CG','CR']:
     mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
     x, y = SpatialCoordinate(mesh)
 
-    ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
+    ocean_curr = as_vector(
+        [0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length]
+    )
 
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
-    ic =  {'u': 0, 'a' : x / length, 'h':1, 's' : as_matrix([[0, 0], [0, 0]])}
+    ic = {"u": 0, "a": x / length, "h": 1, "s": as_matrix([[0, 0], [0, 0]])}
     conditions = Conditions(family=name, ocean_curr=ocean_curr, ic=ic)
-    dirname = "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(timescale, timestep, conditions.stabilised['state'], conditions.family)
+    dirname = (
+        "./output/evp/u_timescale={}_timestep={}_stabilised={}_family={}.pvd".format(
+            timescale, timestep, conditions.stabilised["state"], conditions.family
+        )
+    )
 
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
     solver = SolverParameters()
     params = SeaIceParameters()
 
-    evp = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
-                                solver_params=solver)
+    evp = ElasticViscousPlastic(
+        mesh=mesh,
+        conditions=conditions,
+        timestepping=timestepping,
+        output=output,
+        params=params,
+        solver_params=solver,
+    )
 
     diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 
     t = 0
 
-    l = [j for j in range(0,16)]
+    l = [j for j in range(0, 16)]
 
     while t < timescale - 0.5 * timestep:
         u0, s0 = evp.w0.split()
         evp.solve(evp.usolver)
         rel_error = Error.compute(evp.u1, u0) / norm(evp.u1)
-        if rel_error < 10**(-l[0]):
-            print('relative error < ' , 10**(-l[0]) , 'time' , t)
+        if rel_error < 10 ** (-l[0]):
+            print("relative error < ", 10 ** (-l[0]), "time", t)
             l.pop(0)
         evp.update(evp.w0, evp.w1)
         evp.dump(evp.u1, evp.s1, t=t)
         t += timestep
         evp.progress(t)
-
-
-
-
-
-
-

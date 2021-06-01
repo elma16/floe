@@ -6,7 +6,7 @@ from pathlib import Path
 path = "./output/bt-fixed"
 Path(path).mkdir(parents=True, exist_ok=True)
 
-'''
+"""
 TEST 3 : BOX TEST
 
 Full momentum equation used, wind and ocean forcings present.
@@ -15,16 +15,16 @@ Initial conditions : u = 0, h = 1, A = x / L
 Boundary conditions : u = 0 
 
 --test : one month of no advection ( h and a are fixed) f
-'''
+"""
 
-if '--test' in sys.argv:
+if "--test" in sys.argv:
     timestep = 600
     number_of_triangles = 71
     day = 60 * 60 * 24
     month = 31 * day
     timescale = month
     dumpfreq = 144
-   
+
 else:
     number_of_triangles = 30
     timestep = 20
@@ -39,21 +39,38 @@ length = 10 ** 6
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
-ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
+ocean_curr = as_vector(
+    [0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length]
+)
 t0 = Constant(0)
 geo_wind = as_vector(
-    [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
-     5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
+    [
+        5
+        + (sin(2 * pi * t0 / timescale) - 3)
+        * sin(2 * pi * x / length)
+        * sin(2 * pi * y / length),
+        5
+        + (sin(2 * pi * t0 / timescale) - 3)
+        * sin(2 * pi * y / length)
+        * sin(2 * pi * x / length),
+    ]
+)
 
-ic = {'u' : 0, 'h' : 1, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])}
-conditions = Conditions(ic=ic, family='CG', geo_wind=geo_wind, ocean_curr=ocean_curr)
+ic = {"u": 0, "h": 1, "a": x / length, "s": as_matrix([[0, 0], [0, 0]])}
+conditions = Conditions(ic=ic, family="CG", geo_wind=geo_wind, ocean_curr=ocean_curr)
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-bt = ElasticViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
-                           solver_params=solver)
+bt = ElasticViscousPlastic(
+    mesh=mesh,
+    conditions=conditions,
+    timestepping=timestepping,
+    output=output,
+    params=params,
+    solver_params=solver,
+)
 
 
 d = Function(bt.D)

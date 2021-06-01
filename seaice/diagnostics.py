@@ -13,13 +13,12 @@ class Diagnostic(object):
 
 
 class Error(Diagnostic):
-
     def __init__(self, v, solution):
         super().__init__(v)
         self.solution = solution
 
     @staticmethod
-    def compute(v, solution, norm_type='L2'):
+    def compute(v, solution, norm_type="L2"):
         return norm(solution - v, norm_type)
 
 
@@ -37,23 +36,24 @@ class Velocity(Diagnostic):
         super().__init__(v)
         self.mesh = mesh
 
-    def x_component(fs,v):
-        vh =  v[0]
-        return interpolate(vh,fs)
+    def x_component(fs, v):
+        vh = v[0]
+        return interpolate(vh, fs)
 
     @staticmethod
     def y_component(v):
         return v[1]
 
     @staticmethod
-    def max_component(v,mesh):
+    def max_component(v, mesh):
 
         p = v.dat.data
-        p1 = np.max(abs(p[:,0]))
-        p2 = np.max(abs(p[:,1]))
+        p1 = np.max(abs(p[:, 0]))
+        p2 = np.max(abs(p[:, 1]))
 
-        print(p1,p2)
-    
+        print(p1, p2)
+
+
 # currently only works for the diagnostics of one model in one file
 class OutputDiagnostics(object):
     """
@@ -65,7 +65,9 @@ class OutputDiagnostics(object):
         self.description = description
 
         with Dataset(dirname, "w") as dataset:
-            dataset.description = "Diagnostics data for simulation {desc}".format(desc=description)
+            dataset.description = "Diagnostics data for simulation {desc}".format(
+                desc=description
+            )
             dataset.history = "Created {t}".format(t=time.ctime())
             dataset.source = "Output from SeaIce Model"
             dataset.createDimension("time", None)
@@ -77,9 +79,9 @@ class OutputDiagnostics(object):
     def dump(self, variable, t, solution=None):
         with Dataset(self.dirname, "a") as dataset:
             idx = dataset.dimensions["time"].size
-            dataset.variables["time"][idx:idx + 1] = t
+            dataset.variables["time"][idx : idx + 1] = t
             energy = dataset.variables["energy"]
             error = dataset.variables["error"]
-            energy[idx:idx + 1] = Energy.compute(variable)
+            energy[idx : idx + 1] = Energy.compute(variable)
             if solution is not None:
-                error[idx:idx + 1] = Error.compute(variable, solution)
+                error[idx : idx + 1] = Error.compute(variable, solution)

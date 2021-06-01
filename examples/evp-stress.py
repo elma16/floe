@@ -20,20 +20,30 @@ length = 5 * 10 ** 5
 mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
 x, y = SpatialCoordinate(mesh)
 
-ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
+ocean_curr = as_vector(
+    [0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length]
+)
 
-ic =  {'u': 0,'a':  x / length, 'h': 1}
-stabilised = {'state': False, 'alpha': 10}
+ic = {"u": 0, "a": x / length, "h": 1}
+stabilised = {"state": False, "alpha": 10}
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 conditions = Conditions(stabilised=stabilised, ocean_curr=ocean_curr, ic=ic)
 
-dirname = path + "/u_timescale={}_timestep={}_stab={}.pvd".format(timescale, timestep, stabilised)
+dirname = path + "/u_timescale={}_timestep={}_stab={}.pvd".format(
+    timescale, timestep, stabilised
+)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
 solver = SolverParameters()
 params = SeaIceParameters()
 
-evps = ElasticViscousPlasticStress(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
-                                   solver_params=solver)
+evps = ElasticViscousPlasticStress(
+    mesh=mesh,
+    conditions=conditions,
+    timestepping=timestepping,
+    output=output,
+    params=params,
+    solver_params=solver,
+)
 
 diag = OutputDiagnostics(description="EVP Matrix Test", dirname=diagnostic_dirname)
 
@@ -47,7 +57,12 @@ while t < timescale - 0.5 * timestep:
     t += timestep
     evps.progress(t)
 
-plotter = Plotter(dataset_dirname=diagnostic_dirname, diagnostic='energy', plot_dirname=plot_dirname,
-                  timestepping=timestepping, title=title)
+plotter = Plotter(
+    dataset_dirname=diagnostic_dirname,
+    diagnostic="energy",
+    plot_dirname=plot_dirname,
+    timestepping=timestepping,
+    title=title,
+)
 
 plotter.plot()

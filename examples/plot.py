@@ -23,20 +23,15 @@ dataset_dirname = path + "/box_test_energy_T={}_t={}.nc".format(timescale, times
 plot_dirname = path + "/box_test_energy_T={}_t={}.png".format(timescale, timestep)
 
 diagnostic = "energy"
-dataset = Dataset(dataset_dirname, mode='r')
+dataset = Dataset(dataset_dirname, mode="r")
 yaxis = dataset.variables[diagnostic][:]
 dataset.close()
 
-t = np.arange(0, len(yaxis)*timestep, timestep)
+t = np.arange(0, len(yaxis) * timestep, timestep)
 
 plt.plot(t, yaxis, label="timestep = {} [s]".format(timestep))
-plt.ylabel(r'{} of solution'.format(diagnostic))
-plt.xlabel(r'Time [s]')
+plt.ylabel(r"{} of solution".format(diagnostic))
+plt.xlabel(r"Time [s]")
 plt.title(title)
-plt.legend(loc='best')
+plt.legend(loc="best")
 plt.savefig(plot_dirname)
-
-
-
-
-

@@ -15,27 +15,27 @@ class Plotter(object):
         self.timestep = timestepping.timestep
         self.timescale = timestepping.timescale
 
-        dataset = Dataset(dataset_dirname, mode='r')
+        dataset = Dataset(dataset_dirname, mode="r")
         self.yaxis = dataset.variables[diagnostic][:]
         dataset.close()
 
-    def plot(self,plot_option='plot'):
-        
-        '''
+    def plot(self, plot_option="plot"):
+
+        """
         plot :: choose what plot you want to make
-        '''
+        """
 
         t = np.arange(0, self.timescale, self.timestep)
-        if plot_option == 'plot':
+        if plot_option == "plot":
             plt.plot(t, self.yaxis, label="timescale = {}".format(self.timescale))
-        elif plot_option == 'loglog':
+        elif plot_option == "loglog":
             plt.loglog(t, self.yaxis, label="timescale = {}".format(self.timescale))
-        elif plot_option == 'semilogy':
+        elif plot_option == "semilogy":
             plt.semilogy(t, self.yaxis, label="timescale = {}".format(self.timescale))
-        elif plot_option == 'semilogx':
+        elif plot_option == "semilogx":
             plt.semilogx(t, self.yaxis, label="timescale = {}".format(self.timescale))
-        plt.ylabel(r'{} of solution'.format(self.diagnostic))
-        plt.xlabel(r'Time [s]')
+        plt.ylabel(r"{} of solution".format(self.diagnostic))
+        plt.xlabel(r"Time [s]")
         plt.title(self.title)
-        plt.legend(loc='best')
+        plt.legend(loc="best")
         plt.savefig(self.plot_dirname)
