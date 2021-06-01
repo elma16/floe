@@ -82,7 +82,7 @@ for values in number_of_triangles:
     u1, s1 = split(evp.w1)
     u0, s0 = split(evp.w0)
 
-    theta = 1 / 2
+    theta = 0.5
     uh = (1 - theta) * u0 + theta * u1
     sh = (1 - theta) * s0 + theta * s1
 

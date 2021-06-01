@@ -58,8 +58,7 @@ conditions = Conditions(
     family="CG",
     geo_wind=geo_wind,
     ocean_curr=ocean_curr,
-    ic=ic,
-    advect=advect,
+    ic=ic
 )
 timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
 output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
@@ -76,7 +75,6 @@ bt = ElasticViscousPlasticTransport(
 )
 
 diag = OutputDiagnostics(description="test 3", dirname=diagnostic_dirname)
-
 
 d = Function(bt.D)
 

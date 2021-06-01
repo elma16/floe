@@ -50,6 +50,10 @@ for name in ["CG", "CR"]:
         solver_params=solver,
     )
 
+    evp.assemble(evp.eqn, evp.w1, evp.bcs, solver.srt_params)
+    
+    evp.u1, evp.s1 = evp.w1.split()
+
     diag = OutputDiagnostics(description="EVP Test", dirname=diagnostic_dirname)
 
     t = 0

@@ -27,8 +27,8 @@ if "--test" in sys.argv:
 
 else:
     number_of_triangles = 30
-    timestep = 20
-    dumpfreq = 100
+    timestep = 1
+    dumpfreq = 10
     timescale = timestep * dumpfreq
 
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
@@ -72,6 +72,9 @@ bt = ElasticViscousPlastic(
     solver_params=solver,
 )
 
+bt.assemble(bt.eqn, bt.w1, bt.bcs, solver.srt_params)
+    
+bt.u1, bt.s1 = bt.w1.split()
 
 d = Function(bt.D)
 t = 0
