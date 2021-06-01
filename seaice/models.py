@@ -108,15 +108,27 @@ class SeaIceModel(object):
             self.dump_count -= self.dump_freq
             self.outfile.write(*args, time=t)
 
-    def initial_condition(self, *args):
+    def initial_condition(self, exact, *args):
         """
         arguments should be put in order (variable1, ic1), (variable2, ic2), etc.
         """
         for vars, ics in args:
-            if isinstance(ics, (int, float)) or type(ics) == "ufl.tensors.ListTensor":
-                vars.assign(ics)
+            if exact:
+                if (
+                    isinstance(ics, (int, float))
+                    or type(ics) == "ufl.tensors.ListTensor"
+                ):
+                    vars.assign(ics)
+                else:
+                    vars.project(ics)
             else:
-                vars.interpolate(ics)
+                if (
+                    isinstance(ics, (int, float))
+                    or type(ics) == "ufl.tensors.ListTensor"
+                ):
+                    vars.assign(ics)
+                else:
+                    vars.interpolate(ics)
 
     def assemble(self, eqn, func, bcs, params):
         uprob = NonlinearVariationalProblem(eqn, func, bcs)
@@ -209,6 +221,7 @@ class ViscousPlastic(SeaIceModel):
         ep_dot = self.strain(grad(self.uh))
 
         self.initial_condition(
+            conditions.exact,
             (self.u0, conditions.ic["u"]),
             (self.u1, self.u0),
             (self.a, conditions.ic["a"]),
@@ -262,7 +275,10 @@ class ViscousPlasticTransport(SeaIceModel):
         p, q, r = TestFunctions(self.W2)
 
         self.initial_condition(
-            (u0, conditions.ic["u"]), (h0, conditions.ic["h"]), (a0, conditions.ic["a"])
+            conditions.exact,
+            (u0, conditions.ic["u"]),
+            (h0, conditions.ic["h"]),
+            (a0, conditions.ic["a"]),
         )
 
         self.w1.assign(self.w0)
@@ -333,6 +349,7 @@ class ElasticViscousPlastic(SeaIceModel):
         self.p, self.q = TestFunctions(self.W1)
 
         self.initial_condition(
+            conditions.exact,
             (self.u0, conditions.ic["u"]),
             (self.s0, conditions.ic["s"]),
             (self.a, conditions.ic["a"]),
@@ -411,6 +428,7 @@ class ElasticViscousPlasticStress(SeaIceModel):
         q = TestFunction(self.S)
 
         self.initial_condition(
+            conditions.exact,
             (self.u0, conditions.ic["u"]),
             (a, conditions.ic["a"]),
             (h, conditions.ic["h"]),
@@ -503,6 +521,7 @@ class ElasticViscousPlasticTransport(SeaIceModel):
         p, q, r, m = TestFunctions(self.W3)
 
         self.initial_condition(
+            conditions.exact,
             (u0, conditions.ic["u"]),
             (s0, conditions.ic["s"]),
             (a0, conditions.ic["a"]),

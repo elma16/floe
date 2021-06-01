@@ -114,4 +114,5 @@ class Conditions(Configuration):
     steady_state = False  # steady state
     theta = 0.5  # theta for use in theta method 
     advect = None  # what variable do you want to advect?
+    exact = False # exact or numerical initial condition
     order = 0  # order of the spaces
