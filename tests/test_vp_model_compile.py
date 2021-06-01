@@ -11,9 +11,6 @@ from firedrake import (PeriodicSquareMesh, SpatialCoordinate, as_vector)
 
 
 def test_vp_model_compile(state, family, theta):
-    timestep = 1
-    dumpfreq = 10**3
-    timescale = 1
 
     dirname = "./output/test-output/u.pvd"
 
@@ -29,8 +26,8 @@ def test_vp_model_compile(state, family, theta):
     stabilised =  {'state': state , 'alpha': 1}
     conditions = Conditions(family=family, ocean_curr=ocean_curr, ic=ic, stabilised=stabilised, theta=theta)
 
-    timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
-    output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)
+    timestepping = TimesteppingParameters(timescale=1, timestep=1)
+    output = OutputParameters(dirname=dirname, dumpfreq=10**3)
     solver = SolverParameters()
     params = SeaIceParameters()
 

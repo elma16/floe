@@ -41,7 +41,7 @@ geo_wind = as_vector(
     [5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * x / length) * sin(2 * pi * y / length),
      5 + (sin(2 * pi * t0 / timescale) - 3) * sin(2 * pi * y / length) * sin(2 * pi * x / length)])
 
-ic = {'u' : 0, 'h' : 1, 'a' : x / length, 's' : as_matrix([[0, 0], [0, 0]])}
+ic = {'u': 0, 'h': 1, 'a': x / length, 's': as_matrix([[0, 0], [0, 0]])}
 stabilised =  {'state': True, 'alpha': 1}
 advect = {'h': True, 'a' : True}
 conditions = Conditions(ic=ic, family='CR', geo_wind=geo_wind, ocean_curr=ocean_curr, advect=advect, stabilised=stabilised)

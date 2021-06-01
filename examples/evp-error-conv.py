@@ -3,6 +3,8 @@ from firedrake import *
 from pathlib import Path
 import matplotlib.pyplot as plt
 
+plt.rcParams.update({'font.size': 14})
+
 path = "./output/evp-error-conv"
 Path(path).mkdir(parents=True, exist_ok=True)
 
@@ -20,7 +22,7 @@ Domain is a 500km x 500km square.
 
 timestep = 1
 dumpfreq =  10**3
-timescale = 100
+timescale = 10
 
 zero = Constant(0)
 
@@ -35,7 +37,6 @@ length = 5 * 10 ** 5
 pi_x = pi / length
 
 number_of_triangles = [5, 10, 20, 40, 80]
-#number_of_triangles = [10]
 
 error_values = []
 
@@ -73,7 +74,7 @@ for values in number_of_triangles:
     eqn += timestep * inner(sh, grad(evp.p)) * dx
     eqn -= timestep * inner(params.rho_w * params.C_w * sqrt(dot(ocean_curr - uh, ocean_curr - uh)) * (ocean_curr - uh), evp.p) * dx
 
-    # source terms in momentum equation=-==
+    # source terms in momentum equation
     eqn += timestep * inner(div(sigma_exp), evp.p) * dx
     eqn += timestep * inner(params.rho_w * params.C_w * sqrt(dot(ocean_curr - v_exp, ocean_curr - v_exp)) * (ocean_curr - v_exp), evp.p) * dx
 

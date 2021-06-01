@@ -35,7 +35,7 @@ for values in number_of_triangles:
     x, y = SpatialCoordinate(mesh)
     v_exp = as_vector([-sin(pi_x * x) * sin(pi_x * y), -sin(pi_x * x) * sin(pi_x * y)])
 
-    ic = {'u': v_exp, 'a' : 1, 'h' : 1}
+    ic = {'u': v_exp, 'a': 1, 'h': 1}
     conditions = Conditions(ic=ic, theta=1)
     srt = ViscousPlastic(mesh=mesh, conditions=conditions, timestepping=timestepping, output=output, params=params,
                          solver_params=solver)

@@ -49,7 +49,7 @@ for name in ['CG','CR']:
         evp.solve(evp.usolver)
         rel_error = Error.compute(evp.u1, u0) / norm(evp.u1)
         if rel_error < 10**(-l[0]):
-            print('relative error < ',10**(-l[0]),'time',t)
+            print('relative error < ' , 10**(-l[0]) , 'time' , t)
             l.pop(0)
         evp.update(evp.w0, evp.w1)
         evp.dump(evp.u1, evp.s1, t=t)

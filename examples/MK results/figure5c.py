@@ -32,7 +32,7 @@ d_dirname2 = path + "/evp_stab_energy2.nc"
 fig5c_dirname = path + "/fig5c.png"
 
 
-for triangles in [10,20,30]:
+for triangles in [10, 20, 30]:
     number_of_triangles = triangles
     length = 5 * 10 ** 5
     mesh = SquareMesh(number_of_triangles, number_of_triangles, length)
@@ -40,10 +40,10 @@ for triangles in [10,20,30]:
 
     ocean_curr = as_vector([0.1 * (2 * y - length) / length, -0.1 * (length - 2 * x) / length])
 
-    ic =  {'u': 0, 'a' : x / length, 'h' : 1, 's' : as_matrix([[0, 0], [0, 0]])}
-    conditions = Conditions(theta=0.5,ocean_curr=ocean_curr,ic=ic)
+    ic =  {'u': 0, 'a': x / length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
+    conditions = Conditions(theta=0.5, ocean_curr=ocean_curr, ic=ic)
     stabilised =  {'state': True , 'alpha': 10}
-    conditions_stab = Conditions(theta=0.5,ocean_curr=ocean_curr,stabilised=stabilised,ic=ic)
+    conditions_stab = Conditions(theta=0.5, ocean_curr=ocean_curr, stabilised=stabilised, ic=ic)
         
     timestepping = TimesteppingParameters(timescale=timescale, timestep=timestep)
     output = OutputParameters(dirname=dirname, dumpfreq=dumpfreq)

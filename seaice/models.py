@@ -2,7 +2,7 @@ from firedrake import (FacetNormal, SpatialCoordinate, VectorFunctionSpace, Func
                        MixedFunctionSpace, DirichletBC, inner, interpolate, Constant, Function, TestFunctions,
                        TestFunction, NonlinearVariationalProblem, NonlinearVariationalSolver, File, FILE_CREATE,
                        FILE_READ, div, grad, transpose, sqrt, dev, tr, exp, Identity, dx, dS, perp, dot, avg,
-                       CellVolume, FacetArea, jump, norm, split)
+                       CellVolume, FacetArea, jump, norm, split, as_matrix)
 
 
 class SeaIceModel(object):
@@ -76,7 +76,6 @@ class SeaIceModel(object):
         arguments should be put in order (variable1, ic1), (variable2, ic2), etc.
         '''
         for vars, ics in args:
-            print(vars, ics)
             if isinstance(ics, (int, float)) or type(ics) == 'ufl.tensors.ListTensor':
                 vars.assign(ics)
             else:
@@ -219,7 +218,7 @@ class ElasticViscousPlastic(SeaIceModel):
 
         self.initial_condition((self.u0, conditions.ic['u']), (self.s0, conditions.ic['s']),
                                (self.a, conditions.ic['a']), (self.h, conditions.ic['h']))
-        print(norm(self.s0))
+
         self.w1.assign(self.w0)
         u1, s1 = split(self.w1)
         u0, s0 = split(self.w0)

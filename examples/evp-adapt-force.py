@@ -29,7 +29,7 @@ ocean_curr = c * ocean_curr
 
 ic =  {'u': 0, 'a': x/length, 'h': 1, 's': as_matrix([[0, 0], [0, 0]])}
 
-stabilised = {'state':False, 'alpha':1}
+stabilised = {'state': False, 'alpha': 1}
 
 conditions = Conditions(ic=ic, ocean_curr=ocean_curr, stabilised=stabilised, family='CG')
 

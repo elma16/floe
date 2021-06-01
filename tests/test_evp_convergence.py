@@ -12,7 +12,6 @@ import pytest
                           for d in ['CR', 'CG']])
 
 
-
 def test_evp_convergence(state, norm_type, theta, family):
     timestep = 1
     dumpfreq = 10 ** 6
