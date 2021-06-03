@@ -14,7 +14,7 @@ timescale = 10
 zero = Constant(0)
 zero_vector = Constant(as_vector([0, 0]))
 
-norm_type = "L2"
+norm_type = "H1"
 
 dirname = path + "/u.pvd"
 plot_dirname = path + "/srt-conv_{}.png".format(norm_type)
@@ -81,12 +81,15 @@ for values in number_of_triangles:
     error_values.append(Error.compute(srt.u1, v_exp, norm_type))
 
 h = [sqrt(2) * length / x for x in number_of_triangles]
+hsq = [x**2 for x in h]
 error_slope = float(format(np.polyfit(np.log(h), np.log(error_values), 1)[0], ".3f"))
 
 print(error_slope)
 
-plt.title("Strain Rate Tensor Error Convergence")
+#plt.title("Strain Rate Tensor Error Convergence")
 plt.xlabel(r"h")
-plt.ylabel(r"{} Error".format(norm_type))
-plt.loglog(h, error_values, ".", label="Gradient = {}".format(error_slope))
+plt.ylabel(r"$H^1$ Error".format(norm_type))
+plt.loglog(h, error_values, "-o", label="$H^1$ error")
+plt.loglog(h, hsq, label="$h^2$")
+plt.legend(loc='best')
 plt.savefig(plot_dirname)

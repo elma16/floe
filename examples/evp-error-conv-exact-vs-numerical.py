@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 plt.rcParams.update({"font.size": 14})
 
-path = "./output/evp-error-conv"
+path = "./output/evp-error-conv_ex-vs-num"
 Path(path).mkdir(parents=True, exist_ok=True)
 
 """
@@ -31,7 +31,7 @@ timescale = 10
 
 zero = Constant(0)
 
-norm_type = "H1"
+norm_type = "L2"
 
 title = "EVP Plot"
 diagnostic_dirname = path + "/evp.nc"

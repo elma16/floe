@@ -3,7 +3,7 @@ from firedrake import *
 from pathlib import Path
 import matplotlib.pyplot as plt
 
-plt.rcParams.update({"font.size": 14})
+plt.rcParams.update({"font.size": 12})
 
 path = "./output/evp-error-conv"
 Path(path).mkdir(parents=True, exist_ok=True)
@@ -155,12 +155,15 @@ for values in number_of_triangles:
     error_values.append(Error.compute(u1, v_exp, norm_type))
 
 h = [sqrt(2) * length / x for x in number_of_triangles]
+hsq = [x**2 for x in h]
 error_slope = float(format(np.polyfit(np.log(h), np.log(error_values), 1)[0], ".3f"))
 
 print(error_slope)
 
-plt.title("EVP Error Convergence")
+#plt.title("EVP Error Convergence")
 plt.xlabel(r"h")
-plt.ylabel(r"{} Error".format(norm_type))
-plt.loglog(h, error_values, ".", label="Gradient = {}".format(error_slope))
+plt.ylabel(r"$H^1$ Error".format(norm_type))
+plt.loglog(h, error_values, "-o", label="$H^1$ error")
+plt.loglog(h, hsq, label="$h^2$")
+plt.legend(loc='best')
 plt.savefig(plot_dirname)
