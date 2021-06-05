@@ -20,17 +20,17 @@ Initial conditions : h = 1, A = x / L
 Domain is a 500km x 500km square.
 """
 
-timestep = 1
+timestep = 0.1
 dumpfreq = 10 ** 3
-timescale = 10
+timescale = 1
 
 zero = Constant(0)
 
-norm_type = "H1"
+norm_type = "L2"
 
 title = "EVP Plot"
 diagnostic_dirname = path + "/evp.nc"
-plot_dirname = path + "/evp_error_timescale={}_timestep={}_{}.png".format(
+plot_dirname = path + "/evp_error_timescale={}_timestep={}_{}u.pdf".format(
     timescale, timestep, norm_type
 )
 dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
@@ -38,7 +38,7 @@ dirname = path + "/u_timescale={}_timestep={}.pvd".format(timescale, timestep)
 length = 5 * 10 ** 5
 pi_x = pi / length
 
-number_of_triangles = [5, 10, 20, 40, 80]
+number_of_triangles = [5, 10, 20, 40, 80, 160]
 
 error_values = []
 
@@ -149,21 +149,24 @@ for values in number_of_triangles:
         t += timestep
         evp.dump(u1, s1, w, x, t=t)
         evp.progress(t)
-        print(Error.compute(u1, v_exp, norm_type))
-        # print(Error.compute(evp.s1, x))
+        #print(Error.compute(u1, v_exp, norm_type))
+        #print(Error.compute(s1, sigma_exp, norm_type)/norm(sigma_exp, norm_type))
 
     error_values.append(Error.compute(u1, v_exp, norm_type))
+                        #norm(sigma_exp, norm_type))
 
 h = [sqrt(2) * length / x for x in number_of_triangles]
-hsq = [x**2 for x in h]
+hsq = [10**-6 * x**2 for x in h]
+hd = [10**-3 * x for x in h]
 error_slope = float(format(np.polyfit(np.log(h), np.log(error_values), 1)[0], ".3f"))
 
 print(error_slope)
 
 #plt.title("EVP Error Convergence")
 plt.xlabel(r"h")
-plt.ylabel(r"$H^1$ Error".format(norm_type))
-plt.loglog(h, error_values, "-o", label="$H^1$ error")
+plt.ylabel(r"$L^2$ Error".format(norm_type))
+plt.loglog(h, error_values, "-o", label="$L^2$ error")
 plt.loglog(h, hsq, label="$h^2$")
+#plt.loglog(h, hd, label="$h$")
 plt.legend(loc='best')
 plt.savefig(plot_dirname)

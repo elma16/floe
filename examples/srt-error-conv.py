@@ -17,9 +17,9 @@ zero_vector = Constant(as_vector([0, 0]))
 norm_type = "H1"
 
 dirname = path + "/u.pvd"
-plot_dirname = path + "/srt-conv_{}.png".format(norm_type)
+plot_dirname = path + "/srt-conv_{}.pdf".format(norm_type)
 
-number_of_triangles = [5, 10, 20, 40, 80]
+number_of_triangles = [5, 10, 20, 40, 80, 160]
 
 error_values = []
 
@@ -81,7 +81,7 @@ for values in number_of_triangles:
     error_values.append(Error.compute(srt.u1, v_exp, norm_type))
 
 h = [sqrt(2) * length / x for x in number_of_triangles]
-hsq = [x**2 for x in h]
+hsq = [10**-6 * x**2 for x in h]
 error_slope = float(format(np.polyfit(np.log(h), np.log(error_values), 1)[0], ".3f"))
 
 print(error_slope)
